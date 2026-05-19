@@ -1,0 +1,6 @@
+<svg width="192" height="192" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="UniTrack">
+  <rect width="192" height="192" fill="#534AB7"/>
+  <circle cx="96" cy="82" r="34" fill="#fff"/>
+  <path d="M96 154c26-28 48-55 48-80 0-26-21-48-48-48S48 48 48 74c0 25 22 52 48 80Z" fill="#EDEBFF"/>
+  <circle cx="96" cy="74" r="22" fill="#534AB7"/>
+</svg>

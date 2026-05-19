@@ -1,0 +1,38 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Install all",
+      "type": "shell",
+      "command": "npm run install:all",
+      "problemMatcher": []
+    },
+    {
+      "label": "Run full app",
+      "type": "shell",
+      "command": "npm run dev",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Check project",
+      "type": "shell",
+      "command": "npm run check",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Build GitHub Pages",
+      "type": "shell",
+      "command": "npm run build:pages",
+      "group": "build",
+      "options": {
+        "env": {
+          "VITE_STATIC_MODE": "true",
+          "VITE_BASE_PATH": "./"
+        }
+      },
+      "problemMatcher": []
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+import { z } from "zod";
+
+export const profileSchema = z.object({
+  name: z.string().min(2).max(120),
+  bacAverage: z.coerce.number().min(1).max(10).nullable().optional(),
+  languageResults: z.string().max(1200).optional().default(""),
+  interests: z.array(z.string().min(2).max(80)).max(20).optional().default([]),
+  emailNotifications: z.boolean().optional().default(true),
+  notifyBeforeDays: z.coerce.number().int().min(1).max(60).optional().default(14)
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8, "Parola nouă trebuie să aibă minimum 8 caractere.")
+});
+
+export const deleteAccountSchema = z.object({
+  password: z.string().min(1),
+  confirmation: z.literal("STERG CONTUL", {
+    errorMap: () => ({ message: "Scrie exact STERG CONTUL pentru confirmare." })
+  })
+});

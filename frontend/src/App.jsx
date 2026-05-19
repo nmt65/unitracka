@@ -1,0 +1,195 @@
+import { useEffect, useMemo, useState } from "react";
+import { Loader2 } from "lucide-react";
+import { api } from "./services/api.js";
+import { useAuth } from "./hooks/useAuth.js";
+import { useUniversities } from "./hooks/useUniversities.js";
+import { AdminPanel } from "./pages/AdminPanel.jsx";
+import { Admissions } from "./pages/Admissions.jsx";
+import { AuthPage } from "./pages/AuthPage.jsx";
+import { Calendar } from "./pages/Calendar.jsx";
+import { Compare } from "./pages/Compare.jsx";
+import { Dashboard } from "./pages/Dashboard.jsx";
+import { Documents } from "./pages/Documents.jsx";
+import { Profile } from "./pages/Profile.jsx";
+import { PublicShare } from "./pages/PublicShare.jsx";
+import { Universities } from "./pages/Universities.jsx";
+import { UniversityWorkspace } from "./pages/UniversityWorkspace.jsx";
+import { Navbar } from "./components/Navbar.jsx";
+import { Sidebar } from "./components/Sidebar.jsx";
+import { UniversityModal } from "./components/UniversityModal.jsx";
+
+export function App() {
+  const publicMatch = window.location.pathname.match(/(?:^|\/)public\/([^/]+)/);
+  const { user, setUser, checking, login, register, logout } = useAuth();
+  const { universities, stats, loading, refresh } = useUniversities(Boolean(user));
+  const [active, setActive] = useState("dashboard");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [toast, setToast] = useState("");
+  const [darkMode, setDarkMode] = useState(true);
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    document.body.classList.toggle("dark", darkMode);
+  }, [darkMode]);
+
+  useEffect(() => {
+    if (user) setActive("dashboard");
+  }, [user?.id, user?.role]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(""), 2800);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  useEffect(() => {
+    if (!user) {
+      setNotifications([]);
+      return;
+    }
+    let activeSubscription = true;
+    async function loadNotifications() {
+      try {
+        const data = await api.notifications();
+        if (activeSubscription) setNotifications(data.notifications || []);
+      } catch {
+        if (activeSubscription) setNotifications([]);
+      }
+    }
+    loadNotifications();
+    const timer = window.setInterval(loadNotifications, 45000);
+    return () => {
+      activeSubscription = false;
+      window.clearInterval(timer);
+    };
+  }, [user?.id]);
+
+  const counts = useMemo(() => ({
+    total: universities.length,
+    wishlist: universities.filter((uni) => uni.status === "Wishlist").length,
+    applied: universities.filter((uni) => uni.status === "Aplicat").length,
+    accepted: universities.filter((uni) => uni.status === "Acceptat").length
+  }), [universities]);
+
+  function openAdd() {
+    if (user?.role !== "admin") {
+      setActive("admissions");
+      return;
+    }
+    setEditing(null);
+    setModalOpen(true);
+  }
+
+  function openEdit(university) {
+    setEditing(university);
+    setModalOpen(true);
+  }
+
+  async function saveUniversity(payload) {
+    if (user?.role !== "admin") {
+      setToast("Doar adminul poate adăuga universități.");
+      return;
+    }
+    if (editing) await api.updateUniversity(editing.id, payload);
+    else await api.createUniversity(payload);
+    setToast(editing ? "Universitate actualizata." : "Universitate adaugata.");
+    await refresh();
+  }
+
+  async function deleteUniversity(university) {
+    if (!window.confirm(`Stergi ${university.name}?`)) return;
+    await api.deleteUniversity(university.id);
+    setToast("Universitate stearsa.");
+    await refresh();
+  }
+
+  async function toggleDocument(doc) {
+    await api.updateDocument(doc.id, { isCompleted: !doc.isCompleted });
+    await refresh();
+  }
+
+  async function addDocument(universityId, body) {
+    await api.createDocument(universityId, body);
+    setToast("Document adaugat.");
+    await refresh();
+  }
+
+  async function deleteDocument(doc) {
+    if (!window.confirm(`Stergi documentul ${doc.name}?`)) return;
+    await api.deleteDocument(doc.id);
+    setToast("Document sters.");
+    await refresh();
+  }
+
+  async function markNotificationRead(id) {
+    try {
+      await api.markNotificationRead(id);
+      setNotifications((items) => items.map((item) => item.id === id ? { ...item, readAt: new Date().toISOString() } : item));
+    } catch (error) {
+      setToast(error.message);
+    }
+  }
+
+  if (publicMatch) {
+    return <PublicShare shareId={publicMatch[1]} />;
+  }
+
+  if (checking) {
+    return <main className="loading-screen"><Loader2 className="spin" size={28} /> Se încarcă UniTrack...</main>;
+  }
+
+  if (!user) {
+    return <AuthPage onLogin={login} onRegister={register} />;
+  }
+
+  const pageProps = {
+    user,
+    universities,
+    stats,
+    onAdd: openAdd,
+    onEdit: openEdit,
+    onDelete: deleteUniversity,
+    onManageUniversities: () => setActive("universities"),
+    onToast: setToast
+  };
+
+  return (
+    <div className="app-shell">
+      <Navbar
+        user={user}
+        active={active}
+        onChange={setActive}
+        onLogout={logout}
+        darkMode={darkMode}
+        onToggleTheme={() => setDarkMode((value) => !value)}
+        notifications={notifications}
+        onMarkNotificationRead={markNotificationRead}
+      />
+      <div className="app-body">
+        <Sidebar active={active} onChange={setActive} counts={counts} user={user} />
+        <main className="content">
+          {loading && <div className="loading-bar" />}
+          {active === "dashboard" && user.role === "admin" && <AdminPanel onToast={setToast} />}
+          {active === "dashboard" && user.role === "university" && <UniversityWorkspace user={user} onToast={setToast} />}
+          {active === "dashboard" && user.role === "student" && <Dashboard {...pageProps} />}
+          {active === "admissions" && <Admissions onToast={setToast} />}
+          {active === "universities" && <Universities {...pageProps} />}
+          {active === "documents" && (
+            <Documents
+              universities={universities}
+              onToggleDocument={toggleDocument}
+              onAddDocument={addDocument}
+              onDeleteDocument={deleteDocument}
+            />
+          )}
+          {active === "compare" && <Compare universities={universities} onToast={setToast} />}
+          {active === "calendar" && <Calendar universities={universities} onToast={setToast} />}
+          {active === "profile" && <Profile user={user} universities={universities} stats={stats} onUser={setUser} onLogout={logout} onToast={setToast} />}
+        </main>
+      </div>
+      <UniversityModal open={modalOpen} initial={editing} onClose={() => setModalOpen(false)} onSave={saveUniversity} />
+      {toast && <div className="toast">{toast}</div>}
+    </div>
+  );
+}

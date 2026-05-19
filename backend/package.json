@@ -1,0 +1,33 @@
+{
+  "name": "unitracka-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node --watch-path=src src/server.js",
+    "start": "node src/server.js",
+    "check": "node --check src/server.js && node --check src/app.js && node --check src/models/index.js && node --check src/scripts/smoke.js",
+    "seed": "node src/scripts/seed.js",
+    "smoke": "node src/scripts/smoke.js",
+    "reminders": "node src/scripts/sendReminders.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.12.0",
+    "nodemailer": "^6.10.0",
+    "pdfkit": "^0.16.0",
+    "pg": "^8.13.1",
+    "sequelize": "^6.37.5",
+    "sqlite3": "^5.1.7",
+    "xss": "^1.0.15",
+    "zod": "^3.24.1"
+  }
+}
