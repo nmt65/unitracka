@@ -29,6 +29,13 @@ După primul deploy backend, când Sequelize a creat tabelele, poți rula în Su
 -- copiaza continutul din backend/sql/postgres_rls.sql
 ```
 
+Sau din backend, dacă ai `DATABASE_URL` configurat:
+
+```bash
+npm run db:rls --prefix backend
+npm run production:check --prefix backend
+```
+
 Notă: scriptul activează RLS fără `FORCE`, ca backend-ul server-side să poată folosi autorizarea din API. Nu expune `DATABASE_URL` în frontend.
 
 ## 2. Backend API pe Render/Railway/Fly
