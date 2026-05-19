@@ -40,6 +40,8 @@ Setări tipice:
 - Start command: `npm start`
 - Node version: 22 sau mai nou
 
+Repo-ul include `render.yaml`, deci pe Render poți crea serviciul direct din repository. Variabilele sensibile sunt marcate `sync: false` și se completează în dashboard, nu în GitHub.
+
 Environment Variables:
 
 ```env
@@ -80,7 +82,10 @@ Endpoint-uri de verificat:
 
 ## 3. GitHub Pages frontend
 
-În repo, mergi la Settings -> Pages și alege `GitHub Actions`.
+Repo-ul este pregătit pentru două variante:
+
+- `gh-pages`: publicare statică manuală, folosită acum pentru că GitHub Actions este blocat pe cont.
+- `GitHub Actions`: workflow-ul `.github/workflows/pages.yml`, util după ce Actions funcționează pe cont.
 
 Pentru demo static:
 
@@ -98,6 +103,8 @@ VITE_API_URL=https://backendul-tau/api
 ```
 
 Workflow-ul `.github/workflows/pages.yml` folosește aceste variabile automat.
+
+Pentru publicare manuală pe branch-ul `gh-pages`, refaci build-ul cu variabilele frontend potrivite și împingi conținutul din `frontend/dist` pe branch-ul `gh-pages`.
 
 ## 4. Ce nu pui în GitHub
 

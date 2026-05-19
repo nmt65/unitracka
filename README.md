@@ -78,6 +78,13 @@ npm run build:pages
 
 Workflow-ul `.github/workflows/pages.yml` publică automat frontend-ul pe Pages. Implicit build-ul este static (`VITE_STATIC_MODE=true`). Pentru varianta live reală, setezi în GitHub Actions Variables `VITE_STATIC_MODE=false` și `VITE_API_URL=https://backendul-tau/api`, apoi rulezi backend-ul separat cu PostgreSQL/Supabase.
 
+Deploy-ul public curent:
+
+- Frontend GitHub Pages: `https://nmt65.github.io/unitracka/`
+- Repository GitHub: `https://github.com/nmt65/unitracka`
+- Backend recomandat: Render, folosind `render.yaml`
+- Database recomandat: Supabase Postgres, conectat doar prin `DATABASE_URL` în backend
+
 ## Configurare DB
 
 Implicit, aplicația folosește SQLite în `backend/data/unitracka.sqlite`.
