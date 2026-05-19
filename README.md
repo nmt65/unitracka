@@ -1,47 +1,99 @@
 # UniTrack
 
-UniTrack este o aplicație web pentru gestionarea admiterilor la universități. Proiectul local recreează interfața din prototipul Rocket: dashboard dark, sidebar fix, universități, documente, comparație, calendar, profil și modal de adăugare universitate.
+UniTrack este o platformă web pentru gestionarea procesului de admitere la universități. Aplicația centralizează opțiunile candidatului, documentele necesare, deadline-urile, statusul aplicațiilor și comunicarea dintre elevi, universități și administratori.
 
-## Funcționalități
+Proiectul este construit ca aplicație full-stack: frontend React/Vite, backend Node.js/Express și bază de date relațională prin Sequelize. În dezvoltare rulează cu SQLite local, iar pentru producție poate fi conectat la PostgreSQL.
 
-- Autentificare email/parolă cu JWT în cookie `httpOnly`, CSRF double-submit, rate limiting, validare Zod și sanitizare XSS.
-- Roluri separate: student, universitate și admin.
-- Signup student cu validare CNP și blocare la un singur cont per CNP, fără salvarea CNP-ului în clar.
-- Recuperare cont: parolă uitată și resetare parolă cu token temporar.
-- Email real pentru resetare parolă și notificări de aplicații când SMTP este configurat.
-- Lifecycle cont: deconectare, schimbare parolă și ștergere cont cu confirmare parolă.
-- Dashboard cu statistici, deadline-uri, progres documente și listă de aplicații.
-- Tabel universități cu filtre pe status/tip, export CSV și modal de adăugare/editare.
-- Admin panel: doar adminul poate adăuga universități, conturi instituționale, vede statusul sistemului și auditul de securitate.
-- Workspace universitate: aplicații primite de la elevi, sortare, filtrare și status acceptat/respins/review.
-- Flux student de admitere: trimite aplicații către universitățile active și vede statusul.
-- Checklist documente pe fiecare universitate, documente custom și documente predefinite.
-- Verificare AI documente cu OpenAI/Gemini când există API key și fallback local euristic.
-- Notificări interne pentru aplicații noi și actualizări de status.
-- Audit log pentru acțiuni sensibile în panoul Admin.
+## Obiectiv
+
+Admiterea la facultate implică multe platforme diferite, documente repetate și termene limită greu de urmărit. UniTrack propune un spațiu unic în care elevul își poate organiza aplicațiile, iar instituțiile pot primi și administra dosarele într-un flux coerent.
+
+Aplicația urmărește trei direcții principale:
+
+- organizarea aplicațiilor pentru elevi;
+- verificarea și urmărirea documentelor;
+- administrarea universităților, conturilor instituționale și statusurilor de admitere.
+
+## Funcționalități principale
+
+- Autentificare cu email și parolă.
+- Roluri separate pentru student, universitate și administrator.
+- Cont unic per elev prin validarea CNP-ului, fără stocarea CNP-ului în clar.
+- Resetare parolă cu token temporar.
+- Deconectare, schimbare parolă și ștergere cont.
+- Dashboard cu progresul aplicațiilor, deadline-uri și statistici.
+- Administrare universități, programe, taxe, ratinguri și deadline-uri.
+- Adăugare universități doar de către administrator.
+- Workspace pentru universități, cu aplicații primite de la elevi.
+- Trimitere aplicații de către studenți către universitățile active.
+- Checklist documente pentru fiecare universitate.
+- Documente predefinite și documente custom.
+- Verificare documente cu AI prin OpenAI/Gemini, cu fallback local euristic.
+- Notificări interne pentru aplicații noi și schimbări de status.
+- Audit log pentru acțiuni sensibile.
 - Comparare side-by-side pentru 2-4 universități.
-- Calendar lunar cu export `.ics`.
+- Calendar cu deadline-uri și export `.ics`.
+- Exporturi CSV, JSON, PDF, ICS și XML.
 - Profil student și link public read-only.
-- DB local SQLite pentru development; suport Sequelize pentru PostgreSQL/MySQL.
-- Export JSON/CSV/PDF/ICS/XML.
-- Script SQL pentru PostgreSQL Row Level Security: `backend/sql/postgres_rls.sql`.
+
+## Arhitectură
+
+```text
+frontend/   React + Vite
+backend/    Node.js + Express + Sequelize
+docs/       documentație tehnică și checklist de concurs
+```
+
+Backend-ul expune un API REST, iar frontend-ul consumă API-ul printr-un strat separat de servicii. Pentru prezentări statice, aplicația are și un mod frontend-only bazat pe `localStorage`, util pentru GitHub Pages.
+
+### Tehnologii
+
+- React, Vite, React Router
+- Node.js, Express
+- Sequelize ORM
+- SQLite pentru dezvoltare locală
+- PostgreSQL pentru producție
+- Zod pentru validare
+- JWT în cookie `httpOnly`
+- Helmet, CORS, rate limiting și sanitizare XSS
+- OpenAI/Gemini pentru verificarea asistată a documentelor
+
+## Securitate și date personale
+
+Proiectul include măsuri de securitate aplicate atât la nivel de API, cât și la nivel de bază de date:
+
+- parole hash-uite cu bcrypt;
+- JWT stocat în cookie `httpOnly`;
+- protecție CSRF double-submit;
+- rate limiting pentru autentificare și API;
+- validare strictă a inputului cu Zod;
+- sanitizare împotriva XSS;
+- CNP hash-uit cu pepper, fără salvare în clar;
+- roluri și permisiuni pe endpoint-uri;
+- script SQL pentru Row Level Security în PostgreSQL;
+- audit pentru acțiuni administrative și operații sensibile.
+
+Scriptul pentru politicile PostgreSQL RLS se află în:
+
+```text
+backend/sql/postgres_rls.sql
+```
 
 ## Rulare locală
 
 ```bash
-cd unitracka
 npm run install:all
 npm run dev
 ```
 
-URL-uri:
+URL-uri locale:
 
 - Frontend: `http://127.0.0.1:5173`
 - API: `http://127.0.0.1:4000/api`
 - Health check: `http://127.0.0.1:4000/api/health`
 - Readiness DB check: `http://127.0.0.1:4000/api/ready`
 
-Conturi demo:
+Conturi de test pentru development:
 
 ```text
 Student:       andrei@unitracker.ro / Demo1234!
@@ -49,7 +101,51 @@ Admin:         admin@unitracker.ro / Demo1234!
 Universitate:  admitere@unibuc.ro / Demo1234!
 ```
 
-Datele demo se creează automat în development și includ cele 6 universități din capturi: UB, UTCN, TU Delft, KU Leuven, UPB și University of Edinburgh.
+Datele de test sunt generate doar în modul de dezvoltare. Pentru producție se setează `SEED_DEMO=false`.
+
+## Configurare
+
+Backend-ul citește variabilele din `.env`. Fișierele reale `.env` nu se urcă în repository; în Git se păstrează doar exemplele:
+
+```text
+backend/.env.example
+backend/.env.production.example
+frontend/.env.example
+frontend/.env.pages.example
+```
+
+Exemplu minim pentru dezvoltare:
+
+```env
+NODE_ENV=development
+PORT=4000
+DB_DIALECT=sqlite
+JWT_SECRET=schimba-acest-secret
+CNP_PEPPER=schimba-acest-pepper
+CORS_ORIGIN=http://127.0.0.1:5173
+APP_URL=http://127.0.0.1:5173
+```
+
+Exemplu minim pentru PostgreSQL:
+
+```env
+DB_DIALECT=postgres
+DATABASE_URL=postgresql://user:password@host:5432/database
+```
+
+Cheile pentru AI și SMTP sunt opționale:
+
+```env
+OPENAI_API_KEY=
+GEMINI_API_KEY=
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=UniTrack <no-reply@example.ro>
+```
+
+Fără chei AI externe, verificarea documentelor folosește fallback local. Fără SMTP, tokenul de resetare este disponibil doar în development, pentru testare.
 
 ## Verificare
 
@@ -58,99 +154,66 @@ npm run check
 npm run smoke
 ```
 
-`npm run check` rulează `node --check` pentru backend și `vite build` pentru frontend. `npm run smoke` verifică API-ul pornit: health, DB readiness, CSRF, login demo și lista de universități.
+`npm run check` verifică sintaxa backend-ului și construiește frontend-ul. `npm run smoke` testează API-ul pornit: health, DB readiness, CSRF, autentificare și lista de universități.
 
-## VS Code
+## Build și deploy
 
-Deschide folderul `unitracka` direct în VS Code. Am adăugat:
+Pentru build frontend:
 
-- `.vscode/tasks.json`: install, run full app, check, build GitHub Pages;
-- `.vscode/settings.json`: exclude `node_modules`, `dist`, SQLite local;
-- `.vscode/extensions.json`: extensii recomandate pentru JS, GitHub Actions și SQL.
+```bash
+npm run build
+```
 
-## GitHub Pages
-
-GitHub Pages nu rulează backend Node/SQL. Pentru asta există un mod static de prezentare cu `localStorage`.
+Pentru build static compatibil cu GitHub Pages:
 
 ```bash
 npm run build:pages
 ```
 
-Workflow-ul `.github/workflows/pages.yml` publică automat frontend-ul pe Pages. Implicit build-ul este static (`VITE_STATIC_MODE=true`). Pentru varianta live reală, setezi în GitHub Actions Variables `VITE_STATIC_MODE=false` și `VITE_API_URL=https://backendul-tau/api`, apoi rulezi backend-ul separat cu PostgreSQL/Supabase.
+GitHub Pages poate rula doar frontend static. Varianta completă de producție necesită un backend Node.js separat și o bază de date PostgreSQL.
 
-Deploy-ul public curent:
+Configurația pentru deploy backend se află în:
 
-- Frontend GitHub Pages: `https://nmt65.github.io/unitracka/`
-- Repository GitHub: `https://github.com/nmt65/unitracka`
-- Backend recomandat: Render, folosind `render.yaml`
-- Database recomandat: Supabase Postgres, conectat doar prin `DATABASE_URL` în backend
-
-## Configurare DB
-
-Implicit, aplicația folosește SQLite în `backend/data/unitracka.sqlite`.
-
-Pentru PostgreSQL:
-
-```env
-DB_DIALECT=postgres
-DATABASE_URL=postgres://user:password@localhost:5432/unitrack
-JWT_SECRET=schimba-acest-secret
-CORS_ORIGIN=http://127.0.0.1:5173
-TRUST_PROXY=false
-APP_URL=http://127.0.0.1:5173
-COOKIE_SAMESITE=lax
-COOKIE_SECURE=false
+```text
+render.yaml
 ```
 
-După ce Sequelize creează tabelele în Postgres, poți aplica politicile RLS din `backend/sql/postgres_rls.sql`. În cod există deja filtrare pe `UserId` pentru toate resursele private.
+Flux recomandat pentru producție:
 
-Variabile utile:
-
-```env
-CNP_PEPPER=schimba-acest-pepper-pentru-cnp
-OPENAI_API_KEY=
-GEMINI_API_KEY=
-SMTP_HOST=
-SMTP_PORT=587
-SMTP_USER=
-SMTP_PASS=
-SMTP_FROM=UniTrack <no-reply@unitrack.example.ro>
+```text
+GitHub Pages frontend -> Backend Express -> PostgreSQL
 ```
 
-Fără chei AI externe, verificarea documentelor folosește fallback local.
-Fără SMTP configurat, resetarea parolei returnează tokenul doar în development pentru testare locală. În producție setează SMTP real.
+## Documentație
 
-Pentru mod live fără date demo:
-
-```env
-NODE_ENV=production
-SEED_DEMO=false
-BOOTSTRAP_ADMIN=true
-ADMIN_EMAIL=admin@domeniul-tau.ro
-ADMIN_PASSWORD=o-parola-puternica
-COOKIE_SAMESITE=none
-COOKIE_SECURE=true
-```
-
-Exemplu complet: `backend/.env.production.example`.
-
-## InfoEducație 2026
-
-Regulamentul 2026 include secțiunea „Aplicații Web”, proiectele pot fi individuale sau în echipe de maximum 2 elevi, iar proiectul trebuie să aibă documentație și cod sursă/materiale auxiliare disponibile pentru evaluare. Sursa folosită: regulamentul publicat pe `edu.ro`, nr. 24.683/05.02.2026. Am adăugat checklist-ul local în `docs/infoeducatie-2026-checklist.md`.
-
-Documentație locală:
+Documentația proiectului este în folderul `docs/`:
 
 - `docs/infoeducatie-2026-checklist.md`
 - `docs/arhitectura-tehnica.md`
-- `docs/ce-nu-se-urca-pe-github.md`
-- `docs/deploy-github-pages-supabase.md`
-- `docs/surse-externe.md`
 - `docs/security-and-rls.md`
 - `docs/ai-document-verification.md`
+- `docs/deploy-github-pages-supabase.md`
 - `docs/github-pages.md`
 - `docs/public-launch-checklist.md`
+- `docs/surse-externe.md`
+- `docs/ce-nu-se-urca-pe-github.md`
 
-## Structură
+## Conformitate InfoEducație 2026
+
+Proiectul include cod sursă, documentație tehnică, descrierea arhitecturii, surse externe, explicații de securitate și checklist dedicat pentru categoria Aplicații Web.
+
+Elemente relevante pentru evaluare:
+
+- aplicație web funcțională, cu frontend și backend;
+- roluri distincte și fluxuri pentru utilizatori diferiți;
+- operații CRUD reale;
+- bază de date relațională;
+- protecție pentru date personale;
+- validare server-side;
+- documentație locală pentru instalare, rulare și deploy;
+- exporturi și integrare opțională cu servicii externe.
+
+## Structură repository
 
 ```text
 unitracka/
@@ -158,16 +221,9 @@ unitracka/
 │   ├── sql/postgres_rls.sql
 │   └── src/
 ├── docs/
-│   ├── ai-document-verification.md
-│   ├── arhitectura-tehnica.md
-│   ├── ce-nu-se-urca-pe-github.md
-│   ├── deploy-github-pages-supabase.md
-│   ├── github-pages.md
-│   ├── infoeducatie-2026-checklist.md
-│   ├── surse-externe.md
-│   └── security-and-rls.md
 ├── frontend/
 │   ├── public/
 │   └── src/
+├── render.yaml
 └── README.md
 ```
