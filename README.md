@@ -199,6 +199,7 @@ Documentația proiectului este în folderul `docs/`:
 
 - `docs/infoeducatie-2026-checklist.md`
 - `docs/arhitectura-tehnica.md`
+- `docs/database.md`
 - `docs/security-and-rls.md`
 - `docs/ai-document-verification.md`
 - `docs/deploy-github-pages-supabase.md`
