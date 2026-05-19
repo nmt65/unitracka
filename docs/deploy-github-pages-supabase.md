@@ -32,6 +32,7 @@ După primul deploy backend, când Sequelize a creat tabelele, poți rula în Su
 Sau din backend, dacă ai `DATABASE_URL` configurat:
 
 ```bash
+npm run db:sync --prefix backend
 npm run db:rls --prefix backend
 npm run production:check --prefix backend
 ```

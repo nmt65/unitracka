@@ -159,11 +159,12 @@ npm run smoke
 Pentru PostgreSQL în producție:
 
 ```bash
+npm run db:sync --prefix backend
 npm run db:rls --prefix backend
 npm run production:check --prefix backend
 ```
 
-`db:rls` aplică politicile din `backend/sql/postgres_rls.sql`, iar `production:check` verifică variabilele critice, conexiunea la baza de date și existența tabelelor principale.
+`db:sync` creează tabelele prin Sequelize, `db:rls` aplică politicile din `backend/sql/postgres_rls.sql`, iar `production:check` verifică variabilele critice, conexiunea la baza de date și existența tabelelor principale.
 
 ## Build și deploy
 

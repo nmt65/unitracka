@@ -87,10 +87,11 @@ DATABASE_URL=postgresql://...
 După ce aplicația creează tabelele, politicile Row Level Security se aplică prin:
 
 ```bash
+npm run db:sync --prefix backend
 npm run db:rls --prefix backend
 ```
 
-Scriptul SQL folosit este:
+`db:sync` creează tabelele prin Sequelize, iar `db:rls` aplică politicile de securitate. Scriptul SQL folosit este:
 
 ```text
 backend/sql/postgres_rls.sql
