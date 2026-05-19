@@ -35,3 +35,6 @@ backend/data/
 
 coverage/
 .DS_Store
+
+# Supabase local link metadata. Migrations are committed, temp auth/link files are not.
+supabase/.temp/
