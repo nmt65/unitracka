@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const requiredInProduction = ["JWT_SECRET", "CNP_PEPPER"];
+const defaultCorsOrigin = "http://localhost:5173,http://127.0.0.1:5173";
 
 if (process.env.NODE_ENV === "production") {
   for (const key of requiredInProduction) {
@@ -16,8 +17,8 @@ export const env = {
   nodeEnv: process.env.NODE_ENV || "development",
   port: Number(process.env.PORT || 4000),
   appUrl: process.env.APP_URL || "http://localhost:5173",
-  corsOrigin: process.env.CORS_ORIGIN || "http://localhost:5173",
-  corsOrigins: (process.env.CORS_ORIGIN || "http://localhost:5173").split(",").map((origin) => origin.trim()).filter(Boolean),
+  corsOrigin: process.env.CORS_ORIGIN || defaultCorsOrigin,
+  corsOrigins: (process.env.CORS_ORIGIN || defaultCorsOrigin).split(",").map((origin) => origin.trim()).filter(Boolean),
   trustProxy: process.env.TRUST_PROXY === "true",
   jwtSecret: process.env.JWT_SECRET || "dev-unitracka-secret-change-me",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
