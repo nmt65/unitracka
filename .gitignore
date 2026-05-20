@@ -21,7 +21,7 @@ frontend/.env.*
 !frontend/.env.pages.example
 
 # Baze de date locale SQLite si backup-uri generate automat.
-data/
+/data/
 backend/data/
 *.sqlite
 *.sqlite-*
