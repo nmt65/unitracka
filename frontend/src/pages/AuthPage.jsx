@@ -120,7 +120,13 @@ export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMod
 
   return (
     <main className="auth-page">
-      <button className="auth-theme-toggle" type="button" onClick={onToggleTheme} title={darkMode ? "Light mode" : "Dark mode"}>
+      <button
+        className="auth-theme-toggle"
+        type="button"
+        onClick={onToggleTheme}
+        aria-label={darkMode ? "Activează tema luminoasă" : "Activează tema întunecată"}
+        title={darkMode ? "Tema luminoasă" : "Tema întunecată"}
+      >
         {darkMode ? <Sun size={18} /> : <Moon size={18} />}
       </button>
       <section className="auth-shell">
