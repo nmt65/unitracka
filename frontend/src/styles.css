@@ -297,6 +297,34 @@ textarea:focus {
   padding-left: 40px;
 }
 
+.input-icon.with-action input {
+  padding-right: 46px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 7px;
+  top: 50%;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+}
+
+.password-toggle:hover {
+  color: var(--text);
+  background: var(--surface-3);
+}
+
+.password-toggle svg {
+  position: static;
+  transform: none;
+}
+
 .file-control {
   min-height: 42px;
   display: grid;
@@ -2041,6 +2069,75 @@ body:not(.dark) .topbar {
   gap: 5px;
 }
 
+.workspace-row-expanded {
+  align-items: start;
+}
+
+.application-documents {
+  grid-column: 1 / -1;
+  display: grid !important;
+  gap: 8px;
+  padding-top: 10px;
+}
+
+.application-doc-row {
+  min-height: 38px;
+  display: grid;
+  grid-template-columns: 24px minmax(160px, 1fr) minmax(130px, 0.8fr) 110px minmax(120px, 0.8fr);
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.application-doc-row span,
+.application-doc-row small {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.application-doc-row.verified span,
+.application-doc-row.verified em {
+  color: var(--success);
+}
+
+.application-doc-row.rejected span,
+.application-doc-row.rejected em {
+  color: var(--danger);
+}
+
+.application-doc-row.missing span,
+.application-doc-row.missing em {
+  color: var(--muted);
+}
+
+.application-doc-row em {
+  font-style: normal;
+  font-weight: 900;
+}
+
+.inline-doc-form {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 42px;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: rgba(118, 104, 255, 0.06);
+}
+
+.inline-doc-form input {
+  min-height: 36px;
+}
+
+.inline-doc-form svg {
+  color: var(--muted);
+}
+
 .row-buttons {
   display: flex !important;
   flex-wrap: wrap;
@@ -2290,6 +2387,15 @@ body:not(.dark) .topbar {
 
   .workspace-row {
     grid-template-columns: 1fr;
+  }
+
+  .application-doc-row {
+    grid-template-columns: 22px minmax(0, 1fr);
+  }
+
+  .application-doc-row small,
+  .application-doc-row em {
+    grid-column: 2;
   }
 
   .university-table-card {

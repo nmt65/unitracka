@@ -1,7 +1,27 @@
-import { Document, University } from "../models/index.js";
+import { AdmissionApplication, Document, University } from "../models/index.js";
 
 async function findOwnedUniversity(userId, universityId) {
   return University.findOne({ where: { id: universityId, UserId: userId } });
+}
+
+async function findAccessibleApplication(user, applicationId) {
+  const application = await AdmissionApplication.findByPk(applicationId);
+  if (!application) return null;
+  if (user.role === "admin") return application;
+  if (user.role === "student" && application.StudentId === user.id) return application;
+  if (user.role === "university" && application.InstitutionId === user.InstitutionId) return application;
+  return null;
+}
+
+function canAccessDocument(user, document) {
+  if (!document) return false;
+  if (user.role === "admin") return true;
+  if (document.University) return user.role === "student" && document.University.UserId === user.id;
+  if (document.AdmissionApplication) {
+    if (user.role === "student") return document.AdmissionApplication.StudentId === user.id;
+    if (user.role === "university") return document.AdmissionApplication.InstitutionId === user.InstitutionId;
+  }
+  return false;
 }
 
 export async function listDocuments(req, res, next) {
@@ -9,6 +29,17 @@ export async function listDocuments(req, res, next) {
     const university = await findOwnedUniversity(req.user.id, req.params.universityId);
     if (!university) return res.status(404).json({ message: "Universitatea nu a fost gasita." });
     const documents = await Document.findAll({ where: { UniversityId: university.id }, order: [["createdAt", "ASC"]] });
+    return res.json({ documents });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function listApplicationDocuments(req, res, next) {
+  try {
+    const application = await findAccessibleApplication(req.user, req.params.applicationId);
+    if (!application) return res.status(404).json({ message: "Aplicația nu a fost găsită." });
+    const documents = await Document.findAll({ where: { AdmissionApplicationId: application.id }, order: [["createdAt", "ASC"]] });
     return res.json({ documents });
   } catch (error) {
     next(error);
@@ -26,10 +57,26 @@ export async function createDocument(req, res, next) {
   }
 }
 
+export async function createApplicationDocument(req, res, next) {
+  try {
+    const application = await findAccessibleApplication(req.user, req.params.applicationId);
+    if (!application) return res.status(404).json({ message: "Aplicația nu a fost găsită." });
+    const document = await Document.create({
+      ...req.body,
+      isCompleted: false,
+      verificationStatus: "missing",
+      AdmissionApplicationId: application.id
+    });
+    return res.status(201).json({ document });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function updateDocument(req, res, next) {
   try {
-    const document = await Document.findByPk(req.params.id, { include: [University] });
-    if (!document || document.University.UserId !== req.user.id) {
+    const document = await Document.findByPk(req.params.id, { include: [University, AdmissionApplication] });
+    if (!canAccessDocument(req.user, document)) {
       return res.status(404).json({ message: "Documentul nu a fost gasit." });
     }
 
@@ -48,9 +95,12 @@ export async function updateDocument(req, res, next) {
 
 export async function deleteDocument(req, res, next) {
   try {
-    const document = await Document.findByPk(req.params.id, { include: [University] });
-    if (!document || document.University.UserId !== req.user.id) {
+    const document = await Document.findByPk(req.params.id, { include: [University, AdmissionApplication] });
+    if (!canAccessDocument(req.user, document)) {
       return res.status(404).json({ message: "Documentul nu a fost gasit." });
+    }
+    if (req.user.role === "university") {
+      return res.status(403).json({ message: "Universitatea poate verifica documente, dar nu le poate șterge." });
     }
     await document.destroy();
     return res.status(204).send();
@@ -58,4 +108,3 @@ export async function deleteDocument(req, res, next) {
     next(error);
   }
 }
-

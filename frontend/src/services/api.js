@@ -86,6 +86,8 @@ const liveApi = {
   compare: (ids) => request(`/universities/compare?ids=${ids.join(",")}`),
   listDocuments: (universityId) => request(`/documents/university/${universityId}`),
   createDocument: (universityId, body) => request(`/documents/university/${universityId}`, { method: "POST", body }),
+  listApplicationDocuments: (applicationId) => request(`/documents/application/${applicationId}`),
+  createApplicationDocument: (applicationId, body) => request(`/documents/application/${applicationId}`, { method: "POST", body }),
   updateDocument: (id, body) => request(`/documents/${id}`, { method: "PATCH", body }),
   deleteDocument: (id) => request(`/documents/${id}`, { method: "DELETE" }),
   profile: () => request("/users/profile"),

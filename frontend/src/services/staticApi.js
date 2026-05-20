@@ -458,6 +458,19 @@ export const staticApi = {
     writeState(state);
     return { document };
   },
+  async listApplicationDocuments(applicationId) {
+    const application = readState().applications.find((item) => item.id === applicationId);
+    return { documents: application?.documents || [] };
+  },
+  async createApplicationDocument(applicationId, body) {
+    const state = readState();
+    const application = state.applications.find((item) => item.id === applicationId);
+    if (!application) throw new Error("Aplicația nu a fost găsită.");
+    const document = { id: id("app-doc"), ...body, isCompleted: false, completedAt: null, verificationStatus: "missing" };
+    application.documents.push(document);
+    writeState(state);
+    return { document };
+  },
   async updateDocument(documentId, body) {
     const state = readState();
     const containers = [...state.universities.map((item) => item.documents), ...state.applications.map((item) => item.documents)];

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Brain, Send, Upload } from "lucide-react";
+import { Brain, CheckCircle2, Circle, FileText, Plus, Send, Upload } from "lucide-react";
 import { api } from "../services/api.js";
 
 const statusLabels = {
@@ -10,12 +10,36 @@ const statusLabels = {
   waitlist: "Waitlist"
 };
 
+const documentStatusLabels = {
+  missing: "Lipsă",
+  pending: "În verificare",
+  verified: "Verificat",
+  rejected: "Respins"
+};
+
+const documentHints = [
+  ["Diplomă BAC", ["bac", "bacalaureat", "diploma", "diplomă"]],
+  ["Foaie matricolă", ["foaie", "matricola", "matricolă", "transcript"]],
+  ["CV Europass", ["cv", "europass"]],
+  ["Scrisoare motivație", ["motivatie", "motivație", "motivation"]],
+  ["Scrisori de recomandare", ["recomandare", "recommendation"]],
+  ["Certificat limbă", ["ielts", "toefl", "cambridge", "limba", "language"]],
+  ["Cazier judiciar", ["cazier", "criminal"]],
+  ["Adeverință medicală", ["medical", "adeverinta", "adeverință"]]
+];
+
+function inferExpectedType(fileName, text) {
+  const haystack = `${fileName} ${text || ""}`.toLowerCase();
+  return documentHints.find(([, terms]) => terms.some((term) => haystack.includes(term)))?.[0] || "";
+}
+
 export function Admissions({ onToast }) {
   const [institutions, setInstitutions] = useState([]);
   const [applications, setApplications] = useState([]);
   const [form, setForm] = useState({ institutionId: "", program: "Informatică", faculty: "Facultatea de Matematică și Informatică", programType: "licenta", admissionScore: "9.75", notes: "" });
   const [aiForm, setAiForm] = useState({ documentId: "", expectedType: "Diplomă BAC", fileName: "diploma_bac.pdf", mimeType: "application/pdf", text: "Diplomă de bacalaureat, absolvent, medie BAC" });
   const [aiResult, setAiResult] = useState(null);
+  const [customDocs, setCustomDocs] = useState({});
   const [sending, setSending] = useState(false);
   const [checking, setChecking] = useState(false);
 
@@ -51,8 +75,10 @@ export function Admissions({ onToast }) {
     if (!file) return;
     const canReadText = file.type.startsWith("text/") || /\.(txt|csv|json|xml)$/i.test(file.name);
     const text = canReadText ? await file.text() : aiForm.text;
+    const detectedType = inferExpectedType(file.name, text);
     setAiForm((current) => ({
       ...current,
+      expectedType: detectedType || current.expectedType,
       fileName: file.name,
       mimeType: file.type || "application/octet-stream",
       text
@@ -94,6 +120,21 @@ export function Admissions({ onToast }) {
       onToast(error.message);
     } finally {
       setChecking(false);
+    }
+  }
+
+  async function addApplicationDocument(event, applicationId) {
+    event.preventDefault();
+    const name = customDocs[applicationId]?.trim();
+    if (!name) return;
+    try {
+      const data = await api.createApplicationDocument(applicationId, { name, category: "Custom", isOptional: false });
+      setCustomDocs((current) => ({ ...current, [applicationId]: "" }));
+      setAiForm((current) => ({ ...current, documentId: data.document.id, expectedType: data.document.name }));
+      onToast("Document adăugat în dosarul aplicației.");
+      await load();
+    } catch (error) {
+      onToast(error.message);
     }
   }
 
@@ -147,6 +188,27 @@ export function Admissions({ onToast }) {
             <div><strong>{app.Institution?.name}</strong><small>{app.program} · {app.faculty}</small></div>
             <div><strong>{statusLabels[app.status] || app.status}</strong><small>status</small></div>
             <div><strong>{app.documents?.filter((doc) => doc.verificationStatus === "verified").length || 0}/{app.documents?.length || 0}</strong><small>documente verificate</small></div>
+            <div className="application-documents">
+              {(app.documents || []).map((doc) => (
+                <div key={doc.id} className={`application-doc-row ${doc.verificationStatus || "missing"}`}>
+                  <span>{doc.isCompleted ? <CheckCircle2 size={16} /> : <Circle size={16} />}</span>
+                  <strong>{doc.name}</strong>
+                  <small>{doc.fileName || "Fără fișier atașat"}</small>
+                  <em>{documentStatusLabels[doc.verificationStatus] || doc.verificationStatus}</em>
+                </div>
+              ))}
+              <form className="inline-doc-form" onSubmit={(event) => addApplicationDocument(event, app.id)}>
+                <FileText size={16} />
+                <input
+                  value={customDocs[app.id] || ""}
+                  onChange={(event) => setCustomDocs((current) => ({ ...current, [app.id]: event.target.value }))}
+                  placeholder="Adaugă document lipsă..."
+                />
+                <button className="primary-button square" type="submit" title="Adaugă document în aplicație" aria-label="Adaugă document în aplicație">
+                  <Plus size={17} />
+                </button>
+              </form>
+            </div>
           </article>
         ))}
       </section>

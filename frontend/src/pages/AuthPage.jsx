@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, GraduationCap, Lock, Mail, RotateCcw, ShieldCheck, UserPlus } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, GraduationCap, Lock, Mail, RotateCcw, ShieldCheck, UserPlus } from "lucide-react";
 import { api } from "../services/api.js";
 
 const demoAccounts = [
@@ -20,9 +20,10 @@ function passwordScore(password) {
   ].filter(Boolean).length;
 }
 
-export function AuthPage({ onLogin, onRegister }) {
+export function AuthPage({ onLogin, onRegister, checkingSession = false }) {
   const [mode, setMode] = useState("login");
   const [role, setRole] = useState("student");
+  const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -135,6 +136,7 @@ export function AuthPage({ onLogin, onRegister }) {
           <div>
             <p className="eyebrow">Acces securizat</p>
             <h2>{mode === "login" ? "Intră în cont" : mode === "register" ? "Creează cont" : mode === "forgot" ? "Recuperare parolă" : "Resetare parolă"}</h2>
+            {checkingSession && <p className="auth-meta">Inițializăm conexiunea securizată în fundal.</p>}
           </div>
           <div className="segmented">
             <button type="button" className={mode === "login" ? "active" : ""} onClick={() => setMode("login")}>Login</button>
@@ -181,7 +183,19 @@ export function AuthPage({ onLogin, onRegister }) {
           {mode !== "forgot" && (
             <label>
               Parola
-              <span className="input-icon"><Lock size={17} /><input name="password" type="password" minLength={mode === "login" ? 1 : 8} value={form.password} onChange={updateField} required /></span>
+              <span className="input-icon with-action">
+                <Lock size={17} />
+                <input name="password" type={showPassword ? "text" : "password"} minLength={mode === "login" ? 1 : 8} value={form.password} onChange={updateField} required />
+                <button
+                  className="password-toggle"
+                  type="button"
+                  onClick={() => setShowPassword((value) => !value)}
+                  aria-label={showPassword ? "Ascunde parola" : "Arată parola"}
+                  title={showPassword ? "Ascunde parola" : "Arată parola"}
+                >
+                  {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                </button>
+              </span>
               {mode !== "login" && form.password && (
                 <span className="password-meter" aria-live="polite">
                   <span style={{ width: `${Math.max(strength, 1) * 20}%` }} />
@@ -197,7 +211,6 @@ export function AuthPage({ onLogin, onRegister }) {
           </button>
           <div className="auth-links">
             <button type="button" onClick={() => setMode("forgot")}>Parolă pierdută</button>
-            <button type="button" onClick={() => setMode("reset")}>Am token</button>
           </div>
           {showDemoAccounts && (
             <>

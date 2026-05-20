@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2 } from "lucide-react";
 import { api } from "./services/api.js";
 import { useAuth } from "./hooks/useAuth.js";
 import { useUniversities } from "./hooks/useUniversities.js";
@@ -135,12 +134,8 @@ export function App() {
     return <PublicShare shareId={publicMatch[1]} />;
   }
 
-  if (checking) {
-    return <main className="loading-screen"><Loader2 className="spin" size={28} /> Se încarcă UniTrack...</main>;
-  }
-
   if (!user) {
-    return <AuthPage onLogin={login} onRegister={register} />;
+    return <AuthPage onLogin={login} onRegister={register} checkingSession={checking} />;
   }
 
   const pageProps = {

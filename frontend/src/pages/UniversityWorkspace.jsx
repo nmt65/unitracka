@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../services/api.js";
-import { StatusPill } from "../components/StatusPill.jsx";
+import { CheckCircle2, Circle, FileText } from "lucide-react";
 
 const statusLabels = {
   submitted: "Trimisă",
@@ -8,6 +8,13 @@ const statusLabels = {
   accepted: "Acceptată",
   rejected: "Respinsă",
   waitlist: "Waitlist"
+};
+
+const documentStatusLabels = {
+  missing: "Lipsă",
+  pending: "În verificare",
+  verified: "Verificat",
+  rejected: "Respins"
 };
 
 export function UniversityWorkspace({ user, onToast }) {
@@ -78,7 +85,7 @@ export function UniversityWorkspace({ user, onToast }) {
           </div>
         )}
         {applications.map((application) => (
-          <article className="workspace-row" key={application.id}>
+          <article className="workspace-row workspace-row-expanded" key={application.id}>
             <div>
               <strong>{application.Student?.name}</strong>
               <small>{application.Student?.email} · CNP ****{application.Student?.cnpLast4 || "----"}</small>
@@ -96,6 +103,23 @@ export function UniversityWorkspace({ user, onToast }) {
               <button type="button" onClick={() => updateStatus(application.id, "under_review")}>Review</button>
               <button type="button" onClick={() => updateStatus(application.id, "accepted")}>Acceptă</button>
               <button type="button" onClick={() => updateStatus(application.id, "rejected")}>Respinge</button>
+            </div>
+            <div className="application-documents reviewer-documents">
+              {(application.documents || []).length === 0 && (
+                <div className="inline-empty compact"><strong>Nu există documente atașate.</strong></div>
+              )}
+              {(application.documents || []).map((doc) => (
+                <div key={doc.id} className={`application-doc-row ${doc.verificationStatus || "missing"}`}>
+                  <span>{doc.isCompleted ? <CheckCircle2 size={16} /> : <Circle size={16} />}</span>
+                  <strong>{doc.name}</strong>
+                  <small>
+                    <FileText size={14} />
+                    {doc.fileName || "fără fișier"}
+                  </small>
+                  <em>{documentStatusLabels[doc.verificationStatus] || doc.verificationStatus}</em>
+                  <small>{doc.aiLabel ? `${doc.aiLabel} · ${Math.round((doc.aiConfidence || 0) * 100)}%` : "neverificat AI"}</small>
+                </div>
+              ))}
             </div>
           </article>
         ))}
