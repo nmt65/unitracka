@@ -8,6 +8,8 @@ const demoAccounts = [
   { label: "Universitate", email: "admitere@unibuc.ro", password: "Demo1234!" }
 ];
 
+const showDemoAccounts = import.meta.env.DEV || import.meta.env.VITE_STATIC_MODE === "true";
+
 function passwordScore(password) {
   return [
     password.length >= 8,
@@ -197,15 +199,19 @@ export function AuthPage({ onLogin, onRegister }) {
             <button type="button" onClick={() => setMode("forgot")}>Parolă pierdută</button>
             <button type="button" onClick={() => setMode("reset")}>Am token</button>
           </div>
-          <div className="auth-demo-grid" aria-label="Conturi demo">
-            {demoAccounts.map((account) => (
-              <button key={account.email} type="button" onClick={() => fillDemo(account)}>
-                <strong>{account.label}</strong>
-                <small>{account.email}</small>
-              </button>
-            ))}
-          </div>
-          <p className="auth-meta">Pentru producție setezi `SEED_DEMO=false`, `BOOTSTRAP_ADMIN=true`, `JWT_SECRET` și `CNP_PEPPER` în backend.</p>
+          {showDemoAccounts && (
+            <>
+              <div className="auth-demo-grid" aria-label="Conturi demo">
+                {demoAccounts.map((account) => (
+                  <button key={account.email} type="button" onClick={() => fillDemo(account)}>
+                    <strong>{account.label}</strong>
+                    <small>{account.email}</small>
+                  </button>
+                ))}
+              </div>
+              <p className="auth-meta">Conturile demo apar doar în dezvoltare sau în build-ul static.</p>
+            </>
+          )}
         </form>
       </section>
     </main>
