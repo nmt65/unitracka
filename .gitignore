@@ -38,3 +38,6 @@ coverage/
 
 # Supabase local link metadata. Migrations are committed, temp auth/link files are not.
 supabase/.temp/
+
+# Local Netlify folder
+.netlify

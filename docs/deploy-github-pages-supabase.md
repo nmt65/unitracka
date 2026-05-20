@@ -1,14 +1,48 @@
-# Deploy GitHub Pages + Backend API + Supabase
+# Deploy Netlify + Render + Supabase
 
-GitHub Pages poate hosta doar frontend static. Baza de date Supabase trebuie accesată prin backend-ul Express, nu direct din browser, ca să nu expui parole/chei și ca să păstrezi validările server-side.
-
-Arhitectura recomandată:
+Varianta live folosită pentru UniTrack este:
 
 ```text
-GitHub Pages frontend -> Backend API Node/Express -> Supabase Postgres
+Netlify frontend -> Render API Node/Express -> Supabase PostgreSQL
 ```
 
-## 1. Supabase Postgres
+Baza de date Supabase trebuie accesată prin backend-ul Express, nu direct din browser, ca să nu expui parole/chei și ca să păstrezi validările server-side.
+
+Deployment curent:
+
+- Frontend temporar Netlify: `https://unitrack-640.netlify.app`
+- Domeniu producție: `https://unitrack.sbs`
+- Alias: `https://www.unitrack.sbs`
+- Backend API Render: `https://unitrack-api-79l5.onrender.com`
+- Bază de date: Supabase PostgreSQL
+
+## 1. Netlify frontend
+
+Repo-ul include `netlify.toml`, cu build din `frontend/` și proxy pentru API:
+
+```text
+npm run build --prefix frontend
+publish: frontend/dist
+/api/* -> https://unitrack-api-79l5.onrender.com/api/:splat
+```
+
+Site-ul Netlify este `unitrack-640`. Pentru deploy manual:
+
+```bash
+netlify deploy --prod --dir frontend/dist
+```
+
+În Hostinger DNS, domeniul trebuie să pointeze către Netlify:
+
+```text
+Type   Name   Value
+A      @      75.2.60.5
+CNAME  www    unitrack-640.netlify.app
+```
+
+Elimină recordurile A/CNAME vechi pentru `@` și `www` dacă intră în conflict. SSL-ul Netlify pornește după ce DNS-ul s-a propagat.
+
+## 2. Supabase Postgres
 
 1. Creează proiect pe Supabase.
 2. Mergi la Project Settings -> Database.
@@ -39,7 +73,7 @@ npm run production:check --prefix backend
 
 Notă: scriptul activează RLS fără `FORCE`, ca backend-ul server-side să poată folosi autorizarea din API. Nu expune `DATABASE_URL` în frontend.
 
-## 2. Backend API pe Render/Railway/Fly
+## 3. Backend API pe Render
 
 Setări tipice:
 
@@ -57,8 +91,8 @@ NODE_ENV=production
 PORT=4000
 DB_DIALECT=postgres
 DATABASE_URL=postgresql://...
-APP_URL=https://username.github.io/nume-repo
-CORS_ORIGIN=https://username.github.io
+APP_URL=https://unitrack.sbs
+CORS_ORIGIN=https://unitrack.sbs,https://www.unitrack.sbs,https://unitrack-640.netlify.app
 TRUST_PROXY=true
 COOKIE_SAMESITE=none
 COOKIE_SECURE=true
@@ -90,9 +124,9 @@ Endpoint-uri de verificat:
 - `https://backendul-tau/api/health`
 - `https://backendul-tau/api/ready`
 
-## 3. GitHub Pages frontend
+## 4. GitHub Pages frontend
 
-Repo-ul este pregătit pentru două variante:
+GitHub Pages poate hosta doar frontend static. Repo-ul este pregătit pentru două variante:
 
 - `gh-pages`: publicare statică manuală, folosită acum pentru că GitHub Actions este blocat pe cont.
 - `GitHub Actions`: workflow-ul `.github/workflows/pages.yml`, util după ce Actions funcționează pe cont.
@@ -116,7 +150,7 @@ Workflow-ul `.github/workflows/pages.yml` folosește aceste variabile automat.
 
 Pentru publicare manuală pe branch-ul `gh-pages`, refaci build-ul cu variabilele frontend potrivite și împingi conținutul din `frontend/dist` pe branch-ul `gh-pages`.
 
-## 4. Ce nu pui în GitHub
+## 5. Ce nu pui în GitHub
 
 Nu urca:
 
