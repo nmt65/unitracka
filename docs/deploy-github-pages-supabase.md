@@ -83,6 +83,8 @@ După ce primul admin a fost creat, setează:
 BOOTSTRAP_ADMIN=false
 ```
 
+Pentru proiectul Supabase configurat deja, adminul inițial există în baza de date, deci Render poate rula direct cu `BOOTSTRAP_ADMIN=false`.
+
 Endpoint-uri de verificat:
 
 - `https://backendul-tau/api/health`

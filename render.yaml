@@ -23,7 +23,7 @@ services:
       - key: SEED_DEMO
         value: "false"
       - key: BOOTSTRAP_ADMIN
-        value: "true"
+        value: "false"
       - key: JWT_SECRET
         generateValue: true
       - key: CNP_PEPPER
