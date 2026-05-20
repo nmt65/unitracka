@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "node --watch-path=src src/server.js",
     "start": "node src/server.js",
-    "check": "node --check src/server.js && node --check src/app.js && node --check src/models/index.js && node --check src/scripts/smoke.js && node --check src/scripts/syncDb.js && node --check src/scripts/applyRls.js && node --check src/scripts/productionCheck.js",
+    "check": "node --check src/server.js && node --check src/app.js && node --check src/models/index.js && node --check src/services/documentAi.js && node --check src/services/studentAdvisor.js && node --check src/scripts/smoke.js && node --check src/scripts/syncDb.js && node --check src/scripts/applyRls.js && node --check src/scripts/productionCheck.js",
     "seed": "node src/scripts/seed.js",
     "db:sync": "node src/scripts/syncDb.js",
     "db:rls": "node src/scripts/applyRls.js",

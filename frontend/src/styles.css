@@ -130,6 +130,27 @@ small {
   box-shadow: var(--shadow);
 }
 
+.auth-theme-toggle {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 5;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.auth-theme-toggle:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
 .auth-visual {
   padding: 48px;
   display: flex;
@@ -304,7 +325,7 @@ textarea:focus {
 .password-toggle {
   position: absolute;
   right: 7px;
-  top: 50%;
+  top: 5px;
   width: 32px;
   height: 32px;
   display: grid;
@@ -2138,6 +2159,73 @@ body:not(.dark) .topbar {
   color: var(--muted);
 }
 
+.advisor-output {
+  padding: 20px;
+}
+
+.advisor-output h2,
+.university-pitch-panel h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.advisor-scores {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.advisor-score {
+  min-height: 94px;
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.advisor-score strong {
+  font-size: 2rem;
+  color: var(--primary);
+}
+
+.advisor-score span {
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.advisor-summary {
+  padding: 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: rgba(118, 104, 255, 0.08);
+  color: var(--muted);
+}
+
+.advisor-lists {
+  display: grid;
+  gap: 14px;
+}
+
+.advisor-lists h3 {
+  margin: 0 0 8px;
+  font-size: 0.92rem;
+}
+
+.advisor-lists p {
+  margin: 0 0 7px;
+  color: var(--muted);
+}
+
+.university-pitch-panel {
+  margin-bottom: 20px;
+  padding-top: 18px;
+}
+
 .row-buttons {
   display: flex !important;
   flex-wrap: wrap;
@@ -2363,6 +2451,7 @@ body:not(.dark) .topbar {
   }
 
   .stats-grid,
+  .advisor-scores,
   .system-status-grid,
   .admin-grid,
   .profile-form,

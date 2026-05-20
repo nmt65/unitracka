@@ -37,8 +37,10 @@ export const env = {
   universityEmail: process.env.UNIVERSITY_EMAIL || "admitere@unibuc.ro",
   openaiApiKey: process.env.OPENAI_API_KEY || "",
   openaiDocumentModel: process.env.OPENAI_DOCUMENT_MODEL || "gpt-4o-mini",
+  openaiAdvisorModel: process.env.OPENAI_ADVISOR_MODEL || process.env.OPENAI_DOCUMENT_MODEL || "gpt-4o-mini",
   geminiApiKey: process.env.GEMINI_API_KEY || "",
   geminiDocumentModel: process.env.GEMINI_DOCUMENT_MODEL || "gemini-1.5-flash",
+  geminiAdvisorModel: process.env.GEMINI_ADVISOR_MODEL || process.env.GEMINI_DOCUMENT_MODEL || "gemini-1.5-flash",
   smtp: {
     host: process.env.SMTP_HOST || "",
     port: Number(process.env.SMTP_PORT || 587),

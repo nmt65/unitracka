@@ -349,6 +349,23 @@ export const staticApi = {
     const state = readState();
     return { institutions: state.institutions.filter((item) => item.status === "active") };
   },
+  async myInstitution() {
+    const state = readState();
+    const user = currentUser(state);
+    const institution = state.institutions.find((item) => item.id === user.InstitutionId);
+    if (!institution) throw new Error("Nu ai un workspace de universitate asociat.");
+    return { institution };
+  },
+  async updateMyInstitution(body) {
+    const state = readState();
+    const user = currentUser(state);
+    const institution = state.institutions.find((item) => item.id === user.InstitutionId);
+    if (!institution) throw new Error("Nu ai un workspace de universitate asociat.");
+    Object.assign(institution, body);
+    addAudit(state, { actor: user, action: "institution.profile_update", entityType: "Institution", entityId: institution.id, metadata: Object.keys(body) });
+    writeState(state);
+    return { institution };
+  },
   async adminSystemStatus() {
     return {
       status: {
@@ -359,7 +376,9 @@ export const staticApi = {
         smtpConfigured: false,
         aiConfigured: false,
         openaiModel: null,
+        openaiAdvisorModel: null,
         geminiModel: null,
+        geminiAdvisorModel: null,
         corsOrigins: ["GitHub Pages static"],
         trustProxy: false
       }
@@ -540,6 +559,32 @@ export const staticApi = {
     }
     return { result, document };
   },
+  async studentAdvisor(body) {
+    const state = readState();
+    const user = currentUser(state);
+    const applications = state.applications.filter((app) => app.StudentId === user.id);
+    const universities = userUniversities(state, user.id);
+    const documents = [...applications.flatMap((app) => app.documents || []), ...universities.flatMap((uni) => uni.documents || [])];
+    const verifiedRatio = documents.length ? documents.filter((doc) => doc.isCompleted || doc.verificationStatus === "verified").length / documents.length : 0;
+    const cvText = String(body.cvText || "");
+    const cvSignals = [/proiect|github|portofoliu/i, /olimpiad|concurs|premiu/i, /voluntar|leadership|echip/i, /python|javascript|react|ai|java|c\+\+/i]
+      .filter((pattern) => pattern.test(cvText)).length;
+    const bac = Number(user.bacAverage || 0);
+    const target = state.institutions.find((item) => item.id === body.institutionId) || applications[0]?.Institution || { name: "universitatea selectată" };
+    return {
+      advice: {
+        provider: "static-advisor",
+        targetName: target.name,
+        admissionChance: Math.max(5, Math.min(94, Math.round(18 + bac * 5 + verifiedRatio * 22 + cvSignals * 4))),
+        cvScore: Math.max(20, Math.min(98, 38 + cvSignals * 13)),
+        applicationScore: Math.max(15, Math.min(98, Math.round(28 + verifiedRatio * 58))),
+        summary: `Profilul este evaluat orientativ pentru ${target.name}. Estimarea nu înlocuiește decizia oficială a universității.`,
+        strengths: ["Dosarul este urmărit centralizat.", "Documentele verificate cresc credibilitatea aplicației.", "CV-ul devine mai bun când include proiecte concrete."],
+        risks: ["Estimarea depinde de documentele încărcate.", "Lipsa dovezilor academice reduce scorul."],
+        nextSteps: ["Verifică Diploma BAC/Foaia matricolă.", "Adaugă linkuri concrete în CV.", "Personalizează scrisoarea de motivație pentru program."]
+      }
+    };
+  },
   async notifications() {
     const state = readState();
     const user = currentUser(state);
@@ -557,9 +602,21 @@ export const staticApi = {
   },
   async updateProfile(body) {
     const state = readState();
-    Object.assign(currentUser(state), body);
+    const user = currentUser(state);
+    const documents = [
+      ...state.universities.filter((item) => item.UserId === user.id).flatMap((item) => item.documents || []),
+      ...state.applications.filter((item) => item.StudentId === user.id).flatMap((item) => item.documents || [])
+    ];
+    const hasEvidence = (pattern) => documents.some((doc) => new RegExp(pattern, "i").test(doc.name) && (doc.isCompleted || doc.verificationStatus === "verified"));
+    if (user.role === "student" && body.bacAverage !== undefined && body.bacAverage !== null && Number(body.bacAverage) !== Number(user.bacAverage || 0) && !hasEvidence("bac|matricol")) {
+      throw new Error("Adaugă și verifică Diploma BAC sau Foaia matricolă înainte să salvezi media.");
+    }
+    if (user.role === "student" && body.languageResults && body.languageResults !== user.languageResults && !hasEvidence("limb|ielts|toefl|cambridge")) {
+      throw new Error("Adaugă și verifică un certificat de limbă înainte să salvezi scorurile IELTS/TOEFL.");
+    }
+    Object.assign(user, body);
     writeState(state);
-    return { user: publicUser(currentUser(state), state) };
+    return { user: publicUser(user, state) };
   },
   async changePassword(body) {
     const state = readState();

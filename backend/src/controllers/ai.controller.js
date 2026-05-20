@@ -1,5 +1,6 @@
-import { AdmissionApplication, Document, University } from "../models/index.js";
+import { AdmissionApplication, Document, Institution, University } from "../models/index.js";
 import { classifyDocument } from "../services/documentAi.js";
+import { adviseStudent } from "../services/studentAdvisor.js";
 import { writeAudit } from "../services/audit.js";
 import { hashText } from "../utils/crypto.js";
 
@@ -46,6 +47,56 @@ export async function checkDocument(req, res, next) {
       });
     }
     return res.json({ result, document });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function studentAdvice(req, res, next) {
+  try {
+    if (req.user.role !== "student") {
+      return res.status(403).json({ message: "Consilierul AI este disponibil pentru conturile de elev." });
+    }
+
+    const universities = await University.findAll({ where: { UserId: req.user.id }, include: [Document], order: [["deadline", "ASC"]] });
+    const applications = await AdmissionApplication.findAll({
+      where: { StudentId: req.user.id },
+      include: [Institution, Document],
+      order: [["submittedAt", "DESC"]]
+    });
+    const documents = [
+      ...universities.flatMap((university) => university.Documents || []),
+      ...applications.flatMap((application) => application.Documents || [])
+    ];
+
+    let target = null;
+    if (req.body.applicationId) target = applications.find((item) => item.id === req.body.applicationId) || null;
+    if (!target && req.body.universityId) target = universities.find((item) => item.id === req.body.universityId) || null;
+    if (!target && req.body.institutionId) target = await Institution.findOne({ where: { id: req.body.institutionId, status: "active" } });
+    if (!target) target = applications[0] || universities[0] || null;
+
+    const advice = await adviseStudent({
+      profile: {
+        name: req.user.name,
+        bacAverage: req.user.bacAverage,
+        languageResults: req.user.languageResults,
+        interests: req.user.interests
+      },
+      target,
+      cvText: req.body.cvText,
+      personalGoal: req.body.personalGoal,
+      universities,
+      applications,
+      documents
+    });
+
+    await writeAudit(req, {
+      action: "ai.student_advice",
+      entityType: target?.constructor?.name || "Institution",
+      entityId: target?.id || null,
+      metadata: { provider: advice.provider, admissionChance: advice.admissionChance }
+    });
+    return res.json({ advice });
   } catch (error) {
     next(error);
   }

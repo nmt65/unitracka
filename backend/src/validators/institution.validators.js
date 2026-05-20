@@ -15,3 +15,9 @@ export const institutionSchema = z.object({
 });
 
 export const institutionUpdateSchema = institutionSchema.partial();
+
+export const institutionProfileSchema = z.object({
+  website: optionalUrl,
+  contactEmail: z.string().email().max(180).optional().nullable(),
+  description: z.string().max(4000).optional().nullable()
+});

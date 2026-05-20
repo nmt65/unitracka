@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { Op } from "sequelize";
 import { authCookieName } from "../middleware/auth.js";
 import { env } from "../config/env.js";
-import { Document, Institution, University, User } from "../models/index.js";
+import { AdmissionApplication, Document, Institution, University, User } from "../models/index.js";
 import { writeAudit } from "../services/audit.js";
 import { documentProgress } from "../utils/progress.js";
 
@@ -30,12 +30,60 @@ function publicProfile(user) {
   };
 }
 
+function changedNumber(nextValue, currentValue) {
+  if (nextValue === undefined) return false;
+  if (nextValue === null && (currentValue === null || currentValue === undefined)) return false;
+  return Number(nextValue) !== Number(currentValue);
+}
+
+function changedText(nextValue, currentValue) {
+  if (nextValue === undefined) return false;
+  return String(nextValue || "").trim() !== String(currentValue || "").trim();
+}
+
+function evidenceWhere(terms) {
+  return {
+    isCompleted: true,
+    verificationStatus: "verified",
+    [Op.or]: terms.map((term) => ({ name: { [Op.like]: `%${term}%` } }))
+  };
+}
+
+async function hasVerifiedStudentEvidence(userId, terms) {
+  const where = evidenceWhere(terms);
+  const trackerDocs = await Document.count({
+    where,
+    include: [{ model: University, where: { UserId: userId }, required: true }]
+  });
+  if (trackerDocs > 0) return true;
+
+  const applicationDocs = await Document.count({
+    where,
+    include: [{ model: AdmissionApplication, where: { StudentId: userId }, required: true }]
+  });
+  return applicationDocs > 0;
+}
+
 export function getProfile(req, res) {
   return res.json({ user: publicProfile(req.user) });
 }
 
 export async function updateProfile(req, res, next) {
   try {
+    if (req.user.role === "student") {
+      if (changedNumber(req.body.bacAverage, req.user.bacAverage) && req.body.bacAverage !== null) {
+        const hasEvidence = await hasVerifiedStudentEvidence(req.user.id, ["BAC", "bacalaureat", "Foaie matricol"]);
+        if (!hasEvidence) {
+          return res.status(422).json({ message: "Adaugă și verifică Diploma BAC sau Foaia matricolă înainte să salvezi media." });
+        }
+      }
+      if (changedText(req.body.languageResults, req.user.languageResults) && String(req.body.languageResults || "").trim()) {
+        const hasEvidence = await hasVerifiedStudentEvidence(req.user.id, ["Certificat limb", "IELTS", "TOEFL", "Cambridge"]);
+        if (!hasEvidence) {
+          return res.status(422).json({ message: "Adaugă și verifică un certificat de limbă înainte să salvezi scorurile IELTS/TOEFL." });
+        }
+      }
+    }
     await req.user.update(req.body);
     const user = await User.findByPk(req.user.id, { include: [Institution] });
     await writeAudit(req, { action: "user.profile_update", entityType: "User", entityId: req.user.id, metadata: Object.keys(req.body) });

@@ -1,4 +1,4 @@
-import { Building2, CalendarDays, CheckCircle2, FileText, GraduationCap, Grid2X2, Heart, Send, Scale, ShieldCheck, UserCircle2 } from "lucide-react";
+import { Brain, Building2, CalendarDays, CheckCircle2, FileText, GraduationCap, Grid2X2, Heart, Send, Scale, ShieldCheck, UserCircle2 } from "lucide-react";
 
 const items = [
   { key: "universities", label: "Universități", icon: GraduationCap },
@@ -69,6 +69,10 @@ export function Sidebar({ active, onChange, counts, user }) {
       <button className={`side-link ${active === "admissions" ? "active" : ""}`} type="button" onClick={() => onChange("admissions")}>
         <Building2 size={18} />
         Admitere
+      </button>
+      <button className={`side-link ${active === "advisor" ? "active" : ""}`} type="button" onClick={() => onChange("advisor")}>
+        <Brain size={18} />
+        Consilier AI
       </button>
       {items.map((item) => {
         const Icon = item.icon;

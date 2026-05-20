@@ -8,13 +8,15 @@ Fluxul de documente are trei niveluri:
 
 ## Furnizori suportati
 
-In development functioneaza si fara chei externe, printr-un clasificator local euristic `local-yolo-style`. Pentru o verificare mai puternica se pot seta:
+In development functioneaza si fara chei externe, printr-un clasificator local de documente numit `unitrack-document-classifier`. Pentru o verificare mai puternica se pot seta:
 
 ```env
 OPENAI_API_KEY=
 OPENAI_DOCUMENT_MODEL=gpt-4o-mini
 GEMINI_API_KEY=
 GEMINI_DOCUMENT_MODEL=gemini-1.5-flash
+OPENAI_ADVISOR_MODEL=gpt-4o-mini
+GEMINI_ADVISOR_MODEL=gemini-1.5-flash
 ```
 
 Ordinea este:

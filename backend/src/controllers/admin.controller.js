@@ -83,7 +83,9 @@ export function systemStatus(_req, res) {
       smtpConfigured: isSmtpConfigured(),
       aiConfigured: Boolean(env.openaiApiKey || env.geminiApiKey),
       openaiModel: env.openaiApiKey ? env.openaiDocumentModel : null,
+      openaiAdvisorModel: env.openaiApiKey ? env.openaiAdvisorModel : null,
       geminiModel: env.geminiApiKey ? env.geminiDocumentModel : null,
+      geminiAdvisorModel: env.geminiApiKey ? env.geminiAdvisorModel : null,
       corsOrigins: env.corsOrigins,
       trustProxy: env.trustProxy
     }

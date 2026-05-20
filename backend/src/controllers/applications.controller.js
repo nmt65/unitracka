@@ -48,8 +48,10 @@ export async function createApplication(req, res, next) {
     });
     if (duplicate) return res.status(409).json({ message: "Ai deja o aplicație pentru această universitate și acest program." });
 
+    const { admissionScore: _ignoredAdmissionScore, ...payload } = req.body;
     const application = await AdmissionApplication.create({
-      ...req.body,
+      ...payload,
+      admissionScore: null,
       StudentId: req.user.id,
       InstitutionId: institution.id,
       submittedAt: new Date()

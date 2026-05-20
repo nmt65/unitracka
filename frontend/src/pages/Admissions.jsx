@@ -36,7 +36,7 @@ function inferExpectedType(fileName, text) {
 export function Admissions({ onToast }) {
   const [institutions, setInstitutions] = useState([]);
   const [applications, setApplications] = useState([]);
-  const [form, setForm] = useState({ institutionId: "", program: "Informatică", faculty: "Facultatea de Matematică și Informatică", programType: "licenta", admissionScore: "9.75", notes: "" });
+  const [form, setForm] = useState({ institutionId: "", program: "Informatică", faculty: "Facultatea de Matematică și Informatică", programType: "licenta", notes: "" });
   const [aiForm, setAiForm] = useState({ documentId: "", expectedType: "Diplomă BAC", fileName: "diploma_bac.pdf", mimeType: "application/pdf", text: "Diplomă de bacalaureat, absolvent, medie BAC" });
   const [aiResult, setAiResult] = useState(null);
   const [customDocs, setCustomDocs] = useState({});
@@ -94,7 +94,7 @@ export function Admissions({ onToast }) {
     }
     setSending(true);
     try {
-      await api.createApplication({ ...form, admissionScore: Number(form.admissionScore) });
+      await api.createApplication(form);
       onToast("Aplicația a fost trimisă către universitate.");
       await load();
     } catch (error) {
@@ -154,8 +154,8 @@ export function Admissions({ onToast }) {
             <label>Program<input name="program" value={form.program} onChange={updateForm} required /></label>
             <label>Facultate<input name="faculty" value={form.faculty} onChange={updateForm} /></label>
             <label>Tip<select name="programType" value={form.programType} onChange={updateForm}><option value="licenta">Licență</option><option value="master">Master</option><option value="doctorat">Doctorat</option></select></label>
-            <label>Scor admitere<input name="admissionScore" type="number" min="0" max="10" step="0.01" value={form.admissionScore} onChange={updateForm} /></label>
             <label className="wide">Note<textarea name="notes" value={form.notes} onChange={updateForm} /></label>
+            <p className="field-note wide">Media BAC și scorurile de limbă se completează din profil doar după ce ai documente atestatoare verificate.</p>
           </div>
           {duplicateApplication && <p className="form-error">Există deja o aplicație pe aceeași universitate și program.</p>}
           <div className="profile-actions"><button className="primary-button" disabled={sending || !form.institutionId || duplicateApplication}>{sending ? "Se trimite..." : "Trimite către universitate"}</button></div>

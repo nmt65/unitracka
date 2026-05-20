@@ -29,6 +29,8 @@ Aplicația urmărește trei direcții principale:
 - Checklist documente pentru fiecare universitate.
 - Documente predefinite și documente custom.
 - Verificare documente cu AI prin OpenAI/Gemini, cu fallback local euristic.
+- Consilier AI pentru studenți: scor orientativ pentru CV, dosar și șanse de admitere.
+- Media BAC și scorurile de limbă se pot salva doar după documente atestatoare verificate.
 - Notificări interne pentru aplicații noi și schimbări de status.
 - Audit log pentru acțiuni sensibile.
 - Comparare side-by-side pentru 2-4 universități.

@@ -134,6 +134,7 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
         </section>
         <section className="profile-panel">
           <h2>Rezultate academice</h2>
+          <p className="muted">Media și scorurile se pot salva doar după ce documentele atestatoare sunt verificate în dosar.</p>
           <div className="profile-form three">
             <label>
               Medie BAC
@@ -144,8 +145,8 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
               <input name="languageResults" value={form.languageResults} onChange={updateField} />
             </label>
             <label>
-              Scor TOEFL
-              <input placeholder="ex: 100" />
+              Dovadă necesară
+              <input value="Diplomă BAC / Foaie matricolă / Certificat limbă verificat" disabled />
             </label>
             <label className="wide">
               Domenii de interes

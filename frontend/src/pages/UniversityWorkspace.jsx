@@ -19,11 +19,24 @@ const documentStatusLabels = {
 
 export function UniversityWorkspace({ user, onToast }) {
   const [applications, setApplications] = useState([]);
+  const [institution, setInstitution] = useState(null);
+  const [institutionForm, setInstitutionForm] = useState({ website: "", contactEmail: "", description: "" });
   const [filter, setFilter] = useState({ status: "all", sort: "newest" });
 
   async function load() {
-    const data = await api.workspaceApplications(filter);
+    const [data, institutionData] = await Promise.all([
+      api.workspaceApplications(filter),
+      api.myInstitution().catch(() => ({ institution: null }))
+    ]);
     setApplications(data.applications || []);
+    if (institutionData.institution) {
+      setInstitution(institutionData.institution);
+      setInstitutionForm({
+        website: institutionData.institution.website || "",
+        contactEmail: institutionData.institution.contactEmail || "",
+        description: institutionData.institution.description || ""
+      });
+    }
   }
 
   useEffect(() => {
@@ -47,6 +60,21 @@ export function UniversityWorkspace({ user, onToast }) {
     }
   }
 
+  function updateInstitutionField(event) {
+    setInstitutionForm((current) => ({ ...current, [event.target.name]: event.target.value }));
+  }
+
+  async function saveInstitution(event) {
+    event.preventDefault();
+    try {
+      const data = await api.updateMyInstitution(institutionForm);
+      setInstitution(data.institution);
+      onToast("Prezentarea universității a fost salvată.");
+    } catch (error) {
+      onToast(error.message);
+    }
+  }
+
   return (
     <section className="unitrack-page">
       <div className="page-heading">
@@ -61,6 +89,35 @@ export function UniversityWorkspace({ user, onToast }) {
         <article className="stat-card success"><strong>{stats.accepted}</strong><span>Acceptate</span><small>notificate</small></article>
         <article className="stat-card"><strong>{stats.rejected}</strong><span>Respinse</span><small>arhivate</small></article>
       </div>
+      {institution && (
+        <section className="profile-panel university-pitch-panel">
+          <h2>De ce să vină studenții aici?</h2>
+          <form className="profile-form" onSubmit={saveInstitution}>
+            <label className="wide">
+              Prezentare scurtă
+              <textarea
+                name="description"
+                value={institutionForm.description}
+                onChange={updateInstitutionField}
+                rows="4"
+                placeholder="Scrie 2-4 fraze despre ce face universitatea memorabilă: laboratoare, comunitate, cariere, proiecte, oraș."
+              />
+            </label>
+            <label>
+              Link oficial
+              <input name="website" type="url" value={institutionForm.website} onChange={updateInstitutionField} placeholder="https://..." />
+            </label>
+            <label>
+              Email admitere
+              <input name="contactEmail" type="email" value={institutionForm.contactEmail} onChange={updateInstitutionField} placeholder="admitere@..." />
+            </label>
+            <div className="profile-actions inline-actions">
+              <button className="primary-button" type="submit">Salvează prezentarea</button>
+              {institutionForm.website && <a className="soft-button" href={institutionForm.website} target="_blank" rel="noreferrer">Vezi site oficial</a>}
+            </div>
+          </form>
+        </section>
+      )}
       <div className="filter-bar">
         <select value={filter.status} onChange={(event) => setFilter((current) => ({ ...current, status: event.target.value }))}>
           <option value="all">Toate statusurile</option>

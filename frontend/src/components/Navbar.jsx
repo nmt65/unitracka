@@ -4,6 +4,7 @@ import { Bell, ChevronLeft, LogOut, Moon, Search, Sun } from "lucide-react";
 const studentNav = [
   { key: "dashboard", label: "Dashboard" },
   { key: "admissions", label: "Admitere" },
+  { key: "advisor", label: "Consilier AI" },
   { key: "universities", label: "Universități" },
   { key: "documents", label: "Documente" },
   { key: "compare", label: "Comparare" }

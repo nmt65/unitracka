@@ -11,6 +11,7 @@ import { Dashboard } from "./pages/Dashboard.jsx";
 import { Documents } from "./pages/Documents.jsx";
 import { Profile } from "./pages/Profile.jsx";
 import { PublicShare } from "./pages/PublicShare.jsx";
+import { StudentAdvisor } from "./pages/StudentAdvisor.jsx";
 import { Universities } from "./pages/Universities.jsx";
 import { UniversityWorkspace } from "./pages/UniversityWorkspace.jsx";
 import { Navbar } from "./components/Navbar.jsx";
@@ -135,7 +136,7 @@ export function App() {
   }
 
   if (!user) {
-    return <AuthPage onLogin={login} onRegister={register} checkingSession={checking} />;
+    return <AuthPage onLogin={login} onRegister={register} checkingSession={checking} darkMode={darkMode} onToggleTheme={() => setDarkMode((value) => !value)} />;
   }
 
   const pageProps = {
@@ -169,6 +170,7 @@ export function App() {
           {active === "dashboard" && user.role === "university" && <UniversityWorkspace user={user} onToast={setToast} />}
           {active === "dashboard" && user.role === "student" && <Dashboard {...pageProps} />}
           {active === "admissions" && <Admissions onToast={setToast} />}
+          {active === "advisor" && <StudentAdvisor universities={universities} onToast={setToast} />}
           {active === "universities" && <Universities {...pageProps} />}
           {active === "documents" && (
             <Documents
