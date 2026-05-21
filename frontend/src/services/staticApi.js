@@ -384,6 +384,12 @@ export const staticApi = {
       }
     };
   },
+  async sendTestEmail() {
+    return { sent: false, message: "SMTP indisponibil în modul static." };
+  },
+  async importCatalogInstitutions() {
+    return { created: 0, existing: demoInstitutions.length, catalog: catalog.length };
+  },
   async adminInstitutions() {
     return { institutions: readState().institutions };
   },

@@ -560,7 +560,22 @@ textarea:focus {
   height: 7px;
   margin-top: -13px;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--danger), var(--warning), var(--success));
+  background: #6b7280;
+  transition: width 0.18s ease, background 0.18s ease;
+}
+
+.password-meter.score-1 > span,
+.password-meter.score-2 > span {
+  background: #ef4444;
+}
+
+.password-meter.score-3 > span {
+  background: #2563eb;
+}
+
+.password-meter.score-4 > span,
+.password-meter.score-5 > span {
+  background: #16a34a;
 }
 
 .app-shell {
@@ -576,7 +591,7 @@ textarea:focus {
   left: 230px;
   height: 56px;
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 18px;
   padding: 0 24px;
@@ -589,7 +604,6 @@ body:not(.dark) .topbar {
   background: rgba(255, 255, 255, 0.92);
 }
 
-.top-back,
 .top-icon {
   width: 34px;
   height: 34px;
@@ -599,6 +613,28 @@ body:not(.dark) .topbar {
   place-items: center;
   background: transparent;
   color: var(--muted);
+}
+
+.topbar-title {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.topbar-title span {
+  color: var(--faint);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.topbar-title strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.95rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .language-button {
@@ -611,31 +647,9 @@ body:not(.dark) .topbar {
   font-weight: 900;
 }
 
-.top-back:hover,
 .top-icon:hover {
   color: var(--primary);
   background: var(--surface-2);
-}
-
-.topnav {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.topnav button {
-  min-height: 56px;
-  border: 0;
-  border-radius: 0;
-  padding: 0 12px;
-  background: transparent;
-  color: var(--muted);
-  font-weight: 800;
-}
-
-.topnav button.active,
-.topnav button:hover {
-  color: var(--primary);
 }
 
 .topbar-actions {
@@ -2248,8 +2262,13 @@ body:not(.dark) .topbar {
   color: var(--success);
 }
 
+.catalog-import-panel,
 .ai-config-panel {
   margin-bottom: 22px;
+}
+
+.catalog-import-panel .primary-button {
+  min-width: 190px;
 }
 
 .ai-config-body {
@@ -2272,6 +2291,22 @@ body:not(.dark) .topbar {
 
 .ai-config-panel.missing h2 {
   color: var(--warning);
+}
+
+.inline-admin-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto;
+  gap: 10px;
+  padding: 0 20px 20px;
+}
+
+.inline-admin-form input {
+  min-height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 12px;
+  background: var(--surface-2);
+  color: var(--text);
 }
 
 .system-status-grid .warn strong {
@@ -2787,13 +2822,9 @@ body:not(.dark) .topbar {
   }
 
   .topbar {
-    grid-template-columns: 34px minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 8px;
     padding: 0 10px;
-  }
-
-  .topnav {
-    overflow-x: auto;
   }
 
   .sidebar {
@@ -2816,6 +2847,7 @@ body:not(.dark) .topbar {
   .advisor-scores,
   .system-status-grid,
   .admin-grid,
+  .inline-admin-form,
   .profile-form,
   .profile-form.three,
   .form-grid {

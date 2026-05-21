@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Brain, Copy, Plus, UserPlus } from "lucide-react";
+import { Brain, Copy, Database, MailCheck, Plus, UserPlus } from "lucide-react";
 import { api } from "../services/api.js";
 
 const emptyInstitution = {
@@ -27,7 +27,9 @@ export function AdminPanel({ onToast }) {
   const [systemStatus, setSystemStatus] = useState(null);
   const [institutionForm, setInstitutionForm] = useState(emptyInstitution);
   const [staffForm, setStaffForm] = useState({ email: "", password: "", name: "", institutionId: "" });
+  const [testEmail, setTestEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [importingCatalog, setImportingCatalog] = useState(false);
 
   async function load() {
     const [statusData, institutionData, userData, auditData] = await Promise.all([api.adminSystemStatus(), api.adminInstitutions(), api.adminUsers(), api.adminAuditLogs()]);
@@ -80,6 +82,32 @@ export function AdminPanel({ onToast }) {
       setStaffForm({ email: "", password: "", name: "", institutionId: institutions[0]?.id || "" });
       onToast("Cont universitate creat.");
       await load();
+    } catch (error) {
+      onToast(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function importCatalog() {
+    setImportingCatalog(true);
+    try {
+      const data = await api.importCatalogInstitutions();
+      onToast(`Catalog importat: ${data.created} noi, ${data.existing} existente.`);
+      await load();
+    } catch (error) {
+      onToast(error.message);
+    } finally {
+      setImportingCatalog(false);
+    }
+  }
+
+  async function sendTestEmail(event) {
+    event.preventDefault();
+    setLoading(true);
+    try {
+      const data = await api.sendTestEmail({ email: testEmail || undefined });
+      onToast(data.message || "Email test trimis.");
     } catch (error) {
       onToast(error.message);
     } finally {
@@ -149,7 +177,7 @@ export function AdminPanel({ onToast }) {
           </article>
           <article className={systemStatus.smtpConfigured ? "ok" : "warn"}>
             <strong>{systemStatus.smtpConfigured ? "SMTP activ" : "SMTP lipsă"}</strong>
-            <span>Email resetări/notificări</span>
+            <span>{systemStatus.smtpHost || "Email resetări/notificări"}</span>
           </article>
           <article className={systemStatus.aiConfigured ? "ok" : "warn"}>
             <strong>{systemStatus.aiConfigured ? "AI extern" : "AI local"}</strong>
@@ -163,6 +191,25 @@ export function AdminPanel({ onToast }) {
             <strong>{systemStatus.bootstrapAdmin ? "Bootstrap ON" : "Bootstrap OFF"}</strong>
             <span>Primul admin</span>
           </article>
+          <article>
+            <strong>{systemStatus.catalogCount || 0}</strong>
+            <span>Catalog seed</span>
+          </article>
+        </section>
+      )}
+
+      {systemStatus && (
+        <section className="profile-panel catalog-import-panel">
+          <h2><Database size={17} /> Import catalog universități</h2>
+          <div className="ai-config-body">
+            <div>
+              <strong>Top Europa + România</strong>
+              <p>Importă automat catalogul UniTrack în lista publică de instituții, fără duplicate. Studenții pot aplica imediat la universitățile active.</p>
+            </div>
+            <button className="primary-button" type="button" disabled={importingCatalog} onClick={importCatalog}>
+              {importingCatalog ? "Se importă..." : "Importă catalog universități"}
+            </button>
+          </div>
         </section>
       )}
 
@@ -185,18 +232,22 @@ export function AdminPanel({ onToast }) {
 
       {systemStatus && (
         <section className={`profile-panel ai-config-panel ${systemStatus.smtpConfigured ? "ready" : "missing"}`}>
-          <h2>SMTP resetare parolă</h2>
+          <h2><MailCheck size={17} /> SMTP resetare parolă</h2>
           <div className="ai-config-body">
             <div>
               <strong>{systemStatus.smtpConfigured ? "Email activ" : "Email neconfigurat"}</strong>
               <p>
                 {systemStatus.smtpConfigured
-                  ? "Resetările de parolă și notificările sunt trimise prin SMTP."
+                  ? `Resetările de parolă și notificările sunt trimise prin ${systemStatus.smtpHost || "SMTP"}.`
                   : "Pentru Gmail trebuie parolă de aplicație Google, nu parola normală a contului. Pune variabilele SMTP în Render > Environment și redeploy."}
               </p>
             </div>
             <button className="soft-button" type="button" onClick={copyGmailSmtpEnv}><Copy size={16} /> Copiază SMTP Gmail</button>
           </div>
+          <form className="inline-admin-form" onSubmit={sendTestEmail}>
+            <input type="email" value={testEmail} onChange={(event) => setTestEmail(event.target.value)} placeholder="email pentru test (opțional)" />
+            <button className="soft-button" disabled={loading || !systemStatus.smtpConfigured}>Trimite email test</button>
+          </form>
         </section>
       )}
 

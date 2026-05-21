@@ -34,7 +34,13 @@ export function UniversityModal({ open, initial, onClose, onSave }) {
 
   useEffect(() => {
     if (!selectedCatalog || initial) return;
-    setForm((current) => ({ ...current, country: selectedCatalog.country || current.country }));
+    setForm((current) => ({
+      ...current,
+      shortName: selectedCatalog.shortName || current.shortName,
+      country: selectedCatalog.country || current.country,
+      countryCode: selectedCatalog.countryCode || current.countryCode,
+      officialLink: selectedCatalog.website || current.officialLink
+    }));
   }, [selectedCatalog, initial]);
 
   if (!open) return null;

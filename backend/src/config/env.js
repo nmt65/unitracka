@@ -29,6 +29,7 @@ export const env = {
   dbDialect: process.env.DB_DIALECT || "sqlite",
   databaseUrl: process.env.DATABASE_URL || "./data/unitracka.sqlite",
   seedDemo: process.env.SEED_DEMO !== "false",
+  seedCatalog: process.env.SEED_CATALOG !== "false",
   bootstrapAdmin: process.env.BOOTSTRAP_ADMIN === "true",
   demoEmail: process.env.DEMO_EMAIL || "andrei@unitracker.ro",
   demoPassword: process.env.DEMO_PASSWORD || "Demo1234!",

@@ -7,7 +7,6 @@ export function listCatalog(req, res) {
       if (!search) return true;
       return [item.name, item.country, item.city, ...(item.strengths || [])].join(" ").toLowerCase().includes(search);
     })
-    .slice(0, 60);
+    .slice(0, 180);
   return res.json({ universities: results });
 }
-

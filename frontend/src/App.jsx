@@ -194,7 +194,7 @@ export function App() {
         onMarkNotificationRead={markNotificationRead}
       />
       <div className="app-body">
-        <Sidebar active={active} onChange={setActive} counts={counts} user={user} />
+        <Sidebar active={active} onChange={setActive} counts={counts} user={user} language={language} />
         <main className="content">
           {loading && <div className="loading-bar" />}
           {active === "dashboard" && user.role === "admin" && <AdminPanel onToast={setToast} />}

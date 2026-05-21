@@ -2,7 +2,9 @@ import bcrypt from "bcryptjs";
 import { AuditLog, Institution, User } from "../models/index.js";
 import { env } from "../config/env.js";
 import { writeAudit } from "../services/audit.js";
-import { isSmtpConfigured } from "../services/mail.js";
+import { isSmtpConfigured, sendMailSafe } from "../services/mail.js";
+import { universityCatalog } from "../data/catalog.js";
+import { importCatalogToInstitutions } from "../services/catalogImport.js";
 
 export async function createInstitution(req, res, next) {
   try {
@@ -61,6 +63,47 @@ export async function createUniversityUser(req, res, next) {
   }
 }
 
+export async function importCatalogInstitutions(req, res, next) {
+  try {
+    const result = await importCatalogToInstitutions();
+    await writeAudit(req, {
+      action: "admin.catalog_import",
+      entityType: "Institution",
+      metadata: result
+    });
+    return res.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function sendTestEmail(req, res, next) {
+  try {
+    const to = req.body.email || req.user.email;
+    const delivery = await sendMailSafe({
+      to,
+      subject: "Test email UniTrack",
+      text: [
+        "SMTP este configurat corect.",
+        "",
+        `Mediu: ${env.nodeEnv}`,
+        `APP_URL: ${env.appUrl}`,
+        "",
+        "Dacă ai primit acest mesaj, resetarea parolei și notificările pot fi trimise."
+      ].join("\n")
+    });
+    await writeAudit(req, {
+      action: "admin.smtp_test",
+      entityType: "Email",
+      metadata: { to, sent: delivery.sent, reason: delivery.reason || null }
+    });
+    if (!delivery.sent) return res.status(422).json({ sent: false, message: delivery.reason || "Emailul de test nu a putut fi trimis." });
+    return res.json({ sent: true, message: "Email test trimis." });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function listAuditLogs(_req, res, next) {
   try {
     const logs = await AuditLog.findAll({
@@ -79,15 +122,19 @@ export function systemStatus(_req, res) {
       nodeEnv: env.nodeEnv,
       database: env.dbDialect,
       seedDemo: env.seedDemo,
+      seedCatalog: env.seedCatalog,
       bootstrapAdmin: env.bootstrapAdmin,
       smtpConfigured: isSmtpConfigured(),
+      smtpHost: env.smtp.host || null,
+      smtpUser: env.smtp.user ? env.smtp.user.replace(/(^.).*(@.*$)/, "$1***$2") : null,
       aiConfigured: Boolean(env.openaiApiKey || env.geminiApiKey),
       openaiModel: env.openaiApiKey ? env.openaiDocumentModel : null,
       openaiAdvisorModel: env.openaiApiKey ? env.openaiAdvisorModel : null,
       geminiModel: env.geminiApiKey ? env.geminiDocumentModel : null,
       geminiAdvisorModel: env.geminiApiKey ? env.geminiAdvisorModel : null,
       corsOrigins: env.corsOrigins,
-      trustProxy: env.trustProxy
+      trustProxy: env.trustProxy,
+      catalogCount: universityCatalog.length
     }
   });
 }
