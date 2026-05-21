@@ -35,6 +35,9 @@ export async function register(req, res, next) {
     const existing = await User.unscoped().findOne({ where: { email: req.body.email } });
     if (existing) return res.status(409).json({ message: "Exista deja un cont cu acest email." });
     const role = req.body.role || "student";
+    if (role !== "student") {
+      return res.status(403).json({ message: "Conturile de universitate se creează doar de către admin." });
+    }
     const payload = { email: req.body.email, name: req.body.name || "Student UniTrack", role };
 
     if (role === "student") {

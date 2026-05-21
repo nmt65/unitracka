@@ -22,28 +22,18 @@ function passwordScore(password) {
 
 export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMode = true, onToggleTheme, language = "ro", onToggleLanguage }) {
   const [mode, setMode] = useState("login");
-  const [role, setRole] = useState("student");
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({
     email: "",
     password: "",
     name: "",
     cnp: "",
-    institutionId: "",
     resetToken: ""
   });
-  const [institutions, setInstitutions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [cnpStatus, setCnpStatus] = useState(null);
-
-  useEffect(() => {
-    api.publicInstitutions().then((data) => {
-      setInstitutions(data.institutions || []);
-      setForm((current) => ({ ...current, institutionId: current.institutionId || data.institutions?.[0]?.id || "" }));
-    }).catch(() => setInstitutions([]));
-  }, []);
 
   useEffect(() => {
     const resetToken = new URLSearchParams(window.location.search).get("reset_token");
@@ -53,7 +43,7 @@ export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMod
   }, []);
 
   useEffect(() => {
-    if (mode !== "register" || role !== "student" || form.cnp.length < 13) {
+    if (mode !== "register" || form.cnp.length < 13) {
       setCnpStatus(null);
       return;
     }
@@ -69,7 +59,7 @@ export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMod
       }
     }, 350);
     return () => window.clearTimeout(timer);
-  }, [form.cnp, mode, role]);
+  }, [form.cnp, mode]);
 
   const strength = useMemo(() => passwordScore(form.password), [form.password]);
   const strengthLabel = ["Slabă", "Slabă", "Medie", "Bună", "Puternică", "Foarte puternică"][strength];
@@ -97,9 +87,8 @@ export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMod
           email: form.email,
           password: form.password,
           name: form.name,
-          role,
-          cnp: role === "student" ? form.cnp : undefined,
-          institutionId: role === "university" ? form.institutionId : undefined
+          role: "student",
+          cnp: form.cnp
         });
       }
       if (mode === "forgot") {
@@ -157,30 +146,16 @@ export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMod
           </div>
           {mode === "register" && (
             <>
-              <div className="segmented compact">
-                <button type="button" className={role === "student" ? "active" : ""} onClick={() => setRole("student")}>Student</button>
-                <button type="button" className={role === "university" ? "active" : ""} onClick={() => setRole("university")}>Universitate</button>
-              </div>
+              <p className="field-note ok">Conturile de universitate sunt create de admin după aprobarea instituției.</p>
               <label>
                 Nume
                 <span className="input-icon"><UserPlus size={17} /><input name="name" value={form.name} onChange={updateField} required /></span>
               </label>
-              {role === "student" ? (
-                <label>
-                  CNP
-                  <input name="cnp" value={form.cnp} onChange={updateField} placeholder="13 cifre" inputMode="numeric" pattern="[0-9]{13}" maxLength="13" required />
-                  {cnpStatus && <small className={`field-note ${cnpStatus.state}`} aria-live="polite">{cnpStatus.message}</small>}
-                </label>
-              ) : (
-                <label>
-                  Universitate aprobată de admin
-                  <select name="institutionId" value={form.institutionId} onChange={updateField} required>
-                    {institutions.map((institution) => (
-                      <option key={institution.id} value={institution.id}>{institution.name}</option>
-                    ))}
-                  </select>
-                </label>
-              )}
+              <label>
+                CNP
+                <input name="cnp" value={form.cnp} onChange={updateField} placeholder="13 cifre" inputMode="numeric" pattern="[0-9]{13}" maxLength="13" required />
+                {cnpStatus && <small className={`field-note ${cnpStatus.state}`} aria-live="polite">{cnpStatus.message}</small>}
+              </label>
             </>
           )}
           <label>

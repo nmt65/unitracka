@@ -85,6 +85,7 @@ const en = {
   "Login": "Login",
   "Cont nou": "New account",
   "Student": "Student",
+  "Conturile de universitate sunt create de admin după aprobarea instituției.": "University accounts are created by an admin after institution approval.",
   "Universitate aprobată de admin": "Admin-approved university",
   "Parola": "Password",
   "Parolă pierdută": "Forgot password",
