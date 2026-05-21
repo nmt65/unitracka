@@ -16,5 +16,7 @@ export const applicationStatusSchema = z.object({
 
 export const applicationQuerySchema = z.object({
   status: z.enum(["all", "submitted", "under_review", "accepted", "rejected", "waitlist"]).default("all"),
-  sort: z.enum(["newest", "oldest", "score", "status"]).default("newest")
+  sort: z.enum(["newest", "oldest", "score", "status", "documents"]).default("newest"),
+  search: z.string().max(120).optional().default(""),
+  documents: z.enum(["all", "complete", "incomplete", "missing", "rejected"]).default("all")
 });

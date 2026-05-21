@@ -495,6 +495,14 @@ export const staticApi = {
     const containers = [...state.universities.map((item) => item.documents), ...state.applications.map((item) => item.documents)];
     const document = containers.flat().find((item) => item.id === documentId);
     Object.assign(document, body);
+    if (body.verificationStatus === "verified") {
+      document.isCompleted = true;
+      document.completedAt = new Date().toISOString().slice(0, 10);
+    }
+    if (body.verificationStatus === "rejected") {
+      document.isCompleted = false;
+      document.completedAt = null;
+    }
     if (Object.hasOwn(body, "isCompleted")) document.completedAt = body.isCompleted ? new Date().toISOString().slice(0, 10) : null;
     writeState(state);
     return { document };
@@ -536,12 +544,35 @@ export const staticApi = {
     let apps = state.applications;
     if (user.role === "university") apps = apps.filter((app) => app.InstitutionId === user.InstitutionId);
     if (query.status && query.status !== "all") apps = apps.filter((app) => app.status === query.status);
-    return { applications: apps.map((app) => attachApplication(state, app)) };
+    let rows = apps.map((app) => attachApplication(state, app));
+    if (query.documents && query.documents !== "all") {
+      rows = rows.filter((app) => {
+        const docs = app.documents || [];
+        if (query.documents === "complete") return docs.length && docs.every((doc) => doc.isOptional || doc.verificationStatus === "verified");
+        if (query.documents === "incomplete") return docs.some((doc) => !doc.isOptional && doc.verificationStatus !== "verified");
+        if (query.documents === "missing") return docs.some((doc) => doc.verificationStatus === "missing" || !doc.fileName);
+        if (query.documents === "rejected") return docs.some((doc) => doc.verificationStatus === "rejected");
+        return true;
+      });
+    }
+    if (query.search) {
+      const search = query.search.toLowerCase();
+      rows = rows.filter((app) => [app.Student?.name, app.Student?.email, app.program, app.faculty, app.Institution?.name].filter(Boolean).join(" ").toLowerCase().includes(search));
+    }
+    if (query.sort === "documents") {
+      rows.sort((a, b) => {
+        const ratio = (app) => (app.documents?.length ? app.documents.filter((doc) => doc.verificationStatus === "verified").length / app.documents.length : 0);
+        return ratio(b) - ratio(a);
+      });
+    }
+    return { applications: rows };
   },
   async updateApplicationStatus(appId, body) {
     const state = readState();
     const app = state.applications.find((item) => item.id === appId);
     app.status = body.status;
+    app.reviewerNotes = body.reviewerNotes || "";
+    app.reviewedAt = new Date().toISOString();
     addAudit(state, { actor: currentUser(state), action: "application.status_update", entityType: "AdmissionApplication", entityId: app.id, metadata: { status: app.status } });
     writeState(state);
     return { application: attachApplication(state, app) };

@@ -1189,6 +1189,26 @@ body:not(.dark) .topbar {
   padding-left: 40px;
 }
 
+.search-control {
+  position: relative;
+  display: block;
+  flex: 1 1 280px;
+  margin: 0;
+}
+
+.search-control svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+}
+
+.search-control input {
+  width: 100%;
+  padding-left: 40px;
+}
+
 .filter-tabs {
   display: flex;
   align-items: center;
@@ -2120,6 +2140,32 @@ body:not(.dark) .topbar {
   color: var(--success);
 }
 
+.ai-config-panel {
+  margin-bottom: 22px;
+}
+
+.ai-config-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+}
+
+.ai-config-body p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.ai-config-panel.ready h2 {
+  color: var(--success);
+}
+
+.ai-config-panel.missing h2 {
+  color: var(--warning);
+}
+
 .system-status-grid .warn strong {
   color: var(--warning);
 }
@@ -2225,6 +2271,53 @@ body:not(.dark) .topbar {
   border: 1px dashed var(--border);
   border-radius: 8px;
   background: rgba(118, 104, 255, 0.06);
+}
+
+.review-notes-panel {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: rgba(118, 104, 255, 0.05);
+}
+
+.review-notes-panel p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.review-notes-panel label {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.review-notes-panel textarea {
+  min-height: 74px;
+  resize: vertical;
+}
+
+.application-feedback {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 5px;
+  padding: 11px 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.application-feedback strong {
+  color: var(--text);
+}
+
+.application-feedback span {
+  color: var(--muted);
+  line-height: 1.45;
 }
 
 .inline-doc-form input {
@@ -2456,6 +2549,14 @@ body:not(.dark) .topbar {
 
 .document-viewer textarea {
   resize: vertical;
+}
+
+.document-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 0 20px 20px;
 }
 
 .form-grid {

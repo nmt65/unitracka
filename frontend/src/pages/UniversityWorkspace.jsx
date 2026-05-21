@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../services/api.js";
-import { CheckCircle2, Circle, Eye, FileText, X } from "lucide-react";
+import { CheckCircle2, Circle, Download, Eye, FileText, Search, X } from "lucide-react";
 
 const statusLabels = {
   submitted: "Trimisă",
@@ -21,8 +21,9 @@ export function UniversityWorkspace({ user, onToast }) {
   const [applications, setApplications] = useState([]);
   const [institution, setInstitution] = useState(null);
   const [institutionForm, setInstitutionForm] = useState({ website: "", contactEmail: "", description: "" });
-  const [filter, setFilter] = useState({ status: "all", sort: "newest" });
+  const [filter, setFilter] = useState({ status: "all", sort: "newest", documents: "all", search: "" });
   const [selectedDocument, setSelectedDocument] = useState(null);
+  const [reviewNotes, setReviewNotes] = useState({});
 
   async function load() {
     const [data, institutionData] = await Promise.all([
@@ -30,6 +31,7 @@ export function UniversityWorkspace({ user, onToast }) {
       api.myInstitution().catch(() => ({ institution: null }))
     ]);
     setApplications(data.applications || []);
+    setReviewNotes(Object.fromEntries((data.applications || []).map((item) => [item.id, item.reviewerNotes || ""])));
     if (institutionData.institution) {
       setInstitution(institutionData.institution);
       setInstitutionForm({
@@ -42,18 +44,19 @@ export function UniversityWorkspace({ user, onToast }) {
 
   useEffect(() => {
     load().catch((error) => onToast(error.message));
-  }, [filter.status, filter.sort]);
+  }, [filter.status, filter.sort, filter.documents, filter.search]);
 
   const stats = useMemo(() => ({
     total: applications.length,
     review: applications.filter((item) => item.status === "under_review" || item.status === "submitted").length,
     accepted: applications.filter((item) => item.status === "accepted").length,
-    rejected: applications.filter((item) => item.status === "rejected").length
+    rejected: applications.filter((item) => item.status === "rejected").length,
+    incomplete: applications.filter((item) => (item.documents || []).some((doc) => !doc.isOptional && doc.verificationStatus !== "verified")).length
   }), [applications]);
 
   async function updateStatus(id, status) {
     try {
-      await api.updateApplicationStatus(id, { status });
+      await api.updateApplicationStatus(id, { status, reviewerNotes: reviewNotes[id] || "" });
       onToast("Status actualizat și notificare trimisă elevului.");
       await load();
     } catch (error) {
@@ -63,6 +66,44 @@ export function UniversityWorkspace({ user, onToast }) {
 
   function updateInstitutionField(event) {
     setInstitutionForm((current) => ({ ...current, [event.target.name]: event.target.value }));
+  }
+
+  function updateReviewNote(id, value) {
+    setReviewNotes((current) => ({ ...current, [id]: value }));
+  }
+
+  function exportWorkspaceCsv() {
+    const rows = [
+      ["student", "email", "program", "faculty", "status", "verified_documents", "total_documents", "reviewer_notes"],
+      ...applications.map((application) => [
+        application.Student?.name || "",
+        application.Student?.email || "",
+        application.program || "",
+        application.faculty || "",
+        statusLabels[application.status] || application.status,
+        (application.documents || []).filter((doc) => doc.verificationStatus === "verified").length,
+        (application.documents || []).length,
+        reviewNotes[application.id] || application.reviewerNotes || ""
+      ])
+    ];
+    const csv = rows.map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `unitrack-aplicatii-${Date.now()}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function reviewDocument(document, verificationStatus) {
+    try {
+      const data = await api.updateDocument(document.id, { verificationStatus });
+      setSelectedDocument((current) => current ? { ...current, ...data.document } : current);
+      onToast(verificationStatus === "verified" ? "Document aprobat manual." : "Document respins manual.");
+      await load();
+    } catch (error) {
+      onToast(error.message);
+    }
   }
 
   async function saveInstitution(event) {
@@ -89,6 +130,7 @@ export function UniversityWorkspace({ user, onToast }) {
         <article className="stat-card warning"><strong>{stats.review}</strong><span>De evaluat</span><small>noi / în lucru</small></article>
         <article className="stat-card success"><strong>{stats.accepted}</strong><span>Acceptate</span><small>notificate</small></article>
         <article className="stat-card"><strong>{stats.rejected}</strong><span>Respinse</span><small>arhivate</small></article>
+        <article className="stat-card warning"><strong>{stats.incomplete}</strong><span>Incomplete</span><small>documente lipsă</small></article>
       </div>
       {institution && (
         <section className="profile-panel university-pitch-panel">
@@ -120,6 +162,14 @@ export function UniversityWorkspace({ user, onToast }) {
         </section>
       )}
       <div className="filter-bar">
+        <label className="search-control">
+          <Search size={17} />
+          <input
+            value={filter.search}
+            onChange={(event) => setFilter((current) => ({ ...current, search: event.target.value }))}
+            placeholder="Caută student, email, program..."
+          />
+        </label>
         <select value={filter.status} onChange={(event) => setFilter((current) => ({ ...current, status: event.target.value }))}>
           <option value="all">Toate statusurile</option>
           <option value="submitted">Trimise</option>
@@ -131,9 +181,17 @@ export function UniversityWorkspace({ user, onToast }) {
         <select value={filter.sort} onChange={(event) => setFilter((current) => ({ ...current, sort: event.target.value }))}>
           <option value="newest">Cele mai noi</option>
           <option value="oldest">Cele mai vechi</option>
-          <option value="score">Scor admitere</option>
+          <option value="documents">Documente complete</option>
           <option value="status">Status</option>
         </select>
+        <select value={filter.documents} onChange={(event) => setFilter((current) => ({ ...current, documents: event.target.value }))}>
+          <option value="all">Toate documentele</option>
+          <option value="complete">Dosare complete</option>
+          <option value="incomplete">Dosare incomplete</option>
+          <option value="missing">Fișiere lipsă</option>
+          <option value="rejected">Documente respinse</option>
+        </select>
+        <button className="soft-button" type="button" onClick={exportWorkspaceCsv}><Download size={16} /> Export listă</button>
       </div>
       <section className="applications-card workspace-list">
         {applications.length === 0 && (
@@ -150,17 +208,30 @@ export function UniversityWorkspace({ user, onToast }) {
               <span>{application.program} · {application.faculty || application.Institution?.name}</span>
             </div>
             <div>
-              <strong>{application.admissionScore ?? "-"} </strong>
-              <small>scor</small>
+              <strong>{application.documents?.filter((doc) => doc.verificationStatus === "verified").length || 0}/{application.documents?.length || 0}</strong>
+              <small>documente</small>
             </div>
             <div>
               <span className="status-pill info">{statusLabels[application.status] || application.status}</span>
-              <small>{application.documents?.filter((doc) => doc.verificationStatus === "verified").length || 0}/{application.documents?.length || 0} documente verificate</small>
+              <small>{application.submittedAt ? new Date(application.submittedAt).toLocaleDateString("ro-RO") : "fără dată"}</small>
             </div>
             <div className="row-buttons">
               <button type="button" onClick={() => updateStatus(application.id, "under_review")}>Review</button>
+              <button type="button" onClick={() => updateStatus(application.id, "waitlist")}>Waitlist</button>
               <button type="button" onClick={() => updateStatus(application.id, "accepted")}>Acceptă</button>
               <button type="button" onClick={() => updateStatus(application.id, "rejected")}>Respinge</button>
+            </div>
+            <div className="review-notes-panel">
+              {application.notes && <p><strong>Notă student:</strong> {application.notes}</p>}
+              <label>
+                Feedback pentru student
+                <textarea
+                  value={reviewNotes[application.id] || ""}
+                  onChange={(event) => updateReviewNote(application.id, event.target.value)}
+                  placeholder="Ex: dosarul este complet, lipsește certificatul de limbă, revino cu documentul semnat..."
+                  rows="3"
+                />
+              </label>
             </div>
             <div className="application-documents reviewer-documents">
               {(application.documents || []).length === 0 && (
@@ -214,6 +285,10 @@ export function UniversityWorkspace({ user, onToast }) {
               Text extras / OCR
               <textarea value={selectedDocument.extractedText || ""} readOnly rows="8" />
             </label>
+            <footer className="document-review-actions">
+              <button className="soft-button" type="button" onClick={() => reviewDocument(selectedDocument, "verified")}><CheckCircle2 size={16} /> Aprobă document</button>
+              <button className="danger-button" type="button" onClick={() => reviewDocument(selectedDocument, "rejected")}><X size={16} /> Respinge document</button>
+            </footer>
           </section>
         </div>
       )}

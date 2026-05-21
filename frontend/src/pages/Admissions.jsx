@@ -233,6 +233,10 @@ export function Admissions({ onToast }) {
             <div><strong>{app.Institution?.name}</strong><small>{app.program} · {app.faculty}</small></div>
             <div><strong>{statusLabels[app.status] || app.status}</strong><small>status</small></div>
             <div><strong>{app.documents?.filter((doc) => doc.verificationStatus === "verified").length || 0}/{app.documents?.length || 0}</strong><small>documente verificate</small></div>
+            <div className="application-feedback">
+              <strong>Feedback universitate</strong>
+              <span>{app.reviewerNotes || "Încă nu există feedback de la comisia de admitere."}</span>
+            </div>
             <div className="application-documents">
               {(app.documents || []).map((doc) => (
                 <div key={doc.id} className={`application-doc-row ${doc.verificationStatus || "missing"}`}>

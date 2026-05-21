@@ -11,6 +11,6 @@ export const documentUpdateSchema = z.object({
   category: z.string().min(2).max(80).optional(),
   isOptional: z.boolean().optional(),
   isCompleted: z.boolean().optional(),
+  verificationStatus: z.enum(["missing", "pending", "verified", "rejected"]).optional(),
   completedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional()
 });
-

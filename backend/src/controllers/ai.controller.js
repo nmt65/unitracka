@@ -4,6 +4,14 @@ import { adviseStudent } from "../services/studentAdvisor.js";
 import { writeAudit } from "../services/audit.js";
 import { hashText } from "../utils/crypto.js";
 
+function serializeDocument(document) {
+  if (!document) return document;
+  const plain = document.toJSON ? document.toJSON() : { ...document };
+  delete plain.fileDataUrl;
+  delete plain.fileSha256;
+  return plain;
+}
+
 async function findOwnedDocument(req) {
   if (req.body.documentId) {
     const document = await Document.findByPk(req.body.documentId, { include: [AdmissionApplication, University] });
@@ -48,7 +56,7 @@ export async function checkDocument(req, res, next) {
         metadata: { accepted: result.accepted, provider: result.provider, label: result.label, confidence: result.confidence }
       });
     }
-    return res.json({ result, document });
+    return res.json({ result, document: serializeDocument(document) });
   } catch (error) {
     next(error);
   }

@@ -1,5 +1,12 @@
 import { AdmissionApplication, Document, University } from "../models/index.js";
 
+function serializeDocument(document) {
+  const plain = document.toJSON ? document.toJSON() : { ...document };
+  delete plain.fileDataUrl;
+  delete plain.fileSha256;
+  return plain;
+}
+
 async function findOwnedUniversity(userId, universityId) {
   return University.findOne({ where: { id: universityId, UserId: userId } });
 }
@@ -29,7 +36,7 @@ export async function listDocuments(req, res, next) {
     const university = await findOwnedUniversity(req.user.id, req.params.universityId);
     if (!university) return res.status(404).json({ message: "Universitatea nu a fost gasita." });
     const documents = await Document.findAll({ where: { UniversityId: university.id }, order: [["createdAt", "ASC"]] });
-    return res.json({ documents });
+    return res.json({ documents: documents.map(serializeDocument) });
   } catch (error) {
     next(error);
   }
@@ -40,7 +47,7 @@ export async function listApplicationDocuments(req, res, next) {
     const application = await findAccessibleApplication(req.user, req.params.applicationId);
     if (!application) return res.status(404).json({ message: "Aplicația nu a fost găsită." });
     const documents = await Document.findAll({ where: { AdmissionApplicationId: application.id }, order: [["createdAt", "ASC"]] });
-    return res.json({ documents });
+    return res.json({ documents: documents.map(serializeDocument) });
   } catch (error) {
     next(error);
   }
@@ -51,7 +58,7 @@ export async function createDocument(req, res, next) {
     const university = await findOwnedUniversity(req.user.id, req.params.universityId);
     if (!university) return res.status(404).json({ message: "Universitatea nu a fost gasita." });
     const document = await Document.create({ ...req.body, UniversityId: university.id });
-    return res.status(201).json({ document });
+    return res.status(201).json({ document: serializeDocument(document) });
   } catch (error) {
     next(error);
   }
@@ -67,7 +74,7 @@ export async function createApplicationDocument(req, res, next) {
       verificationStatus: "missing",
       AdmissionApplicationId: application.id
     });
-    return res.status(201).json({ document });
+    return res.status(201).json({ document: serializeDocument(document) });
   } catch (error) {
     next(error);
   }
@@ -81,13 +88,21 @@ export async function updateDocument(req, res, next) {
     }
 
     const payload = { ...req.body };
+    if (payload.verificationStatus === "verified") {
+      payload.isCompleted = true;
+      payload.completedAt = payload.completedAt || new Date().toISOString().slice(0, 10);
+    }
+    if (payload.verificationStatus === "rejected") {
+      payload.isCompleted = false;
+      payload.completedAt = null;
+    }
     if (payload.isCompleted === true && !payload.completedAt) {
       payload.completedAt = new Date().toISOString().slice(0, 10);
     }
     if (payload.isCompleted === false) payload.completedAt = null;
 
     await document.update(payload);
-    return res.json({ document });
+    return res.json({ document: serializeDocument(document) });
   } catch (error) {
     next(error);
   }

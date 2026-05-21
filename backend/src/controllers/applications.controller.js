@@ -18,8 +18,29 @@ function serialize(application) {
   delete plain.documents;
   return {
     ...plain,
-    documents: docs
+    documents: docs.map((doc) => {
+      const safeDoc = doc.toJSON ? doc.toJSON() : { ...doc };
+      delete safeDoc.fileDataUrl;
+      delete safeDoc.fileSha256;
+      return safeDoc;
+    })
   };
+}
+
+function documentRatio(application) {
+  const docs = application.documents || [];
+  if (!docs.length) return 0;
+  return docs.filter((doc) => doc.verificationStatus === "verified" || doc.isCompleted).length / docs.length;
+}
+
+function matchesDocumentFilter(application, filter) {
+  const docs = application.documents || [];
+  if (!filter || filter === "all") return true;
+  if (filter === "complete") return docs.length > 0 && docs.every((doc) => doc.isOptional || doc.verificationStatus === "verified");
+  if (filter === "incomplete") return docs.some((doc) => !doc.isOptional && doc.verificationStatus !== "verified");
+  if (filter === "rejected") return docs.some((doc) => doc.verificationStatus === "rejected");
+  if (filter === "missing") return docs.some((doc) => doc.verificationStatus === "missing" || !doc.fileName);
+  return true;
 }
 
 export async function listMine(req, res, next) {
@@ -98,7 +119,19 @@ export async function workspaceApplications(req, res, next) {
       status: [["status", "ASC"], ["submittedAt", "DESC"]]
     }[req.query.sort || "newest"];
     const applications = await AdmissionApplication.findAll({ where, include: includeAll(), order });
-    return res.json({ applications: applications.map(serialize) });
+    let rows = applications.map(serialize).filter((application) => matchesDocumentFilter(application, req.query.documents));
+    if (req.query.search) {
+      const search = req.query.search.toLowerCase();
+      rows = rows.filter((application) => [
+        application.program,
+        application.faculty,
+        application.Student?.name,
+        application.Student?.email,
+        application.Institution?.name
+      ].filter(Boolean).join(" ").toLowerCase().includes(search));
+    }
+    if (req.query.sort === "documents") rows.sort((a, b) => documentRatio(b) - documentRatio(a));
+    return res.json({ applications: rows });
   } catch (error) {
     next(error);
   }

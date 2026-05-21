@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, UserPlus } from "lucide-react";
+import { Brain, Copy, Plus, UserPlus } from "lucide-react";
 import { api } from "../services/api.js";
 
 const emptyInstitution = {
@@ -97,6 +97,19 @@ export function AdminPanel({ onToast }) {
     }
   }
 
+  async function copyAiEnv() {
+    await navigator.clipboard.writeText([
+      "OPENAI_API_KEY=sk-...",
+      "OPENAI_DOCUMENT_MODEL=gpt-4o-mini",
+      "OPENAI_ADVISOR_MODEL=gpt-4o-mini",
+      "# sau",
+      "GEMINI_API_KEY=...",
+      "GEMINI_DOCUMENT_MODEL=gemini-1.5-flash",
+      "GEMINI_ADVISOR_MODEL=gemini-1.5-flash"
+    ].join("\n"));
+    onToast("Variabilele AI au fost copiate.");
+  }
+
   return (
     <section className="unitrack-page admin-page">
       <div className="page-heading">
@@ -139,6 +152,23 @@ export function AdminPanel({ onToast }) {
             <strong>{systemStatus.bootstrapAdmin ? "Bootstrap ON" : "Bootstrap OFF"}</strong>
             <span>Primul admin</span>
           </article>
+        </section>
+      )}
+
+      {systemStatus && (
+        <section className={`profile-panel ai-config-panel ${systemStatus.aiConfigured ? "ready" : "missing"}`}>
+          <h2><Brain size={17} /> Configurare AI live</h2>
+          <div className="ai-config-body">
+            <div>
+              <strong>{systemStatus.aiConfigured ? "AI extern activ" : "AI extern neconfigurat"}</strong>
+              <p>
+                {systemStatus.aiConfigured
+                  ? `Documentele și consilierul folosesc ${systemStatus.openaiModel || systemStatus.geminiModel}.`
+                  : "Momentan rulează clasificatorul local. Pentru citire mai bună pe PDF-uri, imagini și CV-uri reale, setează cheia API în Render > Environment."}
+              </p>
+            </div>
+            <button className="soft-button" type="button" onClick={copyAiEnv}><Copy size={16} /> Copiază env AI</button>
+          </div>
         </section>
       )}
 
