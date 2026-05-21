@@ -54,8 +54,23 @@ function localClassifier({ expectedType, fileName, text }) {
   };
 }
 
+function dataUrlParts(fileDataUrl = "") {
+  const match = String(fileDataUrl).match(/^data:([^;,]+);base64,(.+)$/);
+  if (!match) return null;
+  return { mimeType: match[1], data: match[2] };
+}
+
 async function openAiClassifier(payload) {
   if (!env.openaiApiKey) return null;
+  const contentItems = [
+    {
+      type: "input_text",
+      text: `Tip așteptat: ${payload.expectedType}\nNume fișier: ${payload.fileName}\nTip MIME: ${payload.mimeType || "necunoscut"}\nText extras:\n${payload.text || ""}`
+    }
+  ];
+  if (payload.fileDataUrl && String(payload.mimeType || "").startsWith("image/")) {
+    contentItems.push({ type: "input_image", image_url: payload.fileDataUrl });
+  }
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
@@ -71,16 +86,16 @@ async function openAiClassifier(payload) {
         },
         {
           role: "user",
-          content: `Tip așteptat: ${payload.expectedType}\nNume fișier: ${payload.fileName}\nText extras:\n${payload.text || ""}`
+          content: contentItems
         }
       ]
     })
   });
   if (!response.ok) return null;
   const data = await response.json();
-  const content = data.output_text || data.output?.flatMap((item) => item.content || []).map((item) => item.text).join("") || "";
+  const responseContent = data.output_text || data.output?.flatMap((item) => item.content || []).map((item) => item.text).join("") || "";
   try {
-    const parsed = JSON.parse(content);
+    const parsed = JSON.parse(responseContent);
     return { provider: "openai", ...parsed };
   } catch {
     return null;
@@ -90,14 +105,17 @@ async function openAiClassifier(payload) {
 async function geminiClassifier(payload) {
   if (!env.geminiApiKey) return null;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${env.geminiDocumentModel}:generateContent?key=${env.geminiApiKey}`;
+  const parts = [{
+    text: `Returnează doar JSON valid cu label, confidence, accepted, explanation. Tip așteptat: ${payload.expectedType}. Fișier: ${payload.fileName}. Tip MIME: ${payload.mimeType || "necunoscut"}. Text extras: ${payload.text || ""}`
+  }];
+  const inline = dataUrlParts(payload.fileDataUrl);
+  if (inline) parts.push({ inline_data: { mime_type: inline.mimeType, data: inline.data } });
   const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       contents: [{
-        parts: [{
-          text: `Returnează doar JSON valid cu label, confidence, accepted, explanation. Tip așteptat: ${payload.expectedType}. Fișier: ${payload.fileName}. Text: ${payload.text || ""}`
-        }]
+        parts
       }]
     })
   });

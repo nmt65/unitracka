@@ -506,6 +506,14 @@ export const staticApi = {
     writeState(state);
     return null;
   },
+  documentFileUrl(documentId) {
+    const state = readState();
+    const document = [
+      ...state.universities.flatMap((item) => item.documents || []),
+      ...state.applications.flatMap((item) => item.documents || [])
+    ].find((doc) => doc.id === documentId);
+    return document?.fileDataUrl || "#";
+  },
   async myApplications() {
     const state = readState();
     const user = currentUser(state);
@@ -545,6 +553,9 @@ export const staticApi = {
     if (document) {
       Object.assign(document, {
         fileName: body.fileName,
+        mimeType: body.mimeType || null,
+        fileSize: body.fileSize || null,
+        fileDataUrl: body.fileDataUrl || null,
         extractedText: body.text,
         verificationStatus: result.accepted ? "verified" : "rejected",
         isCompleted: result.accepted,

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../services/api.js";
-import { CheckCircle2, Circle, FileText } from "lucide-react";
+import { CheckCircle2, Circle, Eye, FileText, X } from "lucide-react";
 
 const statusLabels = {
   submitted: "Trimisă",
@@ -22,6 +22,7 @@ export function UniversityWorkspace({ user, onToast }) {
   const [institution, setInstitution] = useState(null);
   const [institutionForm, setInstitutionForm] = useState({ website: "", contactEmail: "", description: "" });
   const [filter, setFilter] = useState({ status: "all", sort: "newest" });
+  const [selectedDocument, setSelectedDocument] = useState(null);
 
   async function load() {
     const [data, institutionData] = await Promise.all([
@@ -175,12 +176,47 @@ export function UniversityWorkspace({ user, onToast }) {
                   </small>
                   <em>{documentStatusLabels[doc.verificationStatus] || doc.verificationStatus}</em>
                   <small>{doc.aiLabel ? `${doc.aiLabel} · ${Math.round((doc.aiConfidence || 0) * 100)}%` : "neverificat AI"}</small>
+                  {doc.fileSize ? (
+                    <button className="tiny-link as-button" type="button" onClick={() => setSelectedDocument({ ...doc, application })}>
+                      <Eye size={14} /> Vezi document
+                    </button>
+                  ) : null}
                 </div>
               ))}
             </div>
           </article>
         ))}
       </section>
+      {selectedDocument && (
+        <div className="modal-backdrop" role="presentation">
+          <section className="modal-card document-viewer" role="dialog" aria-modal="true" aria-label="Document aplicant">
+            <header>
+              <div>
+                <h2>{selectedDocument.name}</h2>
+                <p>{selectedDocument.application?.Student?.name} · {selectedDocument.fileName || "fără fișier"}</p>
+              </div>
+              <button className="icon-button" type="button" onClick={() => setSelectedDocument(null)} aria-label="Închide">
+                <X size={18} />
+              </button>
+            </header>
+            <div className="document-meta-grid">
+              <span><strong>Status</strong>{documentStatusLabels[selectedDocument.verificationStatus] || selectedDocument.verificationStatus}</span>
+              <span><strong>AI</strong>{selectedDocument.aiLabel ? `${selectedDocument.aiLabel} · ${Math.round((selectedDocument.aiConfidence || 0) * 100)}%` : "Neverificat"}</span>
+              <span><strong>Fișier</strong>{selectedDocument.fileName || "-"}</span>
+            </div>
+            {selectedDocument.aiExplanation && <p className="field-note">{selectedDocument.aiExplanation}</p>}
+            {selectedDocument.fileSize ? (
+              <iframe title={selectedDocument.name} src={api.documentFileUrl(selectedDocument.id)} />
+            ) : (
+              <p className="muted">Nu există fișier atașat pentru acest document.</p>
+            )}
+            <label>
+              Text extras / OCR
+              <textarea value={selectedDocument.extractedText || ""} readOnly rows="8" />
+            </label>
+          </section>
+        </div>
+      )}
     </section>
   );
 }

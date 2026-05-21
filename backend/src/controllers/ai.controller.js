@@ -29,7 +29,9 @@ export async function checkDocument(req, res, next) {
       await document.update({
         fileName: req.body.fileName,
         mimeType: req.body.mimeType || null,
-        fileSha256: hashText(`${req.body.fileName}:${req.body.text || ""}`),
+        fileSize: req.body.fileSize || null,
+        fileDataUrl: req.body.fileDataUrl || null,
+        fileSha256: hashText(`${req.body.fileName}:${req.body.text || ""}:${req.body.fileDataUrl || ""}`),
         extractedText: req.body.text || "",
         verificationStatus: result.accepted ? "verified" : "rejected",
         isCompleted: result.accepted,

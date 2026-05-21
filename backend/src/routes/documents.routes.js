@@ -3,6 +3,7 @@ import {
   createApplicationDocument,
   createDocument,
   deleteDocument,
+  downloadDocumentFile,
   listApplicationDocuments,
   listDocuments,
   updateDocument
@@ -16,5 +17,6 @@ documentsRouter.get("/university/:universityId", listDocuments);
 documentsRouter.post("/university/:universityId", validateBody(documentCreateSchema), createDocument);
 documentsRouter.get("/application/:applicationId", listApplicationDocuments);
 documentsRouter.post("/application/:applicationId", validateBody(documentCreateSchema), createApplicationDocument);
+documentsRouter.get("/:id/file", downloadDocumentFile);
 documentsRouter.patch("/:id", validateBody(documentUpdateSchema), updateDocument);
 documentsRouter.delete("/:id", deleteDocument);

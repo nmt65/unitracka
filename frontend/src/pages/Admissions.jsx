@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Brain, CheckCircle2, Circle, FileText, Plus, Send, Upload } from "lucide-react";
+import { Brain, CheckCircle2, Circle, ExternalLink, Eye, FileText, Plus, Send, Upload } from "lucide-react";
 import { api } from "../services/api.js";
+import { getProgramsForInstitution, programChoiceValue } from "../utils/programCatalog.js";
 
 const statusLabels = {
   submitted: "Trimisă",
@@ -56,14 +57,29 @@ export function Admissions({ onToast }) {
     load().catch((error) => onToast(error.message));
   }, []);
 
+  const selectedInstitution = useMemo(() => institutions.find((item) => item.id === form.institutionId) || null, [institutions, form.institutionId]);
+  const programOptions = useMemo(() => getProgramsForInstitution(selectedInstitution), [selectedInstitution]);
   const allDocs = useMemo(() => applications.flatMap((app) => (app.documents || []).map((doc) => ({ ...doc, appName: app.Institution?.name }))), [applications]);
   const duplicateApplication = useMemo(() => applications.some((app) => (
     app.InstitutionId === form.institutionId
     && app.program?.toLowerCase() === form.program.toLowerCase()
   )), [applications, form.institutionId, form.program]);
 
+  useEffect(() => {
+    if (!programOptions.length) return;
+    const current = programOptions.find((option) => option.program === form.program && option.faculty === form.faculty);
+    if (current) return;
+    const first = programOptions[0];
+    setForm((value) => ({ ...value, program: first.program, faculty: first.faculty, programType: first.programType }));
+  }, [form.institutionId, programOptions]);
+
   function updateForm(event) {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
+  }
+
+  function updateProgramChoice(event) {
+    const [faculty, program, programType] = event.target.value.split("|||");
+    setForm((current) => ({ ...current, faculty, program, programType }));
   }
 
   function updateAi(event) {
@@ -73,17 +89,31 @@ export function Admissions({ onToast }) {
   async function handleDocumentFile(event) {
     const file = event.target.files?.[0];
     if (!file) return;
+    if (file.size > 5_000_000) {
+      onToast("Fișierul trebuie să aibă maximum 5 MB.");
+      return;
+    }
     const canReadText = file.type.startsWith("text/") || /\.(txt|csv|json|xml)$/i.test(file.name);
-    const text = canReadText ? await file.text() : aiForm.text;
+    const [text, fileDataUrl] = await Promise.all([
+      canReadText ? file.text() : Promise.resolve(aiForm.text),
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      })
+    ]);
     const detectedType = inferExpectedType(file.name, text);
     setAiForm((current) => ({
       ...current,
       expectedType: detectedType || current.expectedType,
       fileName: file.name,
       mimeType: file.type || "application/octet-stream",
+      fileSize: file.size,
+      fileDataUrl,
       text
     }));
-    onToast(canReadText ? "Fișier citit local pentru verificare." : "Fișier atașat; completează textul OCR/extras pentru verificare AI.");
+    onToast(canReadText ? "Fișier citit și atașat în dosar." : "Fișier atașat; AI-ul extern îl poate citi dacă cheia API este setată.");
   }
 
   async function submitApplication(event) {
@@ -151,9 +181,24 @@ export function Admissions({ onToast }) {
           <h2><Send size={17} /> Trimite aplicație</h2>
           <div className="profile-form">
             <label>Universitate<select name="institutionId" value={form.institutionId} onChange={updateForm}>{institutions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-            <label>Program<input name="program" value={form.program} onChange={updateForm} required /></label>
-            <label>Facultate<input name="faculty" value={form.faculty} onChange={updateForm} /></label>
+            {selectedInstitution && (
+              <div className="institution-preview wide">
+                <strong>{selectedInstitution.name}</strong>
+                <span>{selectedInstitution.city || selectedInstitution.country} · {selectedInstitution.description || "Universitate activă în platformă, disponibilă pentru aplicații online."}</span>
+                {selectedInstitution.website && <a href={selectedInstitution.website} target="_blank" rel="noreferrer"><ExternalLink size={14} /> Site oficial</a>}
+              </div>
+            )}
+            <label className="wide">Program / facultate
+              <select value={programChoiceValue({ faculty: form.faculty, program: form.program, programType: form.programType })} onChange={updateProgramChoice}>
+                {programOptions.map((option) => (
+                  <option key={programChoiceValue(option)} value={programChoiceValue(option)}>
+                    {option.program} · {option.faculty} · {option.programType}
+                  </option>
+                ))}
+              </select>
+            </label>
             <label>Tip<select name="programType" value={form.programType} onChange={updateForm}><option value="licenta">Licență</option><option value="master">Master</option><option value="doctorat">Doctorat</option></select></label>
+            <label>Facultate<input name="faculty" value={form.faculty} onChange={updateForm} /></label>
             <label className="wide">Note<textarea name="notes" value={form.notes} onChange={updateForm} /></label>
             <p className="field-note wide">Media BAC și scorurile de limbă se completează din profil doar după ce ai documente atestatoare verificate.</p>
           </div>
@@ -167,7 +212,7 @@ export function Admissions({ onToast }) {
             <label>Tip așteptat<input name="expectedType" value={aiForm.expectedType} onChange={updateAi} /></label>
             <label className="wide">Atașează fișier
               <span className="file-control"><Upload size={17} /><input type="file" onChange={handleDocumentFile} accept=".txt,.csv,.json,.xml,.pdf,.doc,.docx,image/*,application/pdf" /></span>
-              <small className="field-note">Pentru PDF/scanări, completează textul extras/OCR în câmpul de mai jos.</small>
+              <small className="field-note">PDF-urile și imaginile sunt păstrate în dosar. Cu OPENAI_API_KEY sau GEMINI_API_KEY, AI-ul primește și fișierul, nu doar textul.</small>
             </label>
             <label className="wide">Nume fișier<input name="fileName" value={aiForm.fileName} onChange={updateAi} /></label>
             <label className="wide">Text extras / OCR<textarea name="text" value={aiForm.text} onChange={updateAi} /></label>
@@ -195,6 +240,7 @@ export function Admissions({ onToast }) {
                   <strong>{doc.name}</strong>
                   <small>{doc.fileName || "Fără fișier atașat"}</small>
                   <em>{documentStatusLabels[doc.verificationStatus] || doc.verificationStatus}</em>
+                  {doc.fileSize ? <a className="tiny-link" href={api.documentFileUrl(doc.id)} target="_blank" rel="noreferrer"><Eye size={14} /> Vezi</a> : null}
                 </div>
               ))}
               <form className="inline-doc-form" onSubmit={(event) => addApplicationDocument(event, app.id)}>

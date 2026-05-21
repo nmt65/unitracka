@@ -93,6 +93,27 @@ export async function updateDocument(req, res, next) {
   }
 }
 
+export async function downloadDocumentFile(req, res, next) {
+  try {
+    const document = await Document.findByPk(req.params.id, { include: [University, AdmissionApplication] });
+    if (!canAccessDocument(req.user, document)) {
+      return res.status(404).json({ message: "Documentul nu a fost gasit." });
+    }
+    if (!document.fileDataUrl) {
+      return res.status(404).json({ message: "Documentul nu are fișier atașat." });
+    }
+    const match = String(document.fileDataUrl).match(/^data:([^;,]+);base64,(.+)$/);
+    if (!match) return res.status(422).json({ message: "Fișierul atașat nu poate fi citit." });
+
+    const buffer = Buffer.from(match[2], "base64");
+    res.setHeader("Content-Type", document.mimeType || match[1] || "application/octet-stream");
+    res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(document.fileName || `${document.name}.bin`)}"`);
+    return res.send(buffer);
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function deleteDocument(req, res, next) {
   try {
     const document = await Document.findByPk(req.params.id, { include: [University, AdmissionApplication] });

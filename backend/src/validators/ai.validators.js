@@ -6,6 +6,8 @@ export const documentCheckSchema = z.object({
   expectedType: z.string().min(2).max(180),
   fileName: z.string().min(2).max(240),
   mimeType: z.string().max(120).optional().nullable(),
+  fileSize: z.coerce.number().int().min(0).max(5_000_000).optional().nullable(),
+  fileDataUrl: z.string().max(7_000_000).optional().nullable(),
   text: z.string().max(12000).optional().default("")
 });
 

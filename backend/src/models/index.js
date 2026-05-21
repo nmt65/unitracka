@@ -134,6 +134,8 @@ export const Document = sequelize.define("Document", {
   completedAt: { type: DataTypes.DATEONLY, allowNull: true },
   fileName: { type: DataTypes.STRING(240), allowNull: true },
   mimeType: { type: DataTypes.STRING(120), allowNull: true },
+  fileSize: { type: DataTypes.INTEGER, allowNull: true },
+  fileDataUrl: { type: DataTypes.TEXT, allowNull: true },
   fileSha256: { type: DataTypes.STRING(64), allowNull: true },
   extractedText: { type: DataTypes.TEXT, allowNull: true },
   verificationStatus: {

@@ -93,6 +93,117 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
     }
   }
 
+  async function submitAccount(event) {
+    event.preventDefault();
+    setSaving(true);
+    try {
+      const data = await api.updateProfile({
+        name: form.name,
+        emailNotifications: form.emailNotifications,
+        notifyBeforeDays: Number(form.notifyBeforeDays)
+      });
+      onUser(data.user);
+      onToast("Cont salvat.");
+    } catch (error) {
+      onToast(error.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (user.role !== "student") {
+    const isUniversity = user.role === "university";
+    return (
+      <section className="unitrack-page profile-page account-page">
+        <div className="page-heading">
+          <div>
+            <h1>{isUniversity ? "Profil universitate" : "Profil administrator"}</h1>
+            <p>{isUniversity ? "Setări pentru contul de admitere al universității." : "Setări pentru contul de administrare UniTrack."}</p>
+          </div>
+        </div>
+
+        {isUniversity && user.institution && (
+          <section className="profile-panel account-context-panel">
+            <h2>Workspace asociat</h2>
+            <div className="institution-preview">
+              <strong>{user.institution.name}</strong>
+              <span>{user.institution.shortName} · cont de evaluare aplicații</span>
+            </div>
+            <p className="muted">Prezentarea publică, linkul oficial și aplicațiile primite se gestionează din pagina „Aplicații primite”.</p>
+          </section>
+        )}
+
+        <form className="profile-stack" onSubmit={submitAccount}>
+          <section className="profile-panel">
+            <h2>Informații cont</h2>
+            <div className="profile-form">
+              <label>
+                Nume afișat
+                <input name="name" value={form.name} onChange={updateField} required />
+              </label>
+              <label>
+                Email
+                <input value={user.email} disabled />
+              </label>
+            </div>
+          </section>
+          <section className="profile-panel">
+            <h2>Notificări</h2>
+            <div className="profile-form">
+              <label className="switch-row">
+                <input type="checkbox" name="emailNotifications" checked={form.emailNotifications} onChange={updateField} />
+                Trimite notificări pentru aplicații și deadline-uri
+              </label>
+              <label>
+                Reminder cu zile înainte
+                <input name="notifyBeforeDays" type="number" min="1" max="60" value={form.notifyBeforeDays} onChange={updateField} />
+              </label>
+            </div>
+          </section>
+          <div className="profile-actions">
+            <button className="primary-button" type="submit" disabled={saving}><Save size={18} /> {saving ? "Se salvează..." : "Salvează cont"}</button>
+          </div>
+        </form>
+
+        <section className="profile-panel security-panel">
+          <h2><KeyRound size={17} /> Securitate cont</h2>
+          <form className="profile-form" onSubmit={changePassword}>
+            <label>
+              Parola curentă
+              <input name="currentPassword" type="password" value={passwordForm.currentPassword} onChange={updatePasswordField} required />
+            </label>
+            <label>
+              Parola nouă
+              <input name="newPassword" type="password" minLength={8} value={passwordForm.newPassword} onChange={updatePasswordField} required />
+            </label>
+            <div className="profile-actions inline-actions">
+              <button className="soft-button" type="submit"><KeyRound size={17} /> Schimbă parola</button>
+              <button className="soft-button" type="button" onClick={onLogout}><LogOut size={17} /> Deconectare</button>
+            </div>
+          </form>
+        </section>
+
+        <section className="profile-panel danger-panel">
+          <h2><AlertTriangle size={17} /> Zonă periculoasă</h2>
+          <p className="muted">Ștergerea contului elimină accesul și datele asociate. Ultimul cont admin nu poate fi șters.</p>
+          <form className="profile-form" onSubmit={deleteAccount}>
+            <label>
+              Parola
+              <input name="password" type="password" value={deleteForm.password} onChange={updateDeleteField} required />
+            </label>
+            <label>
+              Confirmare
+              <input name="confirmation" value={deleteForm.confirmation} onChange={updateDeleteField} placeholder="STERG CONTUL" required />
+            </label>
+            <div className="profile-actions inline-actions">
+              <button className="danger-button" type="submit"><Trash2 size={17} /> Șterge contul definitiv</button>
+            </div>
+          </form>
+        </section>
+      </section>
+    );
+  }
+
   return (
     <section className="unitrack-page profile-page">
       <div className="page-heading">

@@ -93,6 +93,7 @@ const liveApi = {
   createApplicationDocument: (applicationId, body) => request(`/documents/application/${applicationId}`, { method: "POST", body }),
   updateDocument: (id, body) => request(`/documents/${id}`, { method: "PATCH", body }),
   deleteDocument: (id) => request(`/documents/${id}`, { method: "DELETE" }),
+  documentFileUrl: (id) => `${API_BASE}/documents/${id}/file`,
   profile: () => request("/users/profile"),
   updateProfile: (body) => request("/users/profile", { method: "PUT", body }),
   changePassword: (body) => request("/users/profile/password", { method: "PATCH", body }),

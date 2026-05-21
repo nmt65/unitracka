@@ -17,6 +17,13 @@ import { UniversityWorkspace } from "./pages/UniversityWorkspace.jsx";
 import { Navbar } from "./components/Navbar.jsx";
 import { Sidebar } from "./components/Sidebar.jsx";
 import { UniversityModal } from "./components/UniversityModal.jsx";
+import { applyDomLanguage } from "./i18n.js";
+
+const pagesByRole = {
+  student: new Set(["dashboard", "admissions", "advisor", "universities", "documents", "compare", "calendar", "profile"]),
+  university: new Set(["dashboard", "profile"]),
+  admin: new Set(["dashboard", "profile"])
+};
 
 export function App() {
   const publicMatch = window.location.pathname.match(/(?:^|\/)public\/([^/]+)/);
@@ -27,6 +34,7 @@ export function App() {
   const [editing, setEditing] = useState(null);
   const [toast, setToast] = useState("");
   const [darkMode, setDarkMode] = useState(true);
+  const [language, setLanguage] = useState(() => localStorage.getItem("unitrack-language") || "ro");
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
@@ -34,8 +42,19 @@ export function App() {
   }, [darkMode]);
 
   useEffect(() => {
+    localStorage.setItem("unitrack-language", language);
+    return applyDomLanguage(language);
+  }, [language, active, user?.id, toast, notifications.length, universities.length]);
+
+  useEffect(() => {
     if (user) setActive("dashboard");
   }, [user?.id, user?.role]);
+
+  useEffect(() => {
+    if (!user) return;
+    const allowed = pagesByRole[user.role] || pagesByRole.student;
+    if (!allowed.has(active)) setActive("dashboard");
+  }, [active, user?.role]);
 
   useEffect(() => {
     if (!toast) return;
@@ -136,7 +155,17 @@ export function App() {
   }
 
   if (!user) {
-    return <AuthPage onLogin={login} onRegister={register} checkingSession={checking} darkMode={darkMode} onToggleTheme={() => setDarkMode((value) => !value)} />;
+    return (
+      <AuthPage
+        onLogin={login}
+        onRegister={register}
+        checkingSession={checking}
+        darkMode={darkMode}
+        onToggleTheme={() => setDarkMode((value) => !value)}
+        language={language}
+        onToggleLanguage={() => setLanguage((value) => value === "ro" ? "en" : "ro")}
+      />
+    );
   }
 
   const pageProps = {
@@ -159,6 +188,8 @@ export function App() {
         onLogout={logout}
         darkMode={darkMode}
         onToggleTheme={() => setDarkMode((value) => !value)}
+        language={language}
+        onToggleLanguage={() => setLanguage((value) => value === "ro" ? "en" : "ro")}
         notifications={notifications}
         onMarkNotificationRead={markNotificationRead}
       />
@@ -169,9 +200,9 @@ export function App() {
           {active === "dashboard" && user.role === "admin" && <AdminPanel onToast={setToast} />}
           {active === "dashboard" && user.role === "university" && <UniversityWorkspace user={user} onToast={setToast} />}
           {active === "dashboard" && user.role === "student" && <Dashboard {...pageProps} />}
-          {active === "admissions" && <Admissions onToast={setToast} />}
-          {active === "advisor" && <StudentAdvisor universities={universities} onToast={setToast} />}
-          {active === "universities" && <Universities {...pageProps} />}
+          {active === "admissions" && user.role === "student" && <Admissions onToast={setToast} />}
+          {active === "advisor" && user.role === "student" && <StudentAdvisor universities={universities} onToast={setToast} />}
+          {active === "universities" && user.role === "student" && <Universities {...pageProps} />}
           {active === "documents" && (
             <Documents
               universities={universities}
@@ -180,8 +211,8 @@ export function App() {
               onDeleteDocument={deleteDocument}
             />
           )}
-          {active === "compare" && <Compare universities={universities} onToast={setToast} />}
-          {active === "calendar" && <Calendar universities={universities} onToast={setToast} />}
+          {active === "compare" && user.role === "student" && <Compare universities={universities} onToast={setToast} />}
+          {active === "calendar" && user.role === "student" && <Calendar universities={universities} onToast={setToast} />}
           {active === "profile" && <Profile user={user} universities={universities} stats={stats} onUser={setUser} onLogout={logout} onToast={setToast} />}
         </main>
       </div>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Eye, EyeOff, GraduationCap, Lock, Mail, Moon, RotateCcw, ShieldCheck, Sun, UserPlus } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, GraduationCap, Languages, Lock, Mail, Moon, RotateCcw, ShieldCheck, Sun, UserPlus } from "lucide-react";
 import { api } from "../services/api.js";
 
 const demoAccounts = [
@@ -20,7 +20,7 @@ function passwordScore(password) {
   ].filter(Boolean).length;
 }
 
-export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMode = true, onToggleTheme }) {
+export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMode = true, onToggleTheme, language = "ro", onToggleLanguage }) {
   const [mode, setMode] = useState("login");
   const [role, setRole] = useState("student");
   const [showPassword, setShowPassword] = useState(false);
@@ -128,6 +128,10 @@ export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMod
         title={darkMode ? "Tema luminoasă" : "Tema întunecată"}
       >
         {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+      </button>
+      <button className="auth-language-toggle" type="button" onClick={onToggleLanguage} aria-label="Schimbă limba" title="RO / EN">
+        <Languages size={17} />
+        <span>{language === "ro" ? "EN" : "RO"}</span>
       </button>
       <section className="auth-shell">
         <div className="auth-visual">
