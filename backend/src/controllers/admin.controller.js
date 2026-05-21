@@ -124,6 +124,7 @@ export function systemStatus(_req, res) {
       seedDemo: env.seedDemo,
       seedCatalog: env.seedCatalog,
       bootstrapAdmin: env.bootstrapAdmin,
+      bootstrapAdminResetPassword: env.bootstrapAdminResetPassword,
       smtpConfigured: isSmtpConfigured(),
       smtpHost: env.smtp.host || null,
       smtpUser: env.smtp.user ? env.smtp.user.replace(/(^.).*(@.*$)/, "$1***$2") : null,

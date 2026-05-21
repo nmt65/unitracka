@@ -31,6 +31,7 @@ export const env = {
   seedDemo: process.env.SEED_DEMO !== "false",
   seedCatalog: process.env.SEED_CATALOG !== "false",
   bootstrapAdmin: process.env.BOOTSTRAP_ADMIN === "true",
+  bootstrapAdminResetPassword: process.env.BOOTSTRAP_ADMIN_RESET_PASSWORD === "true",
   demoEmail: process.env.DEMO_EMAIL || "andrei@unitracker.ro",
   demoPassword: process.env.DEMO_PASSWORD || "Demo1234!",
   adminEmail: process.env.ADMIN_EMAIL || "admin@unitracker.ro",

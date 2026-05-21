@@ -10,6 +10,9 @@ export async function bootstrapAdmin() {
   const existingAdmin = await User.unscoped().findOne({ where: { email: env.adminEmail } });
   if (existingAdmin) {
     if (existingAdmin.role !== "admin") await existingAdmin.update({ role: "admin" });
+    if (env.bootstrapAdminResetPassword) {
+      await existingAdmin.update({ passwordHash: await bcrypt.hash(env.adminPassword, 12) });
+    }
     return { created: false, skipped: false };
   }
   await User.create({
