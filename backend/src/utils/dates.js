@@ -6,7 +6,3 @@ export function daysUntil(dateLike) {
   return Math.ceil((date.getTime() - today.getTime()) / 86400000);
 }
 
-export function formatIcsDate(dateLike) {
-  return String(dateLike).replaceAll("-", "");
-}
-

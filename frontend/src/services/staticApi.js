@@ -710,7 +710,6 @@ export const staticApi = {
     const universities = userUniversities(state, currentUser(state).id);
     if (type === "json") return download("unitrack-export.json", JSON.stringify({ universities }, null, 2), "application/json");
     if (type === "xml") return download("unitrack-export.xml", `<?xml version="1.0"?><unitrack>${universities.map((uni) => `<universitate><nume>${uni.name}</nume><status>${uni.status}</status></universitate>`).join("")}</unitrack>`, "application/xml");
-    if (type === "ics") return download("unitrack-deadline-uri.ics", ["BEGIN:VCALENDAR", "VERSION:2.0", ...universities.map((uni) => `BEGIN:VEVENT\nSUMMARY:${uni.name}\nDTSTART;VALUE=DATE:${uni.deadline.replaceAll("-", "")}\nEND:VEVENT`), "END:VCALENDAR"].join("\n"), "text/calendar");
     if (type === "pdf") return download("unitrack-status.pdf", universities.map((uni) => `${uni.name} - ${uni.status} - ${uni.progress}%`).join("\n"), "application/pdf");
     const csv = ["Universitate,Program,Status,Deadline,Progres", ...universities.map((uni) => `"${uni.name}","${uni.program}","${uni.status}","${uni.deadline}","${uni.progress}%"`)].join("\n");
     return download("unitrack-universitati.csv", csv, "text/csv");

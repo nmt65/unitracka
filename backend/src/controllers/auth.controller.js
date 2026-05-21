@@ -5,7 +5,7 @@ import { env } from "../config/env.js";
 import { hashCnp, validateCnp } from "../utils/cnp.js";
 import { randomToken, sha256 } from "../utils/crypto.js";
 import { writeAudit } from "../services/audit.js";
-import { sendPasswordResetEmail } from "../services/mail.js";
+import { isSmtpConfigured, sendPasswordResetEmail } from "../services/mail.js";
 
 function publicUser(user) {
   return {
@@ -105,17 +105,28 @@ export async function forgotPassword(req, res, next) {
   try {
     const user = await User.scope("withPassword").findOne({ where: { email: req.body.email } });
     let devResetToken = null;
+    let delivery = { sent: false, reason: isSmtpConfigured() ? "email necunoscut sau netrimis" : "SMTP neconfigurat" };
     if (user) {
       devResetToken = randomToken(24);
       await user.update({
         resetTokenHash: sha256(devResetToken),
         resetTokenExpiresAt: new Date(Date.now() + env.resetTokenMinutes * 60 * 1000)
       });
-      await sendPasswordResetEmail(user, devResetToken);
-      await writeAudit(req, { action: "auth.password_reset_requested", entityType: "User", entityId: user.id, metadata: { email: user.email } });
+      delivery = await sendPasswordResetEmail(user, devResetToken);
+      await writeAudit(req, {
+        action: "auth.password_reset_requested",
+        entityType: "User",
+        entityId: user.id,
+        metadata: { email: user.email, mailSent: delivery.sent, mailReason: delivery.reason || null }
+      });
     }
     return res.json({
-      message: "Dacă emailul există, am generat instrucțiuni pentru resetarea parolei.",
+      message: isSmtpConfigured()
+        ? "Dacă emailul există, am generat instrucțiuni pentru resetarea parolei."
+        : "Resetarea a fost generată, dar emailul nu poate fi trimis până când SMTP este configurat pe Render.",
+      mailConfigured: isSmtpConfigured(),
+      mailSent: delivery.sent,
+      mailReason: env.nodeEnv === "production" ? undefined : delivery.reason,
       resetToken: env.nodeEnv === "production" ? undefined : devResetToken
     });
   } catch (error) {

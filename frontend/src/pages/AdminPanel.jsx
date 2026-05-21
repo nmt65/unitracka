@@ -110,6 +110,17 @@ export function AdminPanel({ onToast }) {
     onToast("Variabilele AI au fost copiate.");
   }
 
+  async function copyGmailSmtpEnv() {
+    await navigator.clipboard.writeText([
+      "SMTP_HOST=smtp.gmail.com",
+      "SMTP_PORT=465",
+      "SMTP_USER=adresa-ta@gmail.com",
+      "SMTP_PASS=parola-app-google-16-caractere",
+      "SMTP_FROM=UniTrack <adresa-ta@gmail.com>"
+    ].join("\n"));
+    onToast("Variabilele SMTP Gmail au fost copiate.");
+  }
+
   return (
     <section className="unitrack-page admin-page">
       <div className="page-heading">
@@ -168,6 +179,23 @@ export function AdminPanel({ onToast }) {
               </p>
             </div>
             <button className="soft-button" type="button" onClick={copyAiEnv}><Copy size={16} /> Copiază env AI</button>
+          </div>
+        </section>
+      )}
+
+      {systemStatus && (
+        <section className={`profile-panel ai-config-panel ${systemStatus.smtpConfigured ? "ready" : "missing"}`}>
+          <h2>SMTP resetare parolă</h2>
+          <div className="ai-config-body">
+            <div>
+              <strong>{systemStatus.smtpConfigured ? "Email activ" : "Email neconfigurat"}</strong>
+              <p>
+                {systemStatus.smtpConfigured
+                  ? "Resetările de parolă și notificările sunt trimise prin SMTP."
+                  : "Pentru Gmail trebuie parolă de aplicație Google, nu parola normală a contului. Pune variabilele SMTP în Render > Environment și redeploy."}
+              </p>
+            </div>
+            <button className="soft-button" type="button" onClick={copyGmailSmtpEnv}><Copy size={16} /> Copiază SMTP Gmail</button>
           </div>
         </section>
       )}

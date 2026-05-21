@@ -17,7 +17,6 @@ export function ExportButtons({ onToast }) {
       <button className="soft-button" type="button" onClick={() => handle("json")}><FileJson size={17} /> JSON</button>
       <button className="soft-button" type="button" onClick={() => handle("xml")}><FileText size={17} /> XML</button>
       <button className="soft-button" type="button" onClick={() => handle("pdf")}><Download size={17} /> PDF</button>
-      <button className="soft-button" type="button" onClick={() => handle("ics")}><Download size={17} /> ICS</button>
     </div>
   );
 }

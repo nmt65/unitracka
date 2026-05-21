@@ -1,6 +1,5 @@
 import PDFDocument from "pdfkit";
 import { Document, University } from "../models/index.js";
-import { formatIcsDate } from "../utils/dates.js";
 import { documentProgress, documentsRemaining } from "../utils/progress.js";
 import { tag } from "../utils/xml.js";
 
@@ -75,36 +74,6 @@ export async function exportXml(req, res, next) {
     res.setHeader("Content-Type", "application/xml; charset=utf-8");
     res.setHeader("Content-Disposition", "attachment; filename=unitrack-export.xml");
     return res.send(xml);
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function exportIcs(req, res, next) {
-  try {
-    const universities = await getUserUniversities(req.user.id);
-    const events = universities
-      .map((uni) => {
-        const uid = `${uni.id}@unitracka.ro`;
-        const description = `${uni.program} - ${uni.faculty}, ${uni.country}. Status: ${uni.status}`;
-        return [
-          "BEGIN:VEVENT",
-          `UID:${uid}`,
-          `DTSTAMP:${new Date().toISOString().replace(/[-:.]/g, "").slice(0, 15)}Z`,
-          `DTSTART;VALUE=DATE:${formatIcsDate(uni.deadline)}`,
-          `SUMMARY:Deadline UniTrack - ${uni.name}`,
-          `DESCRIPTION:${description.replaceAll("\n", " ")}`,
-          uni.officialLink ? `URL:${uni.officialLink}` : "",
-          "END:VEVENT"
-        ]
-          .filter(Boolean)
-          .join("\r\n");
-      })
-      .join("\r\n");
-    const calendar = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//UniTrack//RO", "CALSCALE:GREGORIAN", events, "END:VCALENDAR"].join("\r\n");
-    res.setHeader("Content-Type", "text/calendar; charset=utf-8");
-    res.setHeader("Content-Disposition", "attachment; filename=unitracka-deadline-uri.ics");
-    return res.send(calendar);
   } catch (error) {
     next(error);
   }
