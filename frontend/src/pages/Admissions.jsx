@@ -38,7 +38,7 @@ export function Admissions({ onToast }) {
   const [institutions, setInstitutions] = useState([]);
   const [applications, setApplications] = useState([]);
   const [form, setForm] = useState({ institutionId: "", program: "Informatică", faculty: "Facultatea de Matematică și Informatică", programType: "licenta", notes: "" });
-  const [aiForm, setAiForm] = useState({ documentId: "", expectedType: "Diplomă BAC", fileName: "diploma_bac.pdf", mimeType: "application/pdf", text: "Diplomă de bacalaureat, absolvent, medie BAC" });
+  const [aiForm, setAiForm] = useState({ documentId: "", expectedType: "", fileName: "", mimeType: "", fileSize: null, fileDataUrl: "", text: "" });
   const [aiResult, setAiResult] = useState(null);
   const [customDocs, setCustomDocs] = useState({});
   const [sending, setSending] = useState(false);
@@ -50,7 +50,11 @@ export function Admissions({ onToast }) {
     setApplications(appData.applications || []);
     setForm((current) => ({ ...current, institutionId: current.institutionId || institutionData.institutions?.[0]?.id || "" }));
     const firstDoc = appData.applications?.flatMap((app) => app.documents || [])?.[0];
-    if (firstDoc) setAiForm((current) => ({ ...current, documentId: current.documentId || firstDoc.id, expectedType: firstDoc.name }));
+    if (firstDoc) setAiForm((current) => ({
+      ...current,
+      documentId: current.documentId || firstDoc.id,
+      expectedType: current.expectedType || firstDoc.name
+    }));
   }
 
   useEffect(() => {
@@ -83,7 +87,23 @@ export function Admissions({ onToast }) {
   }
 
   function updateAi(event) {
-    setAiForm((current) => ({ ...current, [event.target.name]: event.target.value }));
+    const { name, value } = event.target;
+    setAiResult(null);
+    if (name === "documentId") {
+      const selectedDoc = allDocs.find((doc) => doc.id === value);
+      setAiForm((current) => ({
+        ...current,
+        documentId: value,
+        expectedType: selectedDoc?.name || current.expectedType,
+        fileName: "",
+        mimeType: "",
+        fileSize: null,
+        fileDataUrl: "",
+        text: ""
+      }));
+      return;
+    }
+    setAiForm((current) => ({ ...current, [name]: value }));
   }
 
   async function handleDocumentFile(event) {
@@ -95,7 +115,7 @@ export function Admissions({ onToast }) {
     }
     const canReadText = file.type.startsWith("text/") || /\.(txt|csv|json|xml)$/i.test(file.name);
     const [text, fileDataUrl] = await Promise.all([
-      canReadText ? file.text() : Promise.resolve(aiForm.text),
+      canReadText ? file.text() : Promise.resolve(""),
       new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result);
@@ -104,16 +124,18 @@ export function Admissions({ onToast }) {
       })
     ]);
     const detectedType = inferExpectedType(file.name, text);
+    setAiResult(null);
     setAiForm((current) => ({
       ...current,
-      expectedType: detectedType || current.expectedType,
       fileName: file.name,
       mimeType: file.type || "application/octet-stream",
       fileSize: file.size,
       fileDataUrl,
       text
     }));
-    onToast(canReadText ? "Fișier citit și atașat în dosar." : "Fișier atașat; AI-ul extern îl poate citi dacă cheia API este setată.");
+    onToast(canReadText
+      ? `Fișier citit și atașat în dosar${detectedType ? `; pare ${detectedType}.` : "."}`
+      : "Fișier atașat. Gemini/OpenAI va citi fișierul dacă cheia API este setată; altfel adaugă text OCR extras real.");
   }
 
   async function submitApplication(event) {
@@ -138,6 +160,14 @@ export function Admissions({ onToast }) {
     event.preventDefault();
     if (!aiForm.documentId) {
       onToast("Trimite întâi o aplicație ca să ai documente de verificat.");
+      return;
+    }
+    if (!aiForm.fileDataUrl) {
+      onToast("Atașează fișierul real înainte de verificare.");
+      return;
+    }
+    if (!aiForm.fileName.trim()) {
+      onToast("Numele fișierului lipsește.");
       return;
     }
     setChecking(true);
@@ -209,16 +239,16 @@ export function Admissions({ onToast }) {
           <h2><Brain size={17} /> Verificare document cu AI</h2>
           <div className="profile-form">
             <label>Document<select name="documentId" value={aiForm.documentId} onChange={updateAi} disabled={allDocs.length === 0}>{allDocs.map((doc) => <option key={doc.id} value={doc.id}>{doc.name} · {doc.appName}</option>)}</select></label>
-            <label>Tip așteptat<input name="expectedType" value={aiForm.expectedType} onChange={updateAi} /></label>
+            <label>Tip așteptat<input name="expectedType" value={aiForm.expectedType} readOnly /></label>
             <label className="wide">Atașează fișier
               <span className="file-control"><Upload size={17} /><input type="file" onChange={handleDocumentFile} accept=".txt,.csv,.json,.xml,.pdf,.doc,.docx,image/*,application/pdf" /></span>
-              <small className="field-note">PDF-urile și imaginile sunt păstrate în dosar. Cu OPENAI_API_KEY sau GEMINI_API_KEY, AI-ul primește și fișierul, nu doar textul.</small>
+              <small className="field-note">Atașează documentul real. PDF-urile și imaginile sunt trimise către Gemini; OpenAI citește imaginile și textul extras. Fără AI extern, lipește text OCR real.</small>
             </label>
             <label className="wide">Nume fișier<input name="fileName" value={aiForm.fileName} onChange={updateAi} /></label>
             <label className="wide">Text extras / OCR<textarea name="text" value={aiForm.text} onChange={updateAi} /></label>
           </div>
           {aiResult && <p className={aiResult.accepted ? "success-note" : "form-error"}>{aiResult.provider}: {aiResult.label} · {Math.round(aiResult.confidence * 100)}% · {aiResult.explanation}</p>}
-          <div className="profile-actions"><button className="primary-button" disabled={checking || allDocs.length === 0}>{checking ? "Se verifică..." : "Verifică și adaugă"}</button></div>
+          <div className="profile-actions"><button className="primary-button" disabled={checking || allDocs.length === 0 || !aiForm.fileDataUrl}>{checking ? "Se verifică..." : "Verifică și adaugă"}</button></div>
         </form>
       </div>
       <section className="applications-card workspace-list">

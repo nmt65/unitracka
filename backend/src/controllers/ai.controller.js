@@ -31,6 +31,11 @@ async function findOwnedDocument(req) {
 
 export async function checkDocument(req, res, next) {
   try {
+    const hasAttachedFile = /^data:[^;,]+;base64,/i.test(String(req.body.fileDataUrl || ""));
+    if (!hasAttachedFile) {
+      return res.status(422).json({ message: "Atașează fișierul real înainte de verificare. Textul sau numele fișierului nu sunt suficiente pentru dosar." });
+    }
+
     const result = await classifyDocument(req.body);
     const document = await findOwnedDocument(req);
     if (document) {

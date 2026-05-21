@@ -234,26 +234,57 @@ function attachApplication(state, app) {
   return { ...clone(app), Institution, Student: publicUser(Student, state) };
 }
 
+function normalizeDocumentText(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[_./\\-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
 function documentTextScore({ fileName = "", text = "", expectedType = "" }) {
-  const haystack = `${fileName} ${text}`.toLowerCase();
-  const expected = expectedType.toLowerCase();
+  const content = String(text || "").trim();
+  const normalizedText = normalizeDocumentText(content);
+  const normalizedFileName = normalizeDocumentText(fileName);
+  const expected = normalizeDocumentText(expectedType);
   const checks = [
     ["Diplomă BAC", ["bac", "bacalaureat", "diplom"]],
     ["Foaie matricolă", ["matricol", "foaie"]],
     ["CV Europass", ["cv", "europass"]],
     ["Scrisoare motivație", ["motiva", "eseu"]],
     ["Scrisori de recomandare", ["recomand"]],
+    ["Certificat limbă", ["ielts", "toefl", "cambridge", "limba", "language"]],
     ["Cazier judiciar", ["cazier", "judiciar"]],
     ["Adeverință medicală", ["medical", "adeverin"]]
   ];
-  const label = checks.find(([, keys]) => keys.some((key) => haystack.includes(key)))?.[0] || expectedType;
-  const accepted = label.toLowerCase().includes(expected) || expected.includes(label.toLowerCase()) || haystack.includes(expected.split(" ")[0]);
+  const scores = checks.map(([label, keys]) => ({
+    label,
+    textHits: keys.filter((key) => normalizedText.includes(normalizeDocumentText(key))).length,
+    fileNameHits: keys.filter((key) => normalizedFileName.includes(normalizeDocumentText(key))).length,
+    expected: normalizeDocumentText(label).includes(expected) || expected.includes(normalizeDocumentText(label))
+  }));
+  const best = [...scores].sort((a, b) => b.textHits - a.textHits || b.fileNameHits - a.fileNameHits)[0];
+
+  if (content.length < 45) {
+    return {
+      provider: "static-ai-check",
+      label: best?.fileNameHits ? best.label : "Necunoscut",
+      confidence: 0.24,
+      accepted: false,
+      explanation: "Nu există suficient text real din document. Numele fișierului nu este dovadă."
+    };
+  }
+
+  const accepted = Boolean(best?.expected && best.textHits >= 2);
   return {
     provider: "static-ai-check",
-    label,
-    confidence: accepted ? 0.91 : 0.42,
+    label: best?.textHits ? best.label : "Necunoscut",
+    confidence: accepted ? Math.min(0.91, 0.5 + best.textHits * 0.14) : 0.28,
     accepted,
-    explanation: accepted ? "Documentul pare să corespundă tipului cerut." : "Conținutul nu seamănă suficient cu documentul așteptat."
+    explanation: accepted
+      ? "Documentul pare să corespundă tipului cerut pe baza textului extras."
+      : "Conținutul nu seamănă suficient cu documentul așteptat."
   };
 }
 
@@ -585,6 +616,9 @@ export const staticApi = {
   },
   async checkDocumentAi(body) {
     const state = readState();
+    if (!body.fileDataUrl) {
+      throw new Error("Atașează fișierul real înainte de verificare. Textul sau numele fișierului nu sunt suficiente pentru dosar.");
+    }
     const result = documentTextScore(body);
     const document = state.applications.flatMap((app) => app.documents).find((doc) => doc.id === body.documentId);
     if (document) {

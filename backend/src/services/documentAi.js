@@ -11,16 +11,38 @@ const patterns = [
   { label: "Adeverință medicală", terms: ["adeverință medicală", "adeverinta medicala", "apt medical", "medic de familie"] }
 ];
 
+const REMOTE_ACCEPTANCE_THRESHOLD = 0.68;
+const LOCAL_MIN_TEXT_LENGTH = 45;
+const LOCAL_MIN_MATCHES = 2;
+
 function normalize(value) {
   return String(value || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[_./\\-]+/g, " ")
+    .replace(/\s+/g, " ")
     .toLowerCase();
+}
+
+function canonicalDocumentType(value) {
+  const normalized = normalize(value);
+  if (!normalized) return "";
+  const match = patterns.find((item) => {
+    const label = normalize(item.label);
+    return label === normalized
+      || label.includes(normalized)
+      || normalized.includes(label)
+      || item.terms.some((term) => normalized.includes(normalize(term)));
+  });
+  return match?.label || "";
 }
 
 function expectedMatches(label, expectedType) {
   const expected = normalize(expectedType);
   const current = normalize(label);
+  const expectedCanonical = canonicalDocumentType(expectedType);
+  const currentCanonical = canonicalDocumentType(label);
+  if (expectedCanonical && currentCanonical) return expectedCanonical === currentCanonical;
   const pattern = patterns.find((item) => item.label === label);
   return current.includes(expected)
     || expected.includes(current)
@@ -28,29 +50,80 @@ function expectedMatches(label, expectedType) {
 }
 
 function localClassifier({ expectedType, fileName, text }) {
-  const haystack = normalize(`${fileName} ${text}`);
+  const textValue = String(text || "").trim();
+  const normalizedText = normalize(textValue);
+  const normalizedFileName = normalize(fileName);
   const scores = patterns.map((item) => ({
     label: item.label,
-    hits: item.terms.filter((term) => haystack.includes(normalize(term))).length,
+    textHits: item.terms.filter((term) => normalizedText.includes(normalize(term))).length,
+    fileNameHits: item.terms.filter((term) => normalizedFileName.includes(normalize(term))).length,
     expected: expectedMatches(item.label, expectedType)
   }));
-  const best = scores.sort((a, b) => b.hits - a.hits)[0] || { label: "Necunoscut", hits: 0 };
+  const best = [...scores].sort((a, b) => b.textHits - a.textHits || b.fileNameHits - a.fileNameHits)[0]
+    || { label: "Necunoscut", textHits: 0, fileNameHits: 0 };
   const expectedScore = scores.find((item) => item.expected);
-  const accepted = Boolean(best.hits > 0 && best.expected);
-  const confidence = best.hits
-    ? Math.min(0.98, 0.54 + best.hits * 0.16 + (best.expected ? 0.16 : 0))
-    : 0.34;
+
+  if (textValue.length < LOCAL_MIN_TEXT_LENGTH) {
+    return {
+      provider: "unitrack-document-classifier",
+      label: best.fileNameHits ? best.label : "Necunoscut",
+      confidence: 0.24,
+      accepted: false,
+      explanation: "Nu am suficient text real din document. Numele fișierului nu este acceptat ca dovadă; atașează OCR sau configurează Gemini pentru citirea PDF/imagine."
+    };
+  }
+
+  const accepted = Boolean(
+    best.expected
+    && expectedScore?.label === best.label
+    && expectedScore.textHits >= LOCAL_MIN_MATCHES
+  );
+  const confidence = best.textHits
+    ? Math.min(0.91, 0.36 + best.textHits * 0.14 + (accepted ? 0.18 : 0))
+    : 0.28;
 
   return {
     provider: "unitrack-document-classifier",
-    label: best.hits ? best.label : expectedType,
+    label: best.textHits ? best.label : "Necunoscut",
     confidence,
     accepted,
-    explanation: best.hits
+    explanation: best.textHits
       ? accepted
-        ? `Documentul pare să fie ${best.label}; am găsit ${best.hits} indicii compatibile cu tipul cerut.`
+        ? `Documentul pare să fie ${best.label}; am găsit ${best.textHits} indicii în conținut, nu doar în numele fișierului.`
         : `Documentul pare să fie ${best.label}, dar tipul cerut este ${expectedScore?.label || expectedType}.`
       : "Nu am găsit indicii clare; documentul rămâne de verificat manual."
+  };
+}
+
+function clampConfidence(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 0.5;
+  return Math.max(0, Math.min(1, numeric));
+}
+
+function normalizeRemoteResult(payload, remote) {
+  const label = String(remote.label || "Necunoscut").trim() || "Necunoscut";
+  const confidence = clampConfidence(remote.confidence);
+  const labelMatchesExpected = expectedMatches(label, payload.expectedType);
+  let accepted = Boolean(remote.accepted) && labelMatchesExpected && confidence >= REMOTE_ACCEPTANCE_THRESHOLD;
+  let explanation = remote.explanation || "Clasificat cu provider AI extern.";
+
+  if (remote.accepted && !labelMatchesExpected) {
+    explanation = `AI-ul a detectat ${label}, nu ${payload.expectedType}. ${explanation}`;
+  } else if (remote.accepted && confidence < REMOTE_ACCEPTANCE_THRESHOLD) {
+    explanation = `Încrederea AI este prea mică pentru aprobare automată. ${explanation}`;
+  }
+
+  if (!accepted && remote.accepted) {
+    explanation = `${explanation} Documentul rămâne respins până la verificare manuală.`;
+  }
+
+  return {
+    provider: remote.provider,
+    label,
+    confidence,
+    accepted,
+    explanation
   };
 }
 
@@ -65,7 +138,7 @@ async function openAiClassifier(payload) {
   const contentItems = [
     {
       type: "input_text",
-      text: `Tip așteptat: ${payload.expectedType}\nNume fișier: ${payload.fileName}\nTip MIME: ${payload.mimeType || "necunoscut"}\nText extras:\n${payload.text || ""}`
+      text: `Evaluează conținutul real al documentului pentru admitere. Nu folosi numele fișierului ca dovadă, doar ca metadată. Dacă documentul nu poate fi citit, este alt tip de act, este generic/neoficial sau conținutul nu susține clar tipul așteptat, răspunde accepted=false și confidence<=0.4.\nTip așteptat: ${payload.expectedType}\nNume fișier: ${payload.fileName}\nTip MIME: ${payload.mimeType || "necunoscut"}\nText extras:\n${payload.text || ""}`
     }
   ];
   if (payload.fileDataUrl && String(payload.mimeType || "").startsWith("image/")) {
@@ -82,7 +155,7 @@ async function openAiClassifier(payload) {
       input: [
         {
           role: "system",
-          content: "Răspunde doar JSON valid: {\"label\":\"...\",\"confidence\":0.0,\"accepted\":true,\"explanation\":\"...\"}. Verifici documente de admitere."
+          content: "Răspunde doar JSON valid: {\"label\":\"...\",\"confidence\":0.0,\"accepted\":true,\"explanation\":\"...\"}. Verifici documente de admitere. Ești strict: nu aprobi pe baza numelui fișierului."
         },
         {
           role: "user",
@@ -106,7 +179,7 @@ async function geminiClassifier(payload) {
   if (!env.geminiApiKey) return null;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${env.geminiDocumentModel}:generateContent?key=${env.geminiApiKey}`;
   const parts = [{
-    text: `Returnează doar JSON valid cu label, confidence, accepted, explanation. Tip așteptat: ${payload.expectedType}. Fișier: ${payload.fileName}. Tip MIME: ${payload.mimeType || "necunoscut"}. Text extras: ${payload.text || ""}`
+    text: `Returnează doar JSON valid cu label, confidence, accepted, explanation. Evaluează conținutul real al fișierului/documentului pentru admitere. Nu folosi numele fișierului ca dovadă, doar ca metadată. Dacă documentul atașat nu poate fi citit, este alt document, nu este oficial sau nu susține clar tipul așteptat, accepted=false și confidence<=0.4. Tip așteptat: ${payload.expectedType}. Fișier: ${payload.fileName}. Tip MIME: ${payload.mimeType || "necunoscut"}. Text extras/OCR: ${payload.text || ""}`
   }];
   const inline = dataUrlParts(payload.fileDataUrl);
   if (inline) parts.push({ inline_data: { mime_type: inline.mimeType, data: inline.data } });
@@ -133,13 +206,7 @@ async function geminiClassifier(payload) {
 export async function classifyDocument(payload) {
   const remote = await openAiClassifier(payload).catch(() => null) || await geminiClassifier(payload).catch(() => null);
   if (remote) {
-    return {
-      provider: remote.provider,
-      label: remote.label || payload.expectedType,
-      confidence: Number(remote.confidence) || 0.5,
-      accepted: Boolean(remote.accepted),
-      explanation: remote.explanation || "Clasificat cu provider AI extern."
-    };
+    return normalizeRemoteResult(payload, remote);
   }
   return localClassifier(payload);
 }
