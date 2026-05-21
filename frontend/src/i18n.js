@@ -3,6 +3,10 @@ const en = {
   "Admitere": "Admissions",
   "Consilier AI": "AI advisor",
   "Universități": "Universities",
+  "Catalog": "Catalog",
+  "Catalog public": "Public catalog",
+  "Trackerul meu": "My tracker",
+  "În tracker": "In tracker",
   "Documente": "Documents",
   "Comparare": "Compare",
   "Compară": "Compare",
@@ -21,6 +25,9 @@ const en = {
   "Aplicat": "Applied",
   "Acceptat": "Accepted",
   "Respins": "Rejected",
+  "Licență": "Bachelor",
+  "Master": "Master",
+  "Doctorat": "PhD",
   "Aplicate": "Applied",
   "Acceptate": "Accepted",
   "Respinse": "Rejected",
@@ -77,6 +84,7 @@ const en = {
   "Trimite aplicație": "Submit application",
   "Universitate": "University",
   "Program / facultate": "Program / faculty",
+  "Program / Facultate": "Program / Faculty",
   "Tip": "Type",
   "Facultate": "Faculty",
   "Note": "Notes",
@@ -228,6 +236,37 @@ const en = {
   "Se trimite...": "Sending...",
   "Document respins de verificarea AI.": "Document rejected by AI verification.",
   "Document verificat și marcat în sistem.": "Document verified and saved in the system.",
+  "Documentele se marchează complete doar după verificare AI sau aprobare de universitate.": "Documents are marked complete only after AI verification or university approval.",
+  "Necesită fișier verificat": "Verified file required",
+  "Adaugă document suplimentar": "Add supplemental document",
+  "Nume document suplimentar...": "Supplemental document name...",
+  "Documentele suplimentare nu cresc progresul până nu sunt verificate de AI sau universitate.": "Supplemental documents do not increase progress until AI or the university verifies them.",
+  "Rezultate academice": "Academic results",
+  "Dovadă BAC verificată": "Verified BAC evidence",
+  "Încarcă și verifică Diplomă BAC / Foaie matricolă": "Upload and verify BAC diploma / transcript",
+  "Certificat limbă verificat": "Verified language certificate",
+  "Certificat limbă necesar pentru IELTS/TOEFL": "Language certificate required for IELTS/TOEFL",
+  "Ofertă educațională": "Educational offer",
+  "Ofertă": "Offer",
+  "Compară selecția": "Compare selection",
+  "Selectată": "Selected",
+  "Selectează cel puțin 2 universități pentru comparație.": "Select at least 2 universities to compare.",
+  "Doar adminul poate adăuga universități în platformă. Elevii aleg din catalogul public și trimit aplicații.": "Only the admin can add universities to the platform. Students choose from the public catalog and submit applications.",
+  "Alege din catalogul curent, compară oferta 2026-2027 și trimite aplicații": "Choose from the current catalog, compare the 2026-2027 offer, and submit applications",
+  "Caută universitate, program, domeniu...": "Search university, program, field...",
+  "Caută pentru comparație...": "Search for comparison...",
+  "Selectează universități": "Select universities",
+  "Poți compara maximum 4 universități.": "You can compare up to 4 universities.",
+  "Alege document aprobat...": "Choose approved document...",
+  "Documentele se adaugă doar din dosarul de admitere, ca tipuri aprobate, apoi se marchează complete după fișier verificat.": "Documents are added only from the admissions file as approved types, then marked complete after a verified file.",
+  "Alege un tip de document aprobat din lista UniTrack.": "Choose an approved document type from the UniTrack list.",
+  "Alege un program din oferta educațională curentă a universității.": "Choose a program from the university's current educational offer.",
+  "Rezultatele examenelor pot avea maximum două zecimale.": "Exam results can have at most two decimal places.",
+  "Nu este în tracker": "Not in tracker",
+  "Trimite aplicație pentru checklist": "Submit an application for the checklist",
+  "Nespecificat": "Not specified",
+  "Aplică": "Apply",
+  "Site oficial": "Official site",
   "Fișierul trebuie să aibă maximum 5 MB.": "File must be maximum 5 MB.",
   "Fișier citit și atașat în dosar.": "File read and attached to the file.",
   "Fișier atașat; AI-ul extern îl poate citi dacă cheia API este setată.": "File attached; external AI can read it if the API key is configured."
@@ -252,8 +291,13 @@ function translateValue(value, language) {
   const dictionary = language === "en" ? en : ro;
   const trimmed = value.trim();
   const translated = dictionary[trimmed];
-  if (!translated) return value;
-  return value.replace(trimmed, translated);
+  if (translated) return value.replace(trimmed, translated);
+  return Object.entries(dictionary)
+    .sort((a, b) => b[0].length - a[0].length)
+    .reduce((nextValue, [source, target]) => {
+      if (source.length <= 3 || !nextValue.includes(source)) return nextValue;
+      return nextValue.split(source).join(target);
+    }, value);
 }
 
 function translateTree(root, language) {

@@ -76,6 +76,9 @@ function keyFor(institution = {}) {
 }
 
 export function getProgramsForInstitution(institution) {
+  if (Array.isArray(institution?.offerPrograms) && institution.offerPrograms.length) {
+    return institution.offerPrograms;
+  }
   return programsByShortName[keyFor(institution)] || defaultPrograms;
 }
 

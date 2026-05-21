@@ -1,9 +1,16 @@
 import { z } from "zod";
 
+const maxTwoDecimals = (value) => {
+  if (value === null || value === undefined) return true;
+  const scaled = Number(value) * 100;
+  return Math.abs(scaled - Math.round(scaled)) < 1e-8;
+};
+const noLongDecimalScores = (value = "") => !/\d+[.,]\d{3,}/.test(String(value));
+
 export const profileSchema = z.object({
   name: z.string().min(2).max(120),
-  bacAverage: z.coerce.number().min(1).max(10).nullable().optional(),
-  languageResults: z.string().max(1200).optional().default(""),
+  bacAverage: z.coerce.number().min(1).max(10).refine(maxTwoDecimals, "Media BAC poate avea maximum două zecimale.").nullable().optional(),
+  languageResults: z.string().max(1200).refine(noLongDecimalScores, "Rezultatele examenelor pot avea maximum două zecimale.").optional().default(""),
   interests: z.array(z.string().min(2).max(80)).max(20).optional().default([]),
   emailNotifications: z.boolean().optional().default(true),
   notifyBeforeDays: z.coerce.number().int().min(1).max(60).optional().default(14)

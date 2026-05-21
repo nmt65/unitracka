@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Copy, KeyRound, Link2, LogOut, Save, Trash2 } from "lucide-react";
 import { api } from "../services/api.js";
 import { StatCards } from "../components/StatCards.jsx";
@@ -11,8 +11,26 @@ function countryCode(university) {
   return university.countryCode || (university.country === "România" || university.country === "Romania" ? "RO" : university.country.slice(0, 2).toUpperCase());
 }
 
+function hasVerifiedEvidence(universities, pattern) {
+  const matcher = new RegExp(pattern, "i");
+  return universities
+    .flatMap((university) => university.documents || [])
+    .some((doc) => matcher.test(doc.name) && doc.verificationStatus === "verified" && doc.fileName && Number(doc.fileSize || 0) > 0);
+}
+
+function hasLongDecimalScore(value) {
+  return /\d+[.,]\d{3,}/.test(String(value || ""));
+}
+
 export function Profile({ user, universities = [], stats, onUser, onLogout, onToast }) {
   const accepted = universities.filter((uni) => uni.status === "Acceptat");
+  const [applicationDocs, setApplicationDocs] = useState([]);
+  const evidenceSources = useMemo(() => [
+    ...universities,
+    { id: "applications", documents: applicationDocs }
+  ], [universities, applicationDocs]);
+  const hasAcademicEvidence = hasVerifiedEvidence(evidenceSources, "bac|bacalaureat|matricol");
+  const hasLanguageEvidence = hasVerifiedEvidence(evidenceSources, "limb|ielts|toefl|cambridge");
   const publicProfileUrl = new URL(`public/${user.publicShareId}`, window.location.href).toString();
   const [form, setForm] = useState({
     name: user.name || "",
@@ -26,8 +44,25 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
   const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "" });
   const [deleteForm, setDeleteForm] = useState({ password: "", confirmation: "" });
 
+  useEffect(() => {
+    if (user.role !== "student") return;
+    let active = true;
+    api.myApplications()
+      .then((data) => {
+        if (active) setApplicationDocs((data.applications || []).flatMap((app) => app.documents || []));
+      })
+      .catch(() => {
+        if (active) setApplicationDocs([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [user.id, user.role]);
+
   function updateField(event) {
     const { name, value, type, checked } = event.target;
+    if (name === "bacAverage" && value && !/^\d{0,2}([.,]\d{0,2})?$/.test(value)) return;
+    if (name === "languageResults" && hasLongDecimalScore(value)) return;
     setForm((current) => ({ ...current, [name]: type === "checkbox" ? checked : value }));
   }
 
@@ -45,7 +80,7 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
     try {
       const payload = {
         ...form,
-        bacAverage: form.bacAverage === "" ? null : Number(form.bacAverage),
+        bacAverage: form.bacAverage === "" ? null : Math.round(Number(String(form.bacAverage).replace(",", ".")) * 100) / 100,
         notifyBeforeDays: Number(form.notifyBeforeDays),
         interests: form.interests.split(",").map((item) => item.trim()).filter(Boolean)
       };
@@ -245,15 +280,19 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
         </section>
         <section className="profile-panel">
           <h2>Rezultate academice</h2>
-          <p className="muted">Media și scorurile se pot salva doar după ce documentele atestatoare sunt verificate în dosar.</p>
+          <p className="muted">Media și scorurile se pot salva doar după ce documentele atestatoare sunt verificate în dosar. Nu acceptăm valori introduse fără dovadă.</p>
+          <div className="evidence-strip">
+            <span className={hasAcademicEvidence ? "ok" : "blocked"}>{hasAcademicEvidence ? "Dovadă BAC verificată" : "Încarcă și verifică Diplomă BAC / Foaie matricolă"}</span>
+            <span className={hasLanguageEvidence ? "ok" : "blocked"}>{hasLanguageEvidence ? "Certificat limbă verificat" : "Certificat limbă necesar pentru IELTS/TOEFL"}</span>
+          </div>
           <div className="profile-form three">
             <label>
               Medie BAC
-              <input name="bacAverage" type="number" min="1" max="10" step="0.01" value={form.bacAverage} onChange={updateField} />
+              <input name="bacAverage" type="number" min="1" max="10" step="0.01" value={form.bacAverage} onChange={updateField} disabled={!hasAcademicEvidence} />
             </label>
             <label>
               Scor IELTS
-              <input name="languageResults" value={form.languageResults} onChange={updateField} />
+              <input name="languageResults" value={form.languageResults} onChange={updateField} disabled={!hasLanguageEvidence} placeholder="ex. IELTS 7.5 / TOEFL 100" />
             </label>
             <label>
               Dovadă necesară

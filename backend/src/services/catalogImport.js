@@ -15,7 +15,7 @@ export async function importCatalogToInstitutions() {
       website: item.website || null,
       contactEmail: item.contactEmail || null,
       status: "active",
-      description: item.description || `Catalog UniTrack: ${item.source || "universitate europeană / România"}. Domenii: ${(item.strengths || []).join(", ") || "admitere generală"}.`
+      description: item.description || `Catalog UniTrack ${item.academicYear || "2026-2027"}: ${item.source || "universitate europeană / România"}. Domenii: ${(item.strengths || []).join(", ") || "admitere generală"}. Ofertă: ${(item.offerPrograms || []).map((program) => program.program).join(", ") || "consultă site-ul oficial"}.`
     }));
   const created = rows.length ? await Institution.bulkCreate(rows, { validate: true }) : [];
   return {

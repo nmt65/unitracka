@@ -45,6 +45,9 @@ function evidenceWhere(terms) {
   return {
     isCompleted: true,
     verificationStatus: "verified",
+    fileName: { [Op.ne]: null },
+    fileSize: { [Op.gt]: 0 },
+    fileSha256: { [Op.ne]: null },
     [Op.or]: terms.map((term) => ({ name: { [Op.like]: `%${term}%` } }))
   };
 }
@@ -70,6 +73,9 @@ export function getProfile(req, res) {
 
 export async function updateProfile(req, res, next) {
   try {
+    if (req.body.bacAverage !== undefined && req.body.bacAverage !== null) {
+      req.body.bacAverage = Math.round(Number(req.body.bacAverage) * 100) / 100;
+    }
     if (req.user.role === "student") {
       if (changedNumber(req.body.bacAverage, req.user.bacAverage) && req.body.bacAverage !== null) {
         const hasEvidence = await hasVerifiedStudentEvidence(req.user.id, ["BAC", "bacalaureat", "Foaie matricol"]);

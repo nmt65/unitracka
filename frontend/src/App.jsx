@@ -124,8 +124,12 @@ export function App() {
   }
 
   async function toggleDocument(doc) {
-    await api.updateDocument(doc.id, { isCompleted: !doc.isCompleted });
-    await refresh();
+    try {
+      await api.updateDocument(doc.id, { isCompleted: !doc.isCompleted });
+      await refresh();
+    } catch (error) {
+      setToast(error.message);
+    }
   }
 
   async function addDocument(universityId, body) {
@@ -176,6 +180,8 @@ export function App() {
     onEdit: openEdit,
     onDelete: deleteUniversity,
     onManageUniversities: () => setActive("universities"),
+    onNavigate: setActive,
+    onRefresh: refresh,
     onToast: setToast
   };
 
@@ -211,7 +217,7 @@ export function App() {
               onDeleteDocument={deleteDocument}
             />
           )}
-          {active === "compare" && user.role === "student" && <Compare universities={universities} onToast={setToast} />}
+          {active === "compare" && user.role === "student" && <Compare universities={universities} onToast={setToast} onRefresh={refresh} />}
           {active === "calendar" && user.role === "student" && <Calendar universities={universities} onToast={setToast} />}
           {active === "profile" && <Profile user={user} universities={universities} stats={stats} onUser={setUser} onLogout={logout} onToast={setToast} />}
         </main>

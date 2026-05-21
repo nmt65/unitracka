@@ -5,7 +5,8 @@ export const statusMeta = {
   Cercetare: { label: "Cercetare", tone: "info" },
   Aplicat: { label: "Aplicat", tone: "warning" },
   Acceptat: { label: "Acceptat", tone: "success" },
-  Respins: { label: "Respins", tone: "danger" }
+  Respins: { label: "Respins", tone: "danger" },
+  Catalog: { label: "Catalog", tone: "info" }
 };
 
 export const programTypes = [

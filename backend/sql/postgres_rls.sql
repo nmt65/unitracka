@@ -120,15 +120,43 @@ CREATE POLICY institutions_delete_admin
   USING (app.current_user_role() = 'admin');
 
 DROP POLICY IF EXISTS universities_owner_scope ON "Universities";
+DROP POLICY IF EXISTS universities_read_scope ON "Universities";
+DROP POLICY IF EXISTS universities_write_admin ON "Universities";
+DROP POLICY IF EXISTS universities_update_admin ON "Universities";
+DROP POLICY IF EXISTS universities_delete_admin ON "Universities";
 
-CREATE POLICY universities_owner_scope
+CREATE POLICY universities_read_scope
   ON "Universities"
-  FOR ALL
+  FOR SELECT
+  USING (
+    app.current_user_role() = 'admin'
+    OR "UserId" = app.current_user_id()
+  );
+
+CREATE POLICY universities_write_admin
+  ON "Universities"
+  FOR INSERT
+  WITH CHECK (
+    app.current_user_role() = 'admin'
+    OR "UserId" = app.current_user_id()
+  );
+
+CREATE POLICY universities_update_admin
+  ON "Universities"
+  FOR UPDATE
   USING (
     app.current_user_role() = 'admin'
     OR "UserId" = app.current_user_id()
   )
   WITH CHECK (
+    app.current_user_role() = 'admin'
+    OR "UserId" = app.current_user_id()
+  );
+
+CREATE POLICY universities_delete_admin
+  ON "Universities"
+  FOR DELETE
+  USING (
     app.current_user_role() = 'admin'
     OR "UserId" = app.current_user_id()
   );

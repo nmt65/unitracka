@@ -1,3 +1,5 @@
+import { currentAdmissionYear as sharedCurrentAdmissionYear, universityCatalog as sharedUniversityCatalog } from "../../../backend/src/data/catalog.js";
+
 const STORE_KEY = "unitrack_static_state_v2";
 const SESSION_KEY = "unitrack_static_session_v2";
 
@@ -7,8 +9,10 @@ const defaultDocuments = [
   ["CV Europass", "Identitate", true, "2026-05-08"],
   ["Scrisoare motivație", "Eseuri", true, "2026-05-09"],
   ["Scrisori de recomandare", "Eseuri", true, "2026-05-11"],
+  ["Certificat limbă (IELTS/TOEFL)", "Limbi străine", true, "2026-05-11", true],
   ["Cazier judiciar", "Administrative", true, "2026-05-07"],
-  ["Adeverință medicală", "Administrative", true, "2026-05-07"]
+  ["Adeverință medicală", "Administrative", true, "2026-05-07"],
+  ["Portofoliu", "Suplimentare", false, null, true]
 ];
 
 const seedUniversities = [
@@ -20,18 +24,24 @@ const seedUniversities = [
   ["University of Edinburgh", "UoE", "Marea Britanie", "GB", "School of Informatics", "Artificial Intelligence", "master", "2026-07-01", "Cercetare", 9250, 8]
 ];
 
-const catalog = [
-  { name: "Universitatea din București", country: "România", city: "București", strengths: ["Informatică", "Drept", "Psihologie"], qsBand: "801-850" },
-  { name: "Universitatea Babeș-Bolyai", country: "România", city: "Cluj-Napoca", strengths: ["Informatică", "Business", "Științe politice"], qsBand: "801-850" },
-  { name: "Universitatea Politehnica București", country: "România", city: "București", strengths: ["Inginerie", "Automatică", "Electronică"], qsBand: "1201-1400" },
-  { name: "Universitatea Tehnică din Cluj-Napoca", country: "România", city: "Cluj-Napoca", strengths: ["Calculatoare", "Arhitectură", "Inginerie"], qsBand: "1401+" },
-  { name: "Universitatea Alexandru Ioan Cuza", country: "România", city: "Iași", strengths: ["Informatică", "Economie", "Litere"], qsBand: "1201-1400" },
-  { name: "University of Amsterdam", country: "Olanda", city: "Amsterdam", strengths: ["Social Sciences", "AI", "Media"], qsBand: "Top 100" },
-  { name: "Delft University of Technology", country: "Olanda", city: "Delft", strengths: ["Engineering", "Architecture", "CS"], qsBand: "Top 50" },
-  { name: "KU Leuven", country: "Belgia", city: "Leuven", strengths: ["AI", "Engineering", "Theology"], qsBand: "Top 100" },
-  { name: "University of Edinburgh", country: "Marea Britanie", city: "Edinburgh", strengths: ["Artificial Intelligence", "Informatics", "Research"], qsBand: "Top 50" },
-  { name: "Politecnico di Milano", country: "Italia", city: "Milano", strengths: ["Engineering", "Design", "Architecture"], qsBand: "Top 150" }
+const currentAdmissionYear = sharedCurrentAdmissionYear;
+const defaultOfferPrograms = [
+  { faculty: "Facultatea de Științe", program: "Informatică", programType: "licenta" },
+  { faculty: "Facultatea de Științe", program: "Inteligență Artificială", programType: "master" },
+  { faculty: "Școala doctorală", program: "Cercetare doctorală", programType: "doctorat" }
 ];
+
+function catalogEntry(item) {
+  return {
+    academicYear: currentAdmissionYear,
+    offerPrograms: item.offerPrograms || defaultOfferPrograms,
+    offerSummary: `Ofertă educațională ${currentAdmissionYear}: ${(item.offerPrograms || defaultOfferPrograms).map((program) => program.program).join(", ")}.`,
+    website: item.website || item.officialLink || "",
+    ...item
+  };
+}
+
+const catalog = sharedUniversityCatalog.map(catalogEntry);
 
 function id(prefix) {
   return `${prefix}-${crypto.randomUUID?.() || Math.random().toString(36).slice(2)}`;
@@ -39,6 +49,15 @@ function id(prefix) {
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function normalizeName(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim()
+    .toLowerCase();
 }
 
 function todayDiff(date) {
@@ -78,11 +97,11 @@ function validateStaticCnp(cnp) {
 }
 
 function makeDocs(prefix, completedCount = 7) {
-  return defaultDocuments.map(([name, category, defaultCompleted, completedAt], index) => ({
+  return defaultDocuments.map(([name, category, defaultCompleted, completedAt, isOptional = false], index) => ({
     id: id(`${prefix}-doc`),
     name,
     category,
-    isOptional: false,
+    isOptional,
     isCompleted: index < completedCount ? defaultCompleted : false,
     completedAt: index < completedCount ? completedAt : null,
     verificationStatus: index < completedCount ? "verified" : "missing",
@@ -217,6 +236,42 @@ function userUniversities(state, userId) {
   return state.universities.filter((university) => university.UserId === userId).map(serializeUniversity).sort((a, b) => a.deadline.localeCompare(b.deadline));
 }
 
+function catalogInstitutionId(item) {
+  return `catalog-${normalizeName(item.name).replace(/\s+/g, "-")}`;
+}
+
+function publicInstitutionRows(state) {
+  const existing = new Set(state.institutions.map((item) => normalizeName(item.name)));
+  const catalogInstitutions = catalog
+    .filter((item) => !existing.has(normalizeName(item.name)))
+    .map((item) => ({
+      id: catalogInstitutionId(item),
+      name: item.name,
+      shortName: item.shortName,
+      country: item.country,
+      countryCode: item.countryCode,
+      city: item.city,
+      website: item.website,
+      contactEmail: item.contactEmail || "",
+      status: "active",
+      description: item.offerSummary,
+      academicYear: item.academicYear,
+      offerPrograms: item.offerPrograms,
+      offerSummary: item.offerSummary
+    }));
+  return [...state.institutions, ...catalogInstitutions]
+    .filter((item) => item.status === "active")
+    .map((item) => {
+      const catalogMatch = catalog.find((entry) => normalizeName(entry.name) === normalizeName(item.name));
+      return {
+        ...item,
+        academicYear: item.academicYear || catalogMatch?.academicYear || currentAdmissionYear,
+        offerPrograms: item.offerPrograms || catalogMatch?.offerPrograms || defaultOfferPrograms,
+        offerSummary: item.offerSummary || catalogMatch?.offerSummary || item.description || `Ofertă educațională ${currentAdmissionYear} disponibilă prin site-ul oficial.`
+      };
+    });
+}
+
 function statsFor(universities) {
   const upcoming = universities.filter((uni) => uni.daysUntilDeadline >= 0).sort((a, b) => a.daysUntilDeadline - b.daysUntilDeadline);
   return {
@@ -256,7 +311,8 @@ function documentTextScore({ fileName = "", text = "", expectedType = "" }) {
     ["Scrisori de recomandare", ["recomand"]],
     ["Certificat limbă", ["ielts", "toefl", "cambridge", "limba", "language"]],
     ["Cazier judiciar", ["cazier", "judiciar"]],
-    ["Adeverință medicală", ["medical", "adeverin"]]
+    ["Adeverință medicală", ["medical", "adeverin"]],
+    ["Portofoliu", ["portofoliu", "portfolio", "github", "proiect"]]
   ];
   const scores = checks.map(([label, keys]) => ({
     label,
@@ -286,6 +342,96 @@ function documentTextScore({ fileName = "", text = "", expectedType = "" }) {
       ? "Documentul pare să corespundă tipului cerut pe baza textului extras."
       : "Conținutul nu seamănă suficient cu documentul așteptat."
   };
+}
+
+function studentDocumentTemplate(name) {
+  const normalized = normalizeName(name);
+  const row = defaultDocuments.find(([docName]) => normalizeName(docName) === normalized);
+  if (!row) return null;
+  const [docName, category] = row;
+  return { name: docName, category, isOptional: docName === "Certificat limbă (IELTS/TOEFL)" || docName === "Portofoliu" };
+}
+
+function approvedTrackerSource(state, body) {
+  const source = publicInstitutionRows(state).find((item) => normalizeName(item.name) === normalizeName(body.name));
+  if (!source) {
+    throw new Error("Elevii pot adăuga în tracker doar universități din catalogul public sau instituții active aprobate de admin.");
+  }
+  if (source.offerPrograms?.length) {
+    const validProgram = source.offerPrograms.some((program) => (
+      normalizeName(program.program) === normalizeName(body.program)
+      && normalizeName(program.faculty) === normalizeName(body.faculty)
+      && program.programType === body.programType
+    ));
+    if (!validProgram) throw new Error("Alege un program din oferta educațională curentă a universității.");
+  }
+  return source;
+}
+
+function studentTrackerPayload(body, source) {
+  return {
+    ...body,
+    name: source.name || body.name,
+    shortName: source.shortName || body.shortName,
+    country: source.country || body.country,
+    countryCode: source.countryCode || body.countryCode,
+    officialLink: source.website || body.officialLink
+  };
+}
+
+function trackerStatusForApplication(status) {
+  if (status === "accepted") return "Acceptat";
+  if (status === "rejected") return "Respins";
+  return "Aplicat";
+}
+
+function syncStaticApplicationTracker(state, user, institution, application) {
+  const faculty = application.faculty || "Oferta educațională oficială";
+  const tracker = state.universities.find((item) => (
+    item.UserId === user.id
+    && normalizeName(item.name) === normalizeName(institution.name)
+    && normalizeName(item.program) === normalizeName(application.program)
+    && normalizeName(item.faculty) === normalizeName(faculty)
+  ));
+  if (tracker) {
+    tracker.status = trackerStatusForApplication(application.status);
+    tracker.officialLink ||= institution.website || "";
+    tracker.notes ||= application.notes || institution.offerSummary || "";
+    return tracker;
+  }
+  const university = {
+    id: id("uni"),
+    UserId: user.id,
+    name: institution.name,
+    shortName: institution.shortName,
+    country: institution.country,
+    countryCode: institution.countryCode,
+    faculty,
+    program: application.program,
+    programType: application.programType,
+    deadline: `${new Date().getFullYear()}-07-15`,
+    status: trackerStatusForApplication(application.status),
+    annualTuition: null,
+    rating: null,
+    officialLink: institution.website || "",
+    notes: application.notes || institution.offerSummary || "",
+    documents: makeDocs(id("uni"), 0)
+  };
+  state.universities.push(university);
+  return university;
+}
+
+function ensureStudentTrackerUpdate(body) {
+  const allowed = new Set(["status", "deadline", "notes", "rating"]);
+  const blocked = Object.keys(body).filter((key) => !allowed.has(key));
+  if (blocked.length) {
+    throw new Error("Elevii pot modifica doar statusul personal, deadline-ul, notițele și ratingul. Universitățile și programele vin din catalogul aprobat.");
+  }
+}
+
+function hasMaxTwoDecimals(value) {
+  const scaled = Number(value) * 100;
+  return Number.isFinite(scaled) && Math.abs(scaled - Math.round(scaled)) < 1e-8;
 }
 
 function download(filename, content, type = "text/plain;charset=utf-8") {
@@ -378,7 +524,7 @@ export const staticApi = {
   },
   async publicInstitutions() {
     const state = readState();
-    return { institutions: state.institutions.filter((item) => item.status === "active") };
+    return { institutions: publicInstitutionRows(state) };
   },
   async myInstitution() {
     const state = readState();
@@ -419,7 +565,8 @@ export const staticApi = {
     return { sent: false, message: "SMTP indisponibil în modul static." };
   },
   async importCatalogInstitutions() {
-    return { created: 0, existing: demoInstitutions.length, catalog: catalog.length };
+    const state = readState();
+    return { created: 0, existing: state.institutions.length, catalog: catalog.length };
   },
   async adminInstitutions() {
     return { institutions: readState().institutions };
@@ -479,14 +626,29 @@ export const staticApi = {
   async createUniversity(body) {
     const state = readState();
     const user = currentUser(state);
-    const university = { ...body, id: id("uni"), UserId: user.id, documents: makeDocs(id("uni"), 0) };
+    let payload = { ...body };
+    if (user.role === "student") {
+      payload = studentTrackerPayload(payload, approvedTrackerSource(state, payload));
+    }
+    const duplicate = state.universities.some((item) => (
+      item.UserId === user.id
+      && normalizeName(item.name) === normalizeName(payload.name)
+      && normalizeName(item.program) === normalizeName(payload.program)
+      && normalizeName(item.faculty) === normalizeName(payload.faculty)
+    ));
+    if (duplicate) {
+      throw new Error("Universitatea și programul există deja în trackerul tău.");
+    }
+    const university = { ...payload, id: id("uni"), UserId: user.id, documents: makeDocs(id("uni"), 0) };
     state.universities.push(university);
     writeState(state);
     return { university: serializeUniversity(university) };
   },
   async updateUniversity(universityId, body) {
     const state = readState();
-    const university = state.universities.find((item) => item.id === universityId);
+    const user = currentUser(state);
+    if (user.role === "student") ensureStudentTrackerUpdate(body);
+    const university = state.universities.find((item) => item.id === universityId && (user.role === "admin" || item.UserId === user.id));
     if (!university) throw new Error("Universitatea nu a fost găsită.");
     Object.assign(university, body);
     writeState(state);
@@ -494,7 +656,8 @@ export const staticApi = {
   },
   async deleteUniversity(universityId) {
     const state = readState();
-    state.universities = state.universities.filter((item) => item.id !== universityId);
+    const user = currentUser(state);
+    state.universities = state.universities.filter((item) => item.id !== universityId || (user.role !== "admin" && item.UserId !== user.id));
     writeState(state);
     return null;
   },
@@ -508,8 +671,12 @@ export const staticApi = {
   },
   async createDocument(universityId, body) {
     const state = readState();
+    const user = currentUser(state);
+    if (user?.role === "student") {
+      throw new Error("Elevii nu pot adăuga documente manual în tracker. Atașează fișierul real la dosarul de admitere.");
+    }
     const university = state.universities.find((item) => item.id === universityId);
-    const document = { id: id("doc"), ...body, isCompleted: Boolean(body.isCompleted), completedAt: null, verificationStatus: "missing" };
+    const document = { id: id("doc"), ...body, category: "Document suplimentar", isOptional: true, isCompleted: false, completedAt: null, verificationStatus: "missing" };
     university.documents.push(document);
     writeState(state);
     return { document };
@@ -520,15 +687,32 @@ export const staticApi = {
   },
   async createApplicationDocument(applicationId, body) {
     const state = readState();
+    const user = currentUser(state);
     const application = state.applications.find((item) => item.id === applicationId);
     if (!application) throw new Error("Aplicația nu a fost găsită.");
-    const document = { id: id("app-doc"), ...body, isCompleted: false, completedAt: null, verificationStatus: "missing" };
+    let payload = { ...body };
+    if (user?.role === "student") {
+      const template = studentDocumentTemplate(payload.name);
+      if (!template) throw new Error("Alege un tip de document aprobat din lista UniTrack.");
+      if ((application.documents || []).some((doc) => normalizeName(doc.name) === normalizeName(template.name))) {
+        throw new Error("Documentul există deja în dosarul acestei aplicații.");
+      }
+      payload = template;
+    }
+    const document = { id: id("app-doc"), ...payload, isCompleted: false, completedAt: null, verificationStatus: "missing" };
     application.documents.push(document);
     writeState(state);
     return { document };
   },
   async updateDocument(documentId, body) {
     const state = readState();
+    const user = currentUser(state);
+    if (user?.role === "student" && (body.name || body.category || body.isOptional !== undefined)) {
+      throw new Error("Elevii nu pot modifica tipul documentelor cerute; pot adăuga doar documente suplimentare.");
+    }
+    if (user?.role === "student" && (body.isCompleted === true || body.completedAt || body.verificationStatus === "verified")) {
+      throw new Error("Documentele se marchează complete doar după verificare AI sau aprobare de universitate.");
+    }
     const containers = [...state.universities.map((item) => item.documents), ...state.applications.map((item) => item.documents)];
     const document = containers.flat().find((item) => item.id === documentId);
     Object.assign(document, body);
@@ -546,6 +730,11 @@ export const staticApi = {
   },
   async deleteDocument(documentId) {
     const state = readState();
+    const user = currentUser(state);
+    const document = [...state.universities.flatMap((item) => item.documents || []), ...state.applications.flatMap((item) => item.documents || [])].find((doc) => doc.id === documentId);
+    if (user?.role === "student" && document && (!document.isOptional || document.isCompleted || document.verificationStatus === "verified")) {
+      throw new Error("Elevii pot șterge doar documente opționale neverificate.");
+    }
     for (const university of state.universities) university.documents = university.documents.filter((doc) => doc.id !== documentId);
     for (const app of state.applications) app.documents = app.documents.filter((doc) => doc.id !== documentId);
     writeState(state);
@@ -567,10 +756,24 @@ export const staticApi = {
   async createApplication(body) {
     const state = readState();
     const user = currentUser(state);
+    const publicInstitution = publicInstitutionRows(state).find((item) => item.id === body.institutionId);
+    if (!publicInstitution) throw new Error("Universitatea nu există sau nu este activă.");
+    if (publicInstitution.offerPrograms?.length) {
+      const validProgram = publicInstitution.offerPrograms.some((program) => (
+        normalizeName(program.program) === normalizeName(body.program)
+        && normalizeName(program.faculty) === normalizeName(body.faculty)
+        && program.programType === body.programType
+      ));
+      if (!validProgram) throw new Error("Alege un program din oferta educațională curentă a universității.");
+    }
+    if (publicInstitution && !state.institutions.some((item) => item.id === publicInstitution.id)) {
+      state.institutions.push(publicInstitution);
+    }
     const duplicate = state.applications.find((item) => item.StudentId === user.id && item.InstitutionId === body.institutionId && item.program.toLowerCase() === body.program.toLowerCase());
     if (duplicate) throw new Error("Ai deja o aplicație pentru această universitate și acest program.");
     const app = { id: id("app"), StudentId: user.id, InstitutionId: body.institutionId, status: "submitted", submittedAt: new Date().toISOString(), documents: makeDocs(id("app"), 0), ...body };
     state.applications.push(app);
+    syncStaticApplicationTracker(state, user, publicInstitution, app);
     addAudit(state, { actor: user, action: "application.create", entityType: "AdmissionApplication", entityId: app.id, metadata: { institutionId: app.InstitutionId, program: app.program } });
     writeState(state);
     return { application: attachApplication(state, app) };
@@ -610,6 +813,9 @@ export const staticApi = {
     app.status = body.status;
     app.reviewerNotes = body.reviewerNotes || "";
     app.reviewedAt = new Date().toISOString();
+    const institution = publicInstitutionRows(state).find((item) => item.id === app.InstitutionId) || state.institutions.find((item) => item.id === app.InstitutionId);
+    const student = state.users.find((item) => item.id === app.StudentId);
+    if (institution && student) syncStaticApplicationTracker(state, student, institution, app);
     addAudit(state, { actor: currentUser(state), action: "application.status_update", entityType: "AdmissionApplication", entityId: app.id, metadata: { status: app.status } });
     writeState(state);
     return { application: attachApplication(state, app) };
@@ -689,7 +895,14 @@ export const staticApi = {
       ...state.universities.filter((item) => item.UserId === user.id).flatMap((item) => item.documents || []),
       ...state.applications.filter((item) => item.StudentId === user.id).flatMap((item) => item.documents || [])
     ];
-    const hasEvidence = (pattern) => documents.some((doc) => new RegExp(pattern, "i").test(doc.name) && (doc.isCompleted || doc.verificationStatus === "verified"));
+    const hasEvidence = (pattern) => documents.some((doc) => new RegExp(pattern, "i").test(doc.name) && doc.verificationStatus === "verified" && doc.fileName && Number(doc.fileSize || 0) > 0);
+    if (body.bacAverage !== undefined && body.bacAverage !== null && !hasMaxTwoDecimals(body.bacAverage)) {
+      throw new Error("Media BAC poate avea maximum două zecimale.");
+    }
+    if (/\d+[.,]\d{3,}/.test(String(body.languageResults || ""))) {
+      throw new Error("Rezultatele examenelor pot avea maximum două zecimale.");
+    }
+    if (body.bacAverage !== undefined && body.bacAverage !== null) body.bacAverage = Math.round(Number(body.bacAverage) * 100) / 100;
     if (user.role === "student" && body.bacAverage !== undefined && body.bacAverage !== null && Number(body.bacAverage) !== Number(user.bacAverage || 0) && !hasEvidence("bac|matricol")) {
       throw new Error("Adaugă și verifică Diploma BAC sau Foaia matricolă înainte să salvezi media.");
     }
@@ -741,7 +954,14 @@ export const staticApi = {
     return {
       universities: catalog.filter((item) => {
         if (!query) return true;
-        return [item.name, item.country, item.city, ...(item.strengths || [])].join(" ").toLowerCase().includes(query);
+        return [
+          item.name,
+          item.country,
+          item.city,
+          item.offerSummary,
+          ...(item.strengths || []),
+          ...(item.offerPrograms || []).map((program) => `${program.program} ${program.faculty}`)
+        ].join(" ").toLowerCase().includes(query);
       })
     };
   },

@@ -2,6 +2,20 @@ import { useEffect, useMemo, useState } from "react";
 import { Brain, CheckCircle2, Circle, ExternalLink, Eye, FileText, Plus, Send, Upload } from "lucide-react";
 import { api } from "../services/api.js";
 import { getProgramsForInstitution, programChoiceValue } from "../utils/programCatalog.js";
+import { programTypes } from "../utils/status.js";
+
+const ADMISSIONS_SELECTION_KEY = "unitrack_admissions_selection_v1";
+const approvedStudentDocuments = [
+  "Diplomă BAC",
+  "Foaie matricolă",
+  "CV Europass",
+  "Scrisoare motivație",
+  "Scrisori de recomandare",
+  "Certificat limbă (IELTS/TOEFL)",
+  "Cazier judiciar",
+  "Adeverință medicală",
+  "Portofoliu"
+];
 
 const statusLabels = {
   submitted: "Trimisă",
@@ -26,7 +40,8 @@ const documentHints = [
   ["Scrisori de recomandare", ["recomandare", "recommendation"]],
   ["Certificat limbă", ["ielts", "toefl", "cambridge", "limba", "language"]],
   ["Cazier judiciar", ["cazier", "criminal"]],
-  ["Adeverință medicală", ["medical", "adeverinta", "adeverință"]]
+  ["Adeverință medicală", ["medical", "adeverinta", "adeverință"]],
+  ["Portofoliu", ["portofoliu", "portfolio", "github", "proiect"]]
 ];
 
 function inferExpectedType(fileName, text) {
@@ -46,9 +61,15 @@ export function Admissions({ onToast }) {
 
   async function load() {
     const [institutionData, appData] = await Promise.all([api.publicInstitutions(), api.myApplications()]);
-    setInstitutions(institutionData.institutions || []);
+    const nextInstitutions = institutionData.institutions || [];
+    setInstitutions(nextInstitutions);
     setApplications(appData.applications || []);
-    setForm((current) => ({ ...current, institutionId: current.institutionId || institutionData.institutions?.[0]?.id || "" }));
+    const preferredName = localStorage.getItem(ADMISSIONS_SELECTION_KEY);
+    const preferredInstitution = preferredName
+      ? nextInstitutions.find((item) => item.name === preferredName)
+      : null;
+    if (preferredInstitution) localStorage.removeItem(ADMISSIONS_SELECTION_KEY);
+    setForm((current) => ({ ...current, institutionId: preferredInstitution?.id || current.institutionId || nextInstitutions[0]?.id || "" }));
     const firstDoc = appData.applications?.flatMap((app) => app.documents || [])?.[0];
     if (firstDoc) setAiForm((current) => ({
       ...current,
@@ -214,7 +235,12 @@ export function Admissions({ onToast }) {
             {selectedInstitution && (
               <div className="institution-preview wide">
                 <strong>{selectedInstitution.name}</strong>
-                <span>{selectedInstitution.city || selectedInstitution.country} · {selectedInstitution.description || "Universitate activă în platformă, disponibilă pentru aplicații online."}</span>
+                <span>{selectedInstitution.city || selectedInstitution.country} · {selectedInstitution.offerSummary || selectedInstitution.description || "Universitate activă în platformă, disponibilă pentru aplicații online."}</span>
+                <div className="offer-list compact-offers">
+                  {programOptions.slice(0, 4).map((program) => (
+                    <span key={programChoiceValue(program)}>{program.program} · {programTypes.find((entry) => entry.value === program.programType)?.label || program.programType}</span>
+                  ))}
+                </div>
                 {selectedInstitution.website && <a href={selectedInstitution.website} target="_blank" rel="noreferrer"><ExternalLink size={14} /> Site oficial</a>}
               </div>
             )}
@@ -222,13 +248,13 @@ export function Admissions({ onToast }) {
               <select value={programChoiceValue({ faculty: form.faculty, program: form.program, programType: form.programType })} onChange={updateProgramChoice}>
                 {programOptions.map((option) => (
                   <option key={programChoiceValue(option)} value={programChoiceValue(option)}>
-                    {option.program} · {option.faculty} · {option.programType}
+                    {option.program} · {option.faculty} · {programTypes.find((entry) => entry.value === option.programType)?.label || option.programType}
                   </option>
                 ))}
               </select>
             </label>
-            <label>Tip<select name="programType" value={form.programType} onChange={updateForm}><option value="licenta">Licență</option><option value="master">Master</option><option value="doctorat">Doctorat</option></select></label>
-            <label>Facultate<input name="faculty" value={form.faculty} onChange={updateForm} /></label>
+            <label>Tip<select name="programType" value={form.programType} onChange={updateForm} disabled><option value="licenta">Licență</option><option value="master">Master</option><option value="doctorat">Doctorat</option></select></label>
+            <label>Facultate<input name="faculty" value={form.faculty} onChange={updateForm} readOnly /></label>
             <label className="wide">Note<textarea name="notes" value={form.notes} onChange={updateForm} /></label>
             <p className="field-note wide">Media BAC și scorurile de limbă se completează din profil doar după ce ai documente atestatoare verificate.</p>
           </div>
@@ -279,12 +305,16 @@ export function Admissions({ onToast }) {
               ))}
               <form className="inline-doc-form" onSubmit={(event) => addApplicationDocument(event, app.id)}>
                 <FileText size={16} />
-                <input
+                <select
                   value={customDocs[app.id] || ""}
                   onChange={(event) => setCustomDocs((current) => ({ ...current, [app.id]: event.target.value }))}
-                  placeholder="Adaugă document lipsă..."
-                />
-                <button className="primary-button square" type="submit" title="Adaugă document în aplicație" aria-label="Adaugă document în aplicație">
+                >
+                  <option value="">Alege document aprobat...</option>
+                  {approvedStudentDocuments
+                    .filter((name) => !(app.documents || []).some((doc) => doc.name === name))
+                    .map((name) => <option key={name} value={name}>{name}</option>)}
+                </select>
+                <button className="primary-button square" type="submit" disabled={!customDocs[app.id]} title="Adaugă document în aplicație" aria-label="Adaugă document în aplicație">
                   <Plus size={17} />
                 </button>
               </form>

@@ -6,7 +6,7 @@ function shortName(university) {
 }
 
 function countryCode(university) {
-  return university.countryCode || (university.country === "România" || university.country === "Romania" ? "RO" : university.country.slice(0, 2).toUpperCase());
+  return university.countryCode || (university.country === "România" || university.country === "Romania" ? "RO" : String(university.country || "").slice(0, 2).toUpperCase());
 }
 
 function starRating(value = 0) {
@@ -15,13 +15,16 @@ function starRating(value = 0) {
 }
 
 function winnerIds(universities) {
-  const minTuition = Math.min(...universities.map((uni) => uni.annualTuition ?? Infinity));
-  const minMissing = Math.min(...universities.map((uni) => uni.remainingRequiredDocuments ?? Infinity));
-  const maxRating = Math.max(...universities.map((uni) => uni.rating ?? 0));
+  const tuitionValues = universities.map((uni) => uni.annualTuition).filter((value) => value !== null && value !== undefined);
+  const missingValues = universities.map((uni) => uni.remainingRequiredDocuments).filter((value) => value !== null && value !== undefined);
+  const ratingValues = universities.map((uni) => uni.rating).filter((value) => value !== null && value !== undefined);
+  const minTuition = tuitionValues.length ? Math.min(...tuitionValues) : null;
+  const minMissing = missingValues.length ? Math.min(...missingValues) : null;
+  const maxRating = ratingValues.length ? Math.max(...ratingValues) : null;
   return {
-    tuition: universities.filter((uni) => (uni.annualTuition ?? Infinity) === minTuition).map((uni) => uni.id),
-    missing: universities.filter((uni) => (uni.remainingRequiredDocuments ?? Infinity) === minMissing).map((uni) => uni.id),
-    rating: universities.filter((uni) => (uni.rating ?? 0) === maxRating).map((uni) => uni.id)
+    tuition: minTuition === null ? [] : universities.filter((uni) => uni.annualTuition === minTuition).map((uni) => uni.id),
+    missing: minMissing === null ? [] : universities.filter((uni) => uni.remainingRequiredDocuments === minMissing).map((uni) => uni.id),
+    rating: maxRating === null ? [] : universities.filter((uni) => uni.rating === maxRating).map((uni) => uni.id)
   };
 }
 
@@ -59,6 +62,15 @@ export function CompareTable({ universities = [] }) {
             ))}
           </tr>
           <tr>
+            <th>Ofertă {universities[0]?.academicYear || "2026-2027"}</th>
+            {universities.map((uni) => (
+              <td key={uni.id}>
+                <strong>{uni.offerPrograms?.slice(0, 2).map((program) => program.program).join(", ") || uni.program}</strong>
+                <small>{uni.offerSummary || uni.faculty}</small>
+              </td>
+            ))}
+          </tr>
+          <tr>
             <th>Deadline</th>
             {universities.map((uni) => <td key={uni.id}><strong>{formatDate(uni.deadline)}</strong></td>)}
           </tr>
@@ -75,7 +87,7 @@ export function CompareTable({ universities = [] }) {
             <th>Taxă aplicație</th>
             {universities.map((uni) => (
               <td className={winners.tuition.includes(uni.id) ? "winner-cell" : ""} key={uni.id}>
-                <strong>{Number(uni.annualTuition || 0) === 0 ? "Gratuit" : `${uni.annualTuition} RON`}</strong>
+                <strong>{uni.annualTuition === null || uni.annualTuition === undefined ? "Nespecificat" : Number(uni.annualTuition || 0) === 0 ? "Gratuit" : `${uni.annualTuition} RON`}</strong>
                 {winners.tuition.includes(uni.id) && <small>↓ Cel mai mic</small>}
               </td>
             ))}
@@ -84,8 +96,8 @@ export function CompareTable({ universities = [] }) {
             <th>Documente lipsă</th>
             {universities.map((uni) => (
               <td className={winners.missing.includes(uni.id) ? "winner-cell" : ""} key={uni.id}>
-                <strong>{uni.remainingRequiredDocuments === 0 ? "✓ Complet" : `${uni.remainingRequiredDocuments} lipsă`}</strong>
-                <small>{uni.documents?.filter((doc) => doc.isCompleted).length || 0}/{uni.documents?.length || 0} pregătite</small>
+                <strong>{uni.remainingRequiredDocuments === null || uni.remainingRequiredDocuments === undefined ? "Nu este în tracker" : uni.remainingRequiredDocuments === 0 ? "✓ Complet" : `${uni.remainingRequiredDocuments} lipsă`}</strong>
+                <small>{uni.documents?.length ? `${uni.documents.filter((doc) => doc.isCompleted).length}/${uni.documents.length} pregătite` : "Trimite aplicație pentru checklist"}</small>
               </td>
             ))}
           </tr>
@@ -93,7 +105,7 @@ export function CompareTable({ universities = [] }) {
             <th>Site oficial</th>
             {universities.map((uni) => (
               <td key={uni.id}>
-                <a href={uni.officialLink} target="_blank" rel="noreferrer">↗ Vizitează</a>
+                {uni.officialLink ? <a href={uni.officialLink} target="_blank" rel="noreferrer">↗ Vizitează</a> : <span className="muted">Nedisponibil</span>}
               </td>
             ))}
           </tr>

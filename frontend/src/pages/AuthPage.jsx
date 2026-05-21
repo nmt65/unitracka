@@ -95,10 +95,14 @@ export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMod
       }
       if (mode === "forgot") {
         const data = await api.forgotPassword({ email: form.email });
-        if (data.mailConfigured === false) {
+        if (data.resetToken) {
+          setForm((current) => ({ ...current, resetToken: data.resetToken, password: "" }));
+          setMode("reset");
+          setNotice(`Token resetare local: ${data.resetToken}`);
+        } else if (data.mailConfigured === false) {
           setError(t("Emailul de resetare nu poate fi trimis încă: SMTP nu este configurat pe server.", language));
         } else {
-          setNotice(data.resetToken ? `Token resetare local: ${data.resetToken}` : data.message);
+          setNotice(data.message);
         }
       }
       if (mode === "reset") {

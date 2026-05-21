@@ -204,4 +204,14 @@ export async function initDb() {
   await sequelize.authenticate();
   const syncOptions = env.dbDialect === "sqlite" ? {} : { alter: env.nodeEnv !== "production" };
   await sequelize.sync(syncOptions);
+  if (env.dbDialect === "sqlite") {
+    const queryInterface = sequelize.getQueryInterface();
+    const documentColumns = await queryInterface.describeTable("Documents").catch(() => null);
+    if (documentColumns && !documentColumns.fileSize) {
+      await queryInterface.addColumn("Documents", "fileSize", { type: DataTypes.INTEGER, allowNull: true });
+    }
+    if (documentColumns && !documentColumns.fileDataUrl) {
+      await queryInterface.addColumn("Documents", "fileDataUrl", { type: DataTypes.TEXT, allowNull: true });
+    }
+  }
 }

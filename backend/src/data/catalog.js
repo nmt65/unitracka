@@ -8,6 +8,46 @@ const strengthsByType = {
   agronomy: ["Agronomy", "Veterinary Medicine", "Biotech", "Sustainability"]
 };
 
+export const currentAdmissionYear = "2026-2027";
+
+const offerProgramsByType = {
+  general: [
+    { faculty: "Faculty of Science", program: "Computer Science", programType: "licenta" },
+    { faculty: "Faculty of Business", program: "Business Administration", programType: "licenta" },
+    { faculty: "Graduate School", program: "Data Science", programType: "master" }
+  ],
+  technical: [
+    { faculty: "Faculty of Engineering", program: "Computer Science & Engineering", programType: "licenta" },
+    { faculty: "Faculty of Engineering", program: "Artificial Intelligence", programType: "master" },
+    { faculty: "Doctoral School", program: "Engineering Research", programType: "doctorat" }
+  ],
+  medical: [
+    { faculty: "Faculty of Medicine", program: "Medicine", programType: "licenta" },
+    { faculty: "Faculty of Pharmacy", program: "Pharmacy", programType: "licenta" },
+    { faculty: "Graduate School", program: "Public Health", programType: "master" }
+  ],
+  arts: [
+    { faculty: "Faculty of Arts", program: "Visual Arts", programType: "licenta" },
+    { faculty: "Faculty of Design", program: "Design", programType: "licenta" },
+    { faculty: "Graduate School", program: "Creative Industries", programType: "master" }
+  ],
+  economics: [
+    { faculty: "Faculty of Economics", program: "Economics", programType: "licenta" },
+    { faculty: "Faculty of Business", program: "Finance and Banking", programType: "licenta" },
+    { faculty: "Graduate School", program: "Business Analytics", programType: "master" }
+  ],
+  law: [
+    { faculty: "Faculty of Law", program: "Law", programType: "licenta" },
+    { faculty: "Faculty of Public Administration", program: "Public Administration", programType: "licenta" },
+    { faculty: "Graduate School", program: "Public Policy", programType: "master" }
+  ],
+  agronomy: [
+    { faculty: "Faculty of Agriculture", program: "Agronomy", programType: "licenta" },
+    { faculty: "Faculty of Veterinary Medicine", program: "Veterinary Medicine", programType: "licenta" },
+    { faculty: "Graduate School", program: "Sustainable Food Systems", programType: "master" }
+  ]
+};
+
 function acronym(name) {
   return name
     .replace(/["'()]/g, " ")
@@ -21,10 +61,15 @@ function acronym(name) {
 
 function entry(item) {
   const type = item.type || "general";
+  const offerPrograms = item.offerPrograms || offerProgramsByType[type] || offerProgramsByType.general;
   return {
     shortName: item.shortName || acronym(item.name),
     website: item.website || "",
     strengths: item.strengths || strengthsByType[type],
+    type,
+    academicYear: item.academicYear || currentAdmissionYear,
+    offerPrograms,
+    offerSummary: item.offerSummary || `Ofertă educațională ${currentAdmissionYear}: ${offerPrograms.map((program) => program.program).join(", ")}.`,
     qsBand: item.rank || item.source || "",
     ...item
   };

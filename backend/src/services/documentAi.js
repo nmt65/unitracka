@@ -8,7 +8,8 @@ const patterns = [
   { label: "Scrisori de recomandare", terms: ["recomandare", "recommendation letter", "letter of recommendation", "referință academică", "referinta academica"] },
   { label: "Certificat limbă", terms: ["ielts", "toefl", "cambridge", "language certificate", "certificat de competență lingvistică", "certificat de competenta lingvistica"] },
   { label: "Cazier judiciar", terms: ["cazier judiciar", "certificat de cazier", "criminal record"] },
-  { label: "Adeverință medicală", terms: ["adeverință medicală", "adeverinta medicala", "apt medical", "medic de familie"] }
+  { label: "Adeverință medicală", terms: ["adeverință medicală", "adeverinta medicala", "apt medical", "medic de familie"] },
+  { label: "Portofoliu", terms: ["portofoliu", "portfolio", "proiecte", "projects", "github", "lucrări", "lucrari"] }
 ];
 
 const REMOTE_ACCEPTANCE_THRESHOLD = 0.68;

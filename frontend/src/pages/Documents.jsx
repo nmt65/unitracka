@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, Circle, Plus, Trash2 } from "lucide-react";
+import { Check, Circle, Lock, Trash2 } from "lucide-react";
 import { ProgressBar } from "../components/ProgressBar.jsx";
 import { StatusPill } from "../components/StatusPill.jsx";
 import { formatDate } from "../utils/date.js";
@@ -24,13 +24,12 @@ const predefined = [
   "Certificat limbă (IELTS/TOEFL)",
   "Cazier judiciar",
   "Adeverință medicală",
-  "Portofoliu (opțional)"
+  "Portofoliu"
 ];
 
-export function Documents({ universities, onToggleDocument, onAddDocument, onDeleteDocument }) {
+export function Documents({ universities, onDeleteDocument }) {
   const [selectedId, setSelectedId] = useState(universities[0]?.id || "");
   const [tab, setTab] = useState("toate");
-  const [customName, setCustomName] = useState("");
 
   useEffect(() => {
     if (!selectedId && universities[0]) setSelectedId(universities[0].id);
@@ -44,13 +43,6 @@ export function Documents({ universities, onToggleDocument, onAddDocument, onDel
     return true;
   });
   const completed = docs.filter((doc) => doc.isCompleted).length;
-
-  async function addCustom(event) {
-    event.preventDefault();
-    if (!customName.trim() || !selected) return;
-    await onAddDocument(selected.id, { name: customName.trim(), category: "Custom", isOptional: false });
-    setCustomName("");
-  }
 
   return (
     <section className="unitrack-page documents-page">
@@ -113,11 +105,11 @@ export function Documents({ universities, onToggleDocument, onAddDocument, onDel
               <div className="doc-checklist-card">
                 {visibleDocs.map((doc) => (
                   <div key={doc.id} className={`doc-row ${doc.isCompleted ? "done" : ""}`}>
-                    <button className="doc-toggle-button" type="button" onClick={() => onToggleDocument(doc)}>
+                    <button className="doc-toggle-button locked" type="button" disabled title="Documentele se completează doar după verificare AI sau aprobare de universitate.">
                       <span className="doc-check">{doc.isCompleted ? <Check size={15} /> : <Circle size={19} />}</span>
                       <span className="doc-row-content">
                         <strong>{doc.name}</strong>
-                        {doc.isCompleted && <small>Finalizat pe {formatDate(doc.completedAt)}</small>}
+                        {doc.isCompleted ? <small>Finalizat pe {formatDate(doc.completedAt)}</small> : <small><Lock size={12} /> Necesită fișier verificat</small>}
                       </span>
                     </button>
                     {doc.category === "Custom" && (
@@ -133,15 +125,10 @@ export function Documents({ universities, onToggleDocument, onAddDocument, onDel
                     )}
                   </div>
                 ))}
-                <form className="custom-doc-form" onSubmit={addCustom}>
-                  <label>
-                    Adaugă document custom
-                    <span>
-                      <input value={customName} onChange={(event) => setCustomName(event.target.value)} placeholder="Nume document..." />
-                      <button className="primary-button square" type="submit" aria-label="Adaugă document custom" title="Adaugă document custom"><Plus size={18} /></button>
-                    </span>
-                  </label>
-                </form>
+                <div className="locked-doc-note">
+                  <Lock size={15} />
+                  <span>Documentele se adaugă doar din dosarul de admitere, ca tipuri aprobate, apoi se marchează complete după fișier verificat.</span>
+                </div>
               </div>
 
               <div className="predefined-docs">

@@ -1543,6 +1543,20 @@ body:not(.dark) .topbar {
   color: var(--primary);
 }
 
+.row-action.text {
+  min-height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: var(--surface-2);
+  color: var(--primary);
+  font-size: 0.78rem;
+}
+
+.row-action.text::before {
+  content: "";
+}
+
 .table-footer {
   min-height: 50px;
   display: flex;
@@ -1550,6 +1564,94 @@ body:not(.dark) .topbar {
   justify-content: space-between;
   padding: 0 16px;
   color: var(--muted);
+}
+
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.catalog-card {
+  min-height: 268px;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.catalog-card header,
+.catalog-card footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.catalog-card header {
+  justify-content: flex-start;
+}
+
+.catalog-card footer {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.catalog-card strong {
+  display: block;
+}
+
+.catalog-card p {
+  min-height: 48px;
+  margin: 0;
+  color: var(--muted);
+}
+
+.offer-list,
+.catalog-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.offer-list span,
+.catalog-tags span {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 10px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.offer-list span {
+  border-color: rgba(124, 103, 255, 0.45);
+  color: var(--primary);
+}
+
+.compact-offers {
+  gap: 6px;
+}
+
+.catalog-state {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(32, 216, 104, 0.36);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: rgba(32, 216, 104, 0.08);
+  color: var(--success);
+  font-size: 0.76rem;
+  font-weight: 900;
 }
 
 .documents-layout {
@@ -1688,6 +1790,17 @@ body:not(.dark) .topbar {
   text-align: left;
 }
 
+.doc-toggle-button.locked {
+  cursor: not-allowed;
+  opacity: 0.86;
+}
+
+.doc-row-content small {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
 .doc-row.done strong {
   color: var(--faint);
   text-decoration: line-through;
@@ -1732,14 +1845,15 @@ body:not(.dark) .topbar {
   outline: 0;
 }
 
-.custom-doc-form {
-  padding: 16px 20px;
-}
-
-.custom-doc-form label > span {
+.locked-doc-note {
+  min-height: 54px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 42px;
-  gap: 8px;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  color: var(--muted);
+  background: var(--surface-2);
 }
 
 .predefined-docs {
@@ -1779,17 +1893,62 @@ body:not(.dark) .topbar {
   color: var(--success);
 }
 
+.evidence-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 20px 16px;
+}
+
+.evidence-strip span {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 12px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.evidence-strip .ok {
+  border-color: rgba(32, 216, 104, 0.45);
+  background: rgba(32, 216, 104, 0.08);
+  color: var(--success);
+}
+
+.evidence-strip .blocked {
+  border-color: rgba(255, 113, 24, 0.45);
+  background: rgba(255, 113, 24, 0.08);
+  color: var(--warning);
+}
+
 .compare-picker-card {
   padding: 18px 20px;
   margin-bottom: 24px;
 }
 
+.compare-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
 .compare-picker-card h2 {
-  margin: 0 0 12px;
+  margin: 0;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.78rem;
+}
+
+.search-field.compact {
+  width: min(360px, 100%);
+  min-height: 38px;
 }
 
 .compare-picker {
@@ -1813,6 +1972,11 @@ body:not(.dark) .topbar {
 
 .compare-chip input {
   display: none;
+}
+
+.compare-chip small {
+  color: var(--faint);
+  font-size: 0.7rem;
 }
 
 .compare-chip.active {
@@ -2474,7 +2638,8 @@ body:not(.dark) .topbar {
   line-height: 1.45;
 }
 
-.inline-doc-form input {
+.inline-doc-form input,
+.inline-doc-form select {
   min-height: 36px;
 }
 

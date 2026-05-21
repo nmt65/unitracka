@@ -1,5 +1,6 @@
-import { AdmissionApplication, Document, Institution, Notification, User } from "../models/index.js";
+import { AdmissionApplication, Document, Institution, Notification, University, User } from "../models/index.js";
 import { defaultDocuments } from "../data/defaultDocuments.js";
+import { universityCatalog } from "../data/catalog.js";
 import { writeAudit } from "../services/audit.js";
 import { sendApplicationStatusEmail, sendApplicationSubmittedEmail } from "../services/mail.js";
 
@@ -43,6 +44,75 @@ function matchesDocumentFilter(application, filter) {
   return true;
 }
 
+function normalizeValue(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function catalogForInstitution(institution) {
+  return universityCatalog.find((item) => normalizeValue(item.name) === normalizeValue(institution.name));
+}
+
+function matchesCurrentOffer(institution, payload) {
+  const catalog = catalogForInstitution(institution);
+  if (!catalog?.offerPrograms?.length) return true;
+  return catalog.offerPrograms.some((offer) => (
+    normalizeValue(offer.program) === normalizeValue(payload.program)
+    && normalizeValue(offer.faculty) === normalizeValue(payload.faculty)
+    && offer.programType === payload.programType
+  ));
+}
+
+function trackerStatusForApplication(status) {
+  if (status === "accepted") return "Acceptat";
+  if (status === "rejected") return "Respins";
+  return "Aplicat";
+}
+
+async function syncApplicationTracker(studentId, institution, application) {
+  const catalog = catalogForInstitution(institution);
+  const [tracker, created] = await University.findOrCreate({
+    where: {
+      UserId: studentId,
+      name: institution.name,
+      program: application.program,
+      faculty: application.faculty || "Oferta educațională oficială"
+    },
+    defaults: {
+      UserId: studentId,
+      name: institution.name,
+      shortName: institution.shortName,
+      country: institution.country,
+      countryCode: institution.countryCode,
+      faculty: application.faculty || "Oferta educațională oficială",
+      program: application.program,
+      programType: application.programType,
+      deadline: `${new Date().getFullYear()}-07-15`,
+      officialLink: institution.website || catalog?.website || "",
+      notes: application.notes || catalog?.offerSummary || null,
+      status: trackerStatusForApplication(application.status),
+      annualTuition: null,
+      rating: null
+    }
+  });
+
+  if (created) {
+    await Document.bulkCreate(defaultDocuments.map((doc) => ({ ...doc, isCompleted: false, verificationStatus: "missing", UniversityId: tracker.id })));
+    return tracker;
+  }
+
+  await tracker.update({
+    status: trackerStatusForApplication(application.status),
+    officialLink: tracker.officialLink || institution.website || catalog?.website || "",
+    notes: tracker.notes || application.notes || catalog?.offerSummary || null
+  });
+  return tracker;
+}
+
 export async function listMine(req, res, next) {
   try {
     const applications = await AdmissionApplication.findAll({
@@ -60,6 +130,9 @@ export async function createApplication(req, res, next) {
   try {
     const institution = await Institution.findOne({ where: { id: req.body.institutionId, status: "active" } });
     if (!institution) return res.status(404).json({ message: "Universitatea nu există sau nu este activă." });
+    if (!matchesCurrentOffer(institution, req.body)) {
+      return res.status(422).json({ message: "Alege un program din oferta educațională curentă a universității." });
+    }
     const duplicate = await AdmissionApplication.findOne({
       where: {
         StudentId: req.user.id,
@@ -83,6 +156,7 @@ export async function createApplication(req, res, next) {
       verificationStatus: "missing",
       AdmissionApplicationId: application.id
     })));
+    await syncApplicationTracker(req.user.id, institution, application);
 
     const staff = await User.findAll({ where: { role: "university", InstitutionId: institution.id } });
     await Notification.bulkCreate(staff.map((user) => ({
@@ -145,6 +219,17 @@ export async function updateApplicationStatus(req, res, next) {
       return res.status(403).json({ message: "Nu poți modifica aplicațiile altei universități." });
     }
     await application.update({ status: req.body.status, reviewerNotes: req.body.reviewerNotes || null, reviewedAt: new Date() });
+    await University.update(
+      { status: trackerStatusForApplication(req.body.status) },
+      {
+        where: {
+          UserId: application.StudentId,
+          name: application.Institution.name,
+          program: application.program,
+          faculty: application.faculty || "Oferta educațională oficială"
+        }
+      }
+    );
     await Notification.create({
       UserId: application.StudentId,
       AdmissionApplicationId: application.id,

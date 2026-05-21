@@ -1,5 +1,6 @@
-import { Document, University, sequelize } from "../models/index.js";
+import { Document, Institution, University, sequelize } from "../models/index.js";
 import { defaultDocuments } from "../data/defaultDocuments.js";
+import { universityCatalog } from "../data/catalog.js";
 import { daysUntil } from "../utils/dates.js";
 import { categoryProgress, documentProgress, documentsRemaining } from "../utils/progress.js";
 
@@ -13,7 +14,8 @@ const documentOrder = [
   "Certificat limbă (IELTS)",
   "Certificat limbă (IELTS/TOEFL)",
   "Cazier judiciar",
-  "Adeverință medicală"
+  "Adeverință medicală",
+  "Portofoliu"
 ];
 
 function serializeUniversity(university) {
@@ -33,6 +35,65 @@ function serializeUniversity(university) {
   };
 }
 
+function normalizeName(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function matchesOfferProgram(source, payload) {
+  if (!source?.offerPrograms?.length) return true;
+  return source.offerPrograms.some((offer) => (
+    normalizeName(offer.program) === normalizeName(payload.program)
+    && normalizeName(offer.faculty) === normalizeName(payload.faculty)
+    && offer.programType === payload.programType
+  ));
+}
+
+async function ensureStudentUsesApprovedCatalog(payload) {
+  const requested = normalizeName(payload.name);
+  const catalogMatch = universityCatalog.find((item) => normalizeName(item.name) === requested);
+  if (catalogMatch) {
+    if (!matchesOfferProgram(catalogMatch, payload)) {
+      const error = new Error("Alege un program din oferta educațională curentă a universității.");
+      error.status = 422;
+      throw error;
+    }
+    return catalogMatch;
+  }
+
+  const institutions = await Institution.findAll({ where: { status: "active" }, attributes: ["name", "shortName", "country", "countryCode", "website"] });
+  const institution = institutions.find((item) => normalizeName(item.name) === requested);
+  if (institution) return institution;
+
+  const error = new Error("Elevii pot adăuga în tracker doar universități din catalogul public sau instituții active aprobate de admin.");
+  error.status = 422;
+  throw error;
+}
+
+function studentUniversityPayload(payload, source) {
+  const clean = { ...payload };
+  clean.name = source.name || clean.name;
+  clean.shortName = source.shortName || clean.shortName;
+  clean.country = source.country || clean.country;
+  clean.countryCode = source.countryCode || clean.countryCode;
+  clean.officialLink = source.website || clean.officialLink;
+  return clean;
+}
+
+function ensureStudentCanUpdate(payload) {
+  const allowed = new Set(["status", "deadline", "notes", "rating"]);
+  const blocked = Object.keys(payload).filter((key) => !allowed.has(key));
+  if (blocked.length) {
+    const error = new Error("Elevii pot modifica doar statusul personal, deadline-ul, notițele și ratingul. Universitățile și programele vin din catalogul aprobat.");
+    error.status = 403;
+    throw error;
+  }
+}
+
 export async function listUniversities(req, res, next) {
   try {
     const universities = await University.findAll({
@@ -49,7 +110,22 @@ export async function listUniversities(req, res, next) {
 export async function createUniversity(req, res, next) {
   const transaction = await sequelize.transaction();
   try {
-    const university = await University.create({ ...req.body, UserId: req.user.id }, { transaction });
+    const approvedSource = req.user.role === "student" ? await ensureStudentUsesApprovedCatalog(req.body) : null;
+    const payload = approvedSource ? studentUniversityPayload(req.body, approvedSource) : req.body;
+    const duplicate = await University.findOne({
+      where: {
+        UserId: req.user.id,
+        name: payload.name,
+        program: payload.program,
+        faculty: payload.faculty
+      },
+      transaction
+    });
+    if (duplicate) {
+      await transaction.rollback();
+      return res.status(409).json({ message: "Universitatea și programul există deja în trackerul tău." });
+    }
+    const university = await University.create({ ...payload, UserId: req.user.id }, { transaction });
     await Document.bulkCreate(
       defaultDocuments.map((doc) => ({ ...doc, UniversityId: university.id })),
       { transaction }
@@ -67,6 +143,9 @@ export async function updateUniversity(req, res, next) {
   try {
     const university = await University.findOne({ where: { id: req.params.id, UserId: req.user.id } });
     if (!university) return res.status(404).json({ message: "Universitatea nu a fost gasita." });
+    if (req.user.role === "student") {
+      ensureStudentCanUpdate(req.body);
+    }
     await university.update(req.body);
     const updated = await University.findByPk(university.id, { include: includeDocuments });
     return res.json({ university: serializeUniversity(updated) });

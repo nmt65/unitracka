@@ -34,12 +34,17 @@ export function UniversityModal({ open, initial, onClose, onSave }) {
 
   useEffect(() => {
     if (!selectedCatalog || initial) return;
+    const offer = selectedCatalog.offerPrograms?.[0];
     setForm((current) => ({
       ...current,
       shortName: selectedCatalog.shortName || current.shortName,
       country: selectedCatalog.country || current.country,
       countryCode: selectedCatalog.countryCode || current.countryCode,
-      officialLink: selectedCatalog.website || current.officialLink
+      faculty: offer?.faculty || current.faculty,
+      program: offer?.program || current.program,
+      programType: offer?.programType || current.programType,
+      officialLink: selectedCatalog.website || current.officialLink,
+      notes: selectedCatalog.offerSummary || current.notes
     }));
   }, [selectedCatalog, initial]);
 
@@ -83,7 +88,7 @@ export function UniversityModal({ open, initial, onClose, onSave }) {
             <input name="name" list="catalog" value={form.name} onChange={updateField} required />
           </label>
           <datalist id="catalog">
-            {catalog.map((item) => <option key={`${item.name}-${item.city}`} value={item.name}>{item.country}</option>)}
+            {catalog.map((item) => <option key={`${item.name}-${item.city}`} value={item.name}>{item.country} · {item.offerSummary || ""}</option>)}
           </datalist>
           <label>
               Abreviere *
