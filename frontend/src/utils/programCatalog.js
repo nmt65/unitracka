@@ -60,6 +60,7 @@ const programsByShortName = {
 };
 
 function keyFor(institution = {}) {
+  institution ||= {};
   const shortName = String(institution.shortName || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
   if (programsByShortName[shortName]) return shortName;
   const name = String(institution.name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
@@ -81,4 +82,3 @@ export function getProgramsForInstitution(institution) {
 export function programChoiceValue(option) {
   return `${option.faculty}|||${option.program}|||${option.programType}`;
 }
-

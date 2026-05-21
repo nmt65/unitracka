@@ -108,6 +108,17 @@ small {
   padding: 24px;
 }
 
+.error-details {
+  max-width: min(680px, 100%);
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--surface-2);
+  color: var(--warning);
+  white-space: pre-wrap;
+}
+
 .spin {
   animation: spin 1s linear infinite;
 }
