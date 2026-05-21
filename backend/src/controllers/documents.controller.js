@@ -88,6 +88,9 @@ export async function updateDocument(req, res, next) {
     }
 
     const payload = { ...req.body };
+    if (req.user.role === "student" && payload.verificationStatus) {
+      return res.status(403).json({ message: "Doar universitatea sau adminul poate schimba statusul de verificare manual." });
+    }
     if (payload.verificationStatus === "verified") {
       payload.isCompleted = true;
       payload.completedAt = payload.completedAt || new Date().toISOString().slice(0, 10);
