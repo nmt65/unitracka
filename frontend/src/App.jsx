@@ -51,6 +51,10 @@ export function App() {
   }, [user?.id, user?.role]);
 
   useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [active]);
+
+  useEffect(() => {
     if (!user) return;
     const allowed = pagesByRole[user.role] || pagesByRole.student;
     if (!allowed.has(active)) setActive("dashboard");

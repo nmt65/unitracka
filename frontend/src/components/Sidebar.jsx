@@ -84,6 +84,10 @@ export function Sidebar({ active, onChange, counts, user, language = "ro" }) {
           </button>
         );
       })}
+      <button className={`side-link mobile-only-nav ${active === "profile" ? "active" : ""}`} type="button" onClick={() => onChange("profile")}>
+        <UserCircle2 size={18} />
+        {t("Profil", language)}
+      </button>
       <button className={`profile-link ${active === "profile" ? "active" : ""}`} type="button" onClick={() => onChange("profile")}>
         <UserCircle2 size={18} />
         <span>{t("Profil", language)}</span>

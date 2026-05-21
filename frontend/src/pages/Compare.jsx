@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { Check, Plus, Search, X } from "lucide-react";
 import { api } from "../services/api.js";
 import { CompareTable } from "../components/CompareTable.jsx";
 import { getProgramsForInstitution } from "../utils/programCatalog.js";
+import { programTypes } from "../utils/status.js";
 
 const COMPARE_SELECTION_KEY = "unitrack_compare_selection_v1";
 
@@ -52,6 +53,8 @@ export function Compare({ universities, onToast }) {
   const [selected, setSelected] = useState([]);
   const [catalog, setCatalog] = useState([]);
   const [query, setQuery] = useState("");
+  const [source, setSource] = useState("all");
+  const [programType, setProgramType] = useState("all");
 
   useEffect(() => {
     api.catalog()
@@ -68,8 +71,13 @@ export function Compare({ universities, onToast }) {
 
   const filtered = useMemo(() => {
     const value = query.toLowerCase();
-    return available.filter((uni) => [uni.name, uni.country, uni.city, uni.program, uni.faculty, uni.offerSummary, ...(uni.strengths || [])].filter(Boolean).join(" ").toLowerCase().includes(value));
-  }, [available, query]);
+    return available.filter((uni) => {
+      const matchesSource = source === "all" || uni.sourceType === source;
+      const matchesType = programType === "all" || uni.programType === programType || (uni.offerPrograms || []).some((offer) => offer.programType === programType);
+      const haystack = [uni.name, uni.country, uni.city, uni.program, uni.faculty, uni.offerSummary, ...(uni.strengths || [])].filter(Boolean).join(" ").toLowerCase();
+      return matchesSource && matchesType && haystack.includes(value);
+    });
+  }, [available, programType, query, source]);
 
   useEffect(() => {
     if (selected.length || available.length < 2) return;
@@ -95,6 +103,8 @@ export function Compare({ universities, onToast }) {
     () => available.filter((uni) => selected.includes(uni.id)).slice(0, 4),
     [available, selected]
   );
+  const selectedSet = useMemo(() => new Set(selected), [selected]);
+  const visibleResults = filtered.slice(0, 36);
 
   function toggle(id) {
     setSelected((current) => {
@@ -107,6 +117,14 @@ export function Compare({ universities, onToast }) {
     });
   }
 
+  function clearSelection() {
+    setSelected([]);
+  }
+
+  function removeSelection(id) {
+    setSelected((current) => current.filter((item) => item !== id));
+  }
+
   return (
     <section className="unitrack-page">
       <div className="page-heading">
@@ -114,27 +132,86 @@ export function Compare({ universities, onToast }) {
           <h1>Compară Universități</h1>
           <p>Selectează 2–4 universități din catalogul public sau din trackerul tău</p>
         </div>
+        <div className="compare-heading-count">
+          <strong>{selectedUniversities.length}/4</strong>
+          <span>selectate</span>
+        </div>
       </div>
-      <div className="compare-picker-card">
-        <div className="compare-toolbar">
-          <h2>Selectează universități ({selected.length}/4)</h2>
-          <label className="search-field compact">
+      <div className="compare-layout">
+        <aside className="compare-picker-card">
+          <div className="compare-toolbar">
+            <div>
+              <h2>Alege universitățile</h2>
+              <p>{filtered.length} rezultate disponibile</p>
+            </div>
+            <button className="soft-button compact" type="button" onClick={clearSelection} disabled={selected.length === 0}>Reset</button>
+          </div>
+          <label className="search-field compare-search">
             <Search size={16} />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Caută pentru comparație..." />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Caută universitate, țară, program..." />
           </label>
-        </div>
-        <div className="compare-picker">
-          {filtered.map((uni) => (
-            <label className={`compare-chip ${selected.includes(uni.id) ? "active" : ""}`} key={uni.id}>
-              <input type="checkbox" checked={selected.includes(uni.id)} onChange={() => toggle(uni.id)} />
-              <strong>{countryCode(uni)}</strong>
-              {shortName(uni)}
-              <small>{uni.sourceType === "tracker" ? "tracker" : "catalog"}</small>
-            </label>
-          ))}
+          <div className="compare-filter-row" aria-label="Sursă universități">
+            {[
+              ["all", "Toate"],
+              ["tracker", "Tracker"],
+              ["catalog", "Catalog"]
+            ].map(([value, label]) => (
+              <button key={value} type="button" className={source === value ? "active" : ""} onClick={() => setSource(value)}>{label}</button>
+            ))}
+          </div>
+          <div className="compare-filter-row compact-row" aria-label="Tip program">
+            <button type="button" className={programType === "all" ? "active" : ""} onClick={() => setProgramType("all")}>Toate</button>
+            {programTypes.map((type) => (
+              <button key={type.value} type="button" className={programType === type.value ? "active" : ""} onClick={() => setProgramType(type.value)}>{type.label}</button>
+            ))}
+          </div>
+          <div className="compare-results">
+            {visibleResults.map((uni) => {
+              const active = selectedSet.has(uni.id);
+              return (
+                <button className={`compare-result ${active ? "active" : ""}`} type="button" key={uni.id} onClick={() => toggle(uni.id)}>
+                  <span className="uni-logo tone-primary">{shortName(uni)}</span>
+                  <span>
+                    <strong>{uni.name}</strong>
+                    <small>{countryCode(uni)} {uni.country} · {uni.program}</small>
+                  </span>
+                  <em>{uni.sourceType === "tracker" ? "tracker" : "catalog"}</em>
+                  {active ? <Check size={17} /> : <Plus size={17} />}
+                </button>
+              );
+            })}
+            {filtered.length > visibleResults.length && <p className="field-note">Mai sunt {filtered.length - visibleResults.length} rezultate. Rafinează căutarea ca să le vezi mai repede.</p>}
+          </div>
+        </aside>
+
+        <div className="compare-workspace">
+          <div className="compare-selection-strip">
+            {Array.from({ length: 4 }).map((_, index) => {
+              const uni = selectedUniversities[index];
+              return (
+                <div className={`compare-slot ${uni ? "filled" : ""}`} key={uni?.id || `slot-${index}`}>
+                  {uni ? (
+                    <>
+                      <span className="uni-logo tone-primary">{shortName(uni)}</span>
+                      <span>
+                        <strong>{uni.name}</strong>
+                        <small>{countryCode(uni)} {uni.country} · {uni.sourceType === "tracker" ? "tracker" : "catalog"}</small>
+                      </span>
+                      <button type="button" onClick={() => removeSelection(uni.id)} aria-label="Elimină din comparație"><X size={15} /></button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="empty-slot-index">{index + 1}</span>
+                      <small>{index < 2 ? "Necesar" : "Opțional"}</small>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <CompareTable universities={selectedUniversities} />
         </div>
       </div>
-      <CompareTable universities={selectedUniversities} />
     </section>
   );
 }
