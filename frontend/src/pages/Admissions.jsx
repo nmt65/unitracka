@@ -268,12 +268,12 @@ export function Admissions({ onToast }) {
             <label>Tip așteptat<input name="expectedType" value={aiForm.expectedType} readOnly /></label>
             <label className="wide">Atașează fișier
               <span className="file-control"><Upload size={17} /><input type="file" onChange={handleDocumentFile} accept=".txt,.csv,.json,.xml,.pdf,.doc,.docx,image/*,application/pdf" /></span>
-              <small className="field-note">Atașează documentul real. Pentru PDF-uri scanate sau imagini, verificarea avansată are nevoie de cheia configurată pe server; altfel folosește textul OCR introdus aici.</small>
+              <small className="field-note">Atașează documentul real. PDF-urile, imaginile și documentele Word se aprobă automat doar cu verificarea avansată configurată pe server; altfel rămân pentru verificarea universității.</small>
             </label>
             <label className="wide">Nume fișier<input name="fileName" value={aiForm.fileName} onChange={updateAi} /></label>
             <label className="wide">Text extras / OCR<textarea name="text" value={aiForm.text} onChange={updateAi} /></label>
           </div>
-          {aiResult && <p className={aiResult.accepted ? "success-note" : "form-error"}>{aiResult.provider}: {aiResult.label} · {Math.round(aiResult.confidence * 100)}% · {aiResult.explanation}</p>}
+          {aiResult && <p className={aiResult.accepted ? "success-note" : "form-error"}>Verificare automată: {aiResult.label} · {Math.round(aiResult.confidence * 100)}% · {aiResult.explanation}</p>}
           <div className="profile-actions"><button className="primary-button" disabled={checking || allDocs.length === 0 || !aiForm.fileDataUrl}>{checking ? "Se verifică..." : "Verifică și adaugă"}</button></div>
         </form>
       </div>

@@ -794,7 +794,7 @@ export const staticApi = {
       throw new Error("Elevii nu pot modifica tipul documentelor cerute; pot adăuga doar documente suplimentare.");
     }
     if (user?.role === "student" && (body.isCompleted === true || body.completedAt || body.verificationStatus === "verified")) {
-      throw new Error("Documentele se marchează complete doar după verificare AI sau aprobare de universitate.");
+      throw new Error("Documentele se marchează complete doar după verificare automată sau aprobare de universitate.");
     }
     const containers = [...state.universities.map((item) => item.documents), ...state.applications.map((item) => item.documents)];
     const document = containers.flat().find((item) => item.id === documentId);

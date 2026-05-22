@@ -22,6 +22,10 @@ function defaultRequirementsForProgram(program) {
   }));
 }
 
+function programKey({ InstitutionId, academicYear, faculty, name, programType }) {
+  return [InstitutionId, academicYear, normalizeName(faculty), normalizeName(name), programType || "licenta"].join("|");
+}
+
 export async function importCatalogToInstitutions() {
   const existing = await Institution.findAll({ attributes: ["id", "name"] });
   const existingNames = new Set(existing.map((item) => item.name.toLowerCase()));
@@ -41,55 +45,70 @@ export async function importCatalogToInstitutions() {
   const created = rows.length ? await Institution.bulkCreate(rows, { validate: true }) : [];
   const institutions = await Institution.findAll({ order: [["name", "ASC"]] });
   const institutionByName = new Map(institutions.map((item) => [normalizeName(item.name), item]));
-  let programsCreated = 0;
-  let requirementsCreated = 0;
+  const programRows = [];
 
   for (const catalogItem of universityCatalog) {
     const institution = institutionByName.get(normalizeName(catalogItem.name));
     if (!institution) continue;
     for (const offer of catalogItem.offerPrograms || []) {
-      const [program, wasCreated] = await AdmissionProgram.findOrCreate({
-        where: {
-          InstitutionId: institution.id,
-          academicYear: catalogItem.academicYear || currentAdmissionYear,
-          faculty: offer.faculty,
-          name: offer.program,
-          programType: offer.programType || "licenta"
-        },
-        defaults: {
-          InstitutionId: institution.id,
-          faculty: offer.faculty,
-          name: offer.program,
-          programType: offer.programType || "licenta",
-          academicYear: catalogItem.academicYear || currentAdmissionYear,
-          deadline: offer.deadline || catalogItem.deadline || null,
-          annualTuition: offer.annualTuition ?? catalogItem.annualTuition ?? null,
-          seats: offer.seats ?? null,
-          language: offer.language || null,
-          admissionMethod: offer.admissionMethod || "Dosar digital verificat în UniTrack și criteriile publicate de universitate.",
-          website: offer.website || catalogItem.website || null,
-          description: offer.description || catalogItem.offerSummary || null,
-          status: "active",
-          source: "catalog"
-        }
+      programRows.push({
+        InstitutionId: institution.id,
+        faculty: offer.faculty,
+        name: offer.program,
+        programType: offer.programType || "licenta",
+        academicYear: catalogItem.academicYear || currentAdmissionYear,
+        deadline: offer.deadline || catalogItem.deadline || null,
+        annualTuition: offer.annualTuition ?? catalogItem.annualTuition ?? null,
+        seats: offer.seats ?? null,
+        language: offer.language || null,
+        admissionMethod: offer.admissionMethod || "Dosar digital verificat în UniTrack și criteriile publicate de universitate.",
+        website: offer.website || catalogItem.website || null,
+        description: offer.description || catalogItem.offerSummary || null,
+        status: "active",
+        source: "catalog"
       });
-      if (wasCreated) programsCreated += 1;
-
-      for (const requirement of defaultRequirementsForProgram(offer)) {
-        const [, requirementWasCreated] = await ProgramRequirement.findOrCreate({
-          where: { AdmissionProgramId: program.id, documentName: requirement.documentName },
-          defaults: { ...requirement, AdmissionProgramId: program.id }
-        });
-        if (requirementWasCreated) requirementsCreated += 1;
-      }
     }
   }
+
+  const programCountBefore = await AdmissionProgram.count();
+  if (programRows.length) {
+    await AdmissionProgram.bulkCreate(programRows, { ignoreDuplicates: true, validate: true });
+  }
+  const programCountAfter = await AdmissionProgram.count();
+  const programsCreated = Math.max(0, programCountAfter - programCountBefore);
+  const programs = await AdmissionProgram.findAll({ attributes: ["id", "InstitutionId", "academicYear", "faculty", "name", "programType"] });
+  const programByKey = new Map(programs.map((program) => [programKey(program), program]));
+  const requirementRows = [];
+
+  for (const catalogItem of universityCatalog) {
+    const institution = institutionByName.get(normalizeName(catalogItem.name));
+    if (!institution) continue;
+    for (const offer of catalogItem.offerPrograms || []) {
+      const program = programByKey.get(programKey({
+        InstitutionId: institution.id,
+        academicYear: catalogItem.academicYear || currentAdmissionYear,
+        faculty: offer.faculty,
+        name: offer.program,
+        programType: offer.programType || "licenta"
+      }));
+      if (!program) continue;
+      defaultRequirementsForProgram(offer).forEach((requirement) => {
+        requirementRows.push({ ...requirement, AdmissionProgramId: program.id });
+      });
+    }
+  }
+
+  const requirementCountBefore = await ProgramRequirement.count();
+  if (requirementRows.length) {
+    await ProgramRequirement.bulkCreate(requirementRows, { ignoreDuplicates: true, validate: true });
+  }
+  const requirementCountAfter = await ProgramRequirement.count();
 
   return {
     created: created.length,
     existing: existing.length,
     programsCreated,
-    requirementsCreated,
+    requirementsCreated: Math.max(0, requirementCountAfter - requirementCountBefore),
     catalog: universityCatalog.length
   };
 }

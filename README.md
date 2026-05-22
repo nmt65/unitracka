@@ -28,8 +28,8 @@ Aplicația urmărește trei direcții principale:
 - Trimitere aplicații de către studenți către universitățile active.
 - Checklist documente pentru fiecare universitate.
 - Documente predefinite și documente custom.
-- Verificare documente cu AI prin OpenAI/Gemini, cu fallback local euristic.
-- Consilier AI pentru studenți: scor orientativ pentru CV, dosar și șanse de admitere.
+- Verificare automată asistată prin OpenAI/Gemini, cu reguli locale stricte când providerul nu este configurat.
+- Asistent pentru studenți: scor orientativ pentru CV, dosar și șanse de admitere.
 - Media BAC și scorurile de limbă se pot salva doar după documente atestatoare verificate.
 - Notificări interne pentru aplicații noi și schimbări de status.
 - Audit log pentru acțiuni sensibile.
@@ -135,7 +135,7 @@ DB_DIALECT=postgres
 DATABASE_URL=postgresql://user:password@host:5432/database
 ```
 
-Cheile pentru AI și SMTP sunt opționale:
+Cheile pentru verificarea asistată și SMTP sunt opționale:
 
 ```env
 OPENAI_API_KEY=
@@ -147,7 +147,7 @@ SMTP_PASS=
 SMTP_FROM=UniTrack <no-reply@example.ro>
 ```
 
-Fără chei AI externe, verificarea documentelor folosește fallback local. Fără SMTP, tokenul de resetare este disponibil doar în development, pentru testare.
+Fără chei externe, verificarea documentelor folosește reguli locale stricte. Fără SMTP, resetarea prin email nu poate fi trimisă în producție.
 
 ## Verificare
 

@@ -23,6 +23,7 @@ import { aiRouter } from "./routes/ai.routes.js";
 import { applicationsRouter } from "./routes/applications.routes.js";
 import { institutionsRouter } from "./routes/institutions.routes.js";
 import { notificationsRouter } from "./routes/notifications.routes.js";
+import { startupState } from "./startupState.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -59,6 +60,14 @@ export function createApp() {
   app.get("/api/ready", async (_req, res) => {
     try {
       await sequelize.authenticate();
+      if (!startupState.databaseReady) {
+        return res.status(503).json({
+          ok: false,
+          database: env.dbDialect,
+          startup: startupState.error ? "error" : "initializing",
+          error: startupState.error || undefined
+        });
+      }
       return res.json({ ok: true, database: env.dbDialect, timestamp: new Date().toISOString() });
     } catch {
       return res.status(503).json({ ok: false, database: env.dbDialect });

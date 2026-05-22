@@ -59,7 +59,7 @@ async function enforceAiQuota(req, feature) {
     }
   });
   if (used >= limit) {
-    const label = feature === "document" ? "verificări de documente" : "cereri către consilierul AI";
+    const label = feature === "document" ? "verificări de documente" : "cereri către asistentul de dosar";
     const error = new Error(`Ai atins limita zilnică de ${limit} ${label}. Reîncearcă mâine sau cere adminului să mărească limita.`);
     error.status = 429;
     throw error;
@@ -142,7 +142,7 @@ export async function checkDocument(req, res, next) {
 export async function studentAdvice(req, res, next) {
   try {
     if (req.user.role !== "student") {
-      return res.status(403).json({ message: "Consilierul AI este disponibil pentru conturile de elev." });
+      return res.status(403).json({ message: "Asistentul de dosar este disponibil pentru conturile de elev." });
     }
     await enforceAiQuota(req, "advisor");
 

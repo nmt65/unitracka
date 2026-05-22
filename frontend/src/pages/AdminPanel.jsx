@@ -236,8 +236,8 @@ export function AdminPanel({ onToast }) {
             <span>Limită asistent dosar</span>
           </article>
           <article className={systemStatus.seedDemo ? "warn" : "ok"}>
-            <strong>{systemStatus.seedDemo ? "Demo seed ON" : "Demo seed OFF"}</strong>
-            <span>Date demo publice</span>
+            <strong>{systemStatus.seedDemo ? "Seed test ON" : "Seed test OFF"}</strong>
+            <span>Date de test publice</span>
           </article>
           <article className={systemStatus.bootstrapAdmin ? "warn" : "ok"}>
             <strong>{systemStatus.bootstrapAdmin ? "Bootstrap ON" : "Bootstrap OFF"}</strong>

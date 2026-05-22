@@ -129,7 +129,7 @@ export async function updateDocument(req, res, next) {
       return res.status(403).json({ message: "Elevii nu pot modifica tipul documentelor cerute; pot adăuga doar documente suplimentare." });
     }
     if (req.user.role === "student" && (payload.isCompleted === true || payload.completedAt)) {
-      return res.status(403).json({ message: "Documentele se marchează complete doar după verificare AI sau aprobare de universitate." });
+      return res.status(403).json({ message: "Documentele se marchează complete doar după verificare automată sau aprobare de universitate." });
     }
     if (payload.verificationStatus === "verified") {
       payload.isCompleted = true;

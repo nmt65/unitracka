@@ -29,7 +29,7 @@ Surse oficiale verificate:
 - UI complet pentru flow-ul de aplicații universitare: dashboard, admitere, documente, comparație, calendar, profil.
 - Admin panel pentru universități și conturi instituționale.
 - Workspace de universitate pentru sortarea aplicațiilor primite.
-- Documentație pentru securitate/RLS și verificare AI documente.
+- Documentație pentru securitate/RLS și verificare asistată a documentelor.
 
 ## Mapare pe criteriile de jurizare Web
 
@@ -37,8 +37,8 @@ Surse oficiale verificate:
 | --- | --- |
 | Inginerie web și programare | React/Vite modular, Express API, servicii separate, validatoare Zod, modele Sequelize, suport SQLite/PostgreSQL, exporturi XML/JSON/CSV/PDF/ICS. |
 | Arhitectura datelor | Schema relațională cu utilizatori, instituții, aplicații, documente, notificări; script `backend/sql/postgres_rls.sql`; CNP hash-uit cu HMAC. |
-| Funcționalitate și utilitate | Flux complet student-universitate-admin: cont unic, aplicații, documente, verificare AI, workspace, comparație, calendar, profil public, notificări. |
-| Design și UX | Interfață responsive inspirată din prototipul Rocket, dark/light mode, navigare laterală, stări goale, validări live, feedback prin toast. |
+| Funcționalitate și utilitate | Flux complet student-universitate-admin: cont unic, aplicații, documente, verificare asistată, workspace, comparație, calendar, profil public, notificări. |
+| Design și UX | Interfață responsive construită manual în React/CSS, dark/light mode, navigare laterală, stări goale, validări live, feedback prin toast. |
 | Securitate | JWT `httpOnly`, CSRF, rate limit, body limit, Helmet, CORS configurabil, validare server-side, sanitizare XSS, verificare CNP, RLS SQL pentru PostgreSQL. |
 | Testare și prezentare | `npm run check`, `npm run smoke`, health/readiness endpoints, capturi QA în `docs/`, checklist lansare publică. |
 
@@ -46,6 +46,6 @@ Surse oficiale verificate:
 
 - Capturi finale din aplicație la rezoluție mare; una este deja în `docs/unitracka-qa-public-ready-dashboard-latest.png`.
 - Documentație tehnică finală de prezentare: arhitectură, model DB, API, securitate, limitări.
-- Fișier explicit cu surse externe: biblioteci npm, iconițe lucide, framework-uri, eventuale modele AI dacă se adaugă ulterior.
+- Fișier explicit cu surse externe: biblioteci npm, iconițe lucide, framework-uri, eventuale modele externe dacă se adaugă ulterior.
 - Instrucțiuni de rulare offline/pe laptopul de prezentare.
 - În README-ul final trebuie menționat clar ce componente sunt cod propriu și ce biblioteci externe sunt folosite, deoarece regulamentul cere declararea materialelor/fragmentelor care nu aparțin autorului.

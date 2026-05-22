@@ -107,12 +107,12 @@ function normalizeRemoteResult(payload, remote) {
   const confidence = clampConfidence(remote.confidence);
   const labelMatchesExpected = expectedMatches(label, payload.expectedType);
   let accepted = Boolean(remote.accepted) && labelMatchesExpected && confidence >= REMOTE_ACCEPTANCE_THRESHOLD;
-  let explanation = remote.explanation || "Clasificat cu provider AI extern.";
+  let explanation = remote.explanation || "Clasificat cu providerul de analiză configurat.";
 
   if (remote.accepted && !labelMatchesExpected) {
-    explanation = `AI-ul a detectat ${label}, nu ${payload.expectedType}. ${explanation}`;
+    explanation = `Verificarea automată a detectat ${label}, nu ${payload.expectedType}. ${explanation}`;
   } else if (remote.accepted && confidence < REMOTE_ACCEPTANCE_THRESHOLD) {
-    explanation = `Încrederea AI este prea mică pentru aprobare automată. ${explanation}`;
+    explanation = `Încrederea clasificării este prea mică pentru aprobare automată. ${explanation}`;
   }
 
   if (!accepted && remote.accepted) {
@@ -206,17 +206,20 @@ async function geminiClassifier(payload) {
 
 export async function classifyDocument(payload) {
   const remoteConfigured = Boolean(env.openaiApiKey || env.geminiApiKey);
+  const binaryDocument = /^data:(application\/pdf|image\/|application\/msword|application\/vnd\.openxmlformats-officedocument)/i.test(String(payload.fileDataUrl || ""));
   const remote = await openAiClassifier(payload).catch(() => null) || await geminiClassifier(payload).catch(() => null);
   if (remote) {
     return normalizeRemoteResult(payload, remote);
   }
-  if (remoteConfigured && /^data:(application\/pdf|image\/)/i.test(String(payload.fileDataUrl || ""))) {
+  if (binaryDocument) {
     return {
       provider: "unitrack-document-classifier",
       label: "Necunoscut",
       confidence: 0.18,
       accepted: false,
-      explanation: "AI-ul extern nu a putut citi fișierul atașat, deci documentul nu este aprobat automat. Verifică cheia API sau aprobă manual din workspace-ul universității."
+      explanation: remoteConfigured
+        ? "Providerul de analiză nu a putut citi fișierul atașat, deci documentul nu este aprobat automat. Verifică cheia API sau aprobă manual din workspace-ul universității."
+        : "Pentru PDF-uri, imagini și documente Word este necesară verificarea avansată configurată pe server sau aprobarea manuală a universității. Textul introdus manual nu poate aproba documentul."
     };
   }
   return localClassifier(payload);

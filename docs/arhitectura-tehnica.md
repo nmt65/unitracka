@@ -2,7 +2,7 @@
 
 ## Scop
 
-UniTrack gestionează procesul de admitere dintre elevi și universități: cont unic per elev, dosare de aplicație, documente, verificare AI, notificări și workspace pentru instituții.
+UniTrack gestionează procesul de admitere dintre elevi și universități: cont unic per elev, dosare de aplicație, documente, verificare asistată, notificări și workspace pentru instituții.
 
 ## Stack
 
@@ -10,14 +10,14 @@ UniTrack gestionează procesul de admitere dintre elevi și universități: cont
 - Backend: Node.js + Express, Sequelize ORM, Zod validation.
 - Date local: SQLite pentru development.
 - Date producție: PostgreSQL recomandat, cu politici RLS în `backend/sql/postgres_rls.sql`.
-- AI documente: OpenAI/Gemini prin API key sau fallback local euristic.
+- Verificare documente: OpenAI/Gemini prin API key sau reguli locale stricte pentru fișiere text.
 
 ## Fluxuri principale
 
 1. Studentul creează cont cu CNP valid; backend-ul salvează doar HMAC-ul CNP-ului și ultimele 4 cifre.
 2. Studentul trimite aplicație către o instituție activă aprobată de admin.
 3. Sistemul creează checklist-ul de documente și notifică workspace-ul universității.
-4. Studentul verifică documentele cu AI; documentele acceptate sunt marcate ca finalizate.
+4. Studentul verifică documentele prin fluxul asistat; documentele acceptate sunt marcate ca finalizate.
 5. Universitatea sortează aplicațiile, schimbă statusul și trimite notificare studentului.
 6. Adminul aprobă instituții și creează conturi de universitate.
 7. Acțiunile critice sunt păstrate în audit log pentru verificare și depanare.
@@ -38,14 +38,14 @@ UniTrack gestionează procesul de admitere dintre elevi și universități: cont
 - `/api/admin/*`: instituții, conturi universitate, listă utilizatori, audit log.
 - `/api/applications/*`: aplicații student și workspace universitate.
 - `/api/documents/*`: documente checklist.
-- `/api/ai/documents/check`: verificare documente.
+- `/api/ai/documents/check`: verificare asistată documente.
 - `/api/exports/*`: CSV, JSON, XML, PDF, ICS.
 
 ## Securitate
 
 - Cookie JWT `httpOnly`, `sameSite=lax`.
 - Token CSRF double-submit pentru metode unsafe.
-- Rate limiting global, separat pentru auth și document AI.
+- Rate limiting global, separat pentru auth și verificări documente.
 - Validare Zod și sanitizare XSS pe body/query/params.
 - Helmet și CORS configurabil prin `CORS_ORIGIN`.
 - CNP-ul nu se păstrează în clar.

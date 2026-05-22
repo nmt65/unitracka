@@ -1,4 +1,4 @@
-# Verificare AI documente
+# Verificare asistată documente
 
 Fluxul de documente are trei niveluri:
 
@@ -37,16 +37,16 @@ Ordinea este:
 - certificat limba;
 - portofoliu.
 
-Raspunsul include `label`, `confidence`, `accepted` si `explanation`, apoi actualizeaza documentul in baza de date cu `verified` sau `rejected`. Pentru fisiere imagine, OpenAI primeste si imaginea. Pentru Gemini, payload-ul include fisierul atasat inline. Fallback-ul local foloseste textul extras/OCR ca dovada; numele fisierului este tratat doar ca metadata si nu poate aproba singur un document.
+Raspunsul include `label`, `confidence`, `accepted` si `explanation`, apoi actualizeaza documentul in baza de date cu `verified` sau `rejected`. Pentru fisiere imagine, OpenAI primeste si imaginea. Pentru Gemini, payload-ul include fisierul atasat inline. Clasificatorul local poate aproba doar fisiere text cu continut suficient; pentru PDF, imagini si documente Word este necesar provider extern sau aprobare manuala de universitate.
 
 Reguli stricte introduse dupa testarea cu documente gresite:
 
 - verificarea API cere un `fileDataUrl` real;
 - formularul nu mai contine text/nume de fisier demo;
 - schimbarea documentului selectat sterge fisierul, textul OCR si verdictul vechi;
-- daca AI-ul detecteaza un alt tip de document decat cel cerut, documentul ramane `rejected`;
+- daca verificarea detecteaza un alt tip de document decat cel cerut, documentul ramane `rejected`;
 - daca nu exista text OCR suficient si nu este configurat Gemini/OpenAI, documentul ramane de verificat manual.
 
 ## Limitari corecte pentru documentatie
 
-Sistemul nu inlocuieste validarea umana a secretariatului. AI-ul este folosit ca pre-verificare si triere, iar decizia finala ramane la contul de universitate.
+Sistemul nu inlocuieste validarea umana a secretariatului. Verificarea asistata este folosita pentru pre-verificare si triere, iar decizia finala ramane la contul de universitate.
