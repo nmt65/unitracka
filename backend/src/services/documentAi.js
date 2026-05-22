@@ -3,7 +3,7 @@ import { env } from "../config/env.js";
 const patterns = [
   { label: "Diplomă BAC", terms: ["diploma de bacalaureat", "diplomă de bacalaureat", "bacalaureat", "diplomă bac", "diploma bac", "diploma de absolvire"] },
   { label: "Foaie matricolă", terms: ["foaie matricola", "foaie matricolă", "situație școlară", "situatie scolara", "transcript", "matricol"] },
-  { label: "CV Europass", terms: ["europass", "curriculum vitae", "experiență profesională", "experienta profesionala", "competențe", "competente"] },
+  { label: "CV Europass", terms: ["europass", "erasmus", "curriculum vitae", "resume", "cv", "experiență profesională", "experienta profesionala", "work experience", "education", "educație", "educatie", "competențe", "competente", "skills"] },
   { label: "Scrisoare motivație", terms: ["scrisoare de motivatie", "scrisoare motivație", "motivation letter", "personal statement", "motivația candidaturii"] },
   { label: "Scrisori de recomandare", terms: ["recomandare", "recommendation letter", "letter of recommendation", "referință academică", "referinta academica"] },
   { label: "Certificat limbă", terms: ["ielts", "toefl", "cambridge", "language certificate", "certificat de competență lingvistică", "certificat de competenta lingvistica"] },
@@ -74,10 +74,11 @@ function localClassifier({ expectedType, fileName, text }) {
     };
   }
 
+  const requiredMatches = expectedScore?.label === "CV Europass" ? 1 : LOCAL_MIN_MATCHES;
   const accepted = Boolean(
     best.expected
     && expectedScore?.label === best.label
-    && expectedScore.textHits >= LOCAL_MIN_MATCHES
+    && expectedScore.textHits >= requiredMatches
   );
   const confidence = best.textHits
     ? Math.min(0.91, 0.36 + best.textHits * 0.14 + (accepted ? 0.18 : 0))
