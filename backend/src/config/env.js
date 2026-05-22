@@ -43,6 +43,8 @@ export const env = {
   geminiApiKey: process.env.GEMINI_API_KEY || "",
   geminiDocumentModel: process.env.GEMINI_DOCUMENT_MODEL || "gemini-1.5-flash",
   geminiAdvisorModel: process.env.GEMINI_ADVISOR_MODEL || process.env.GEMINI_DOCUMENT_MODEL || "gemini-1.5-flash",
+  aiDocumentDailyLimit: Number(process.env.AI_DOCUMENT_DAILY_LIMIT || 40),
+  aiAdvisorDailyLimit: Number(process.env.AI_ADVISOR_DAILY_LIMIT || 20),
   smtp: {
     host: process.env.SMTP_HOST || "",
     port: Number(process.env.SMTP_PORT || 587),

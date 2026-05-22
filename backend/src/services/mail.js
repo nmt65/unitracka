@@ -32,19 +32,29 @@ export async function sendMailSafe(message) {
 
 export async function sendPasswordResetEmail(user, token) {
   const resetUrl = `${env.appUrl.replace(/\/$/, "")}/?reset_token=${encodeURIComponent(token)}`;
+  const safeName = user.name || "utilizator UniTrack";
   return sendMailSafe({
     to: user.email,
     subject: "Resetare parolă UniTrack",
     text: [
-      `Salut, ${user.name || "utilizator UniTrack"},`,
+      `Salut, ${safeName},`,
       "",
       "Ai cerut resetarea parolei pentru contul tău.",
       `Link resetare: ${resetUrl}`,
-      `Token: ${token}`,
       "",
       `Linkul expiră în ${env.resetTokenMinutes} minute.`,
       "Dacă nu ai cerut resetarea, ignoră acest mesaj."
-    ].join("\n")
+    ].join("\n"),
+    html: [
+      "<div style=\"font-family:Arial,sans-serif;line-height:1.55;color:#111827;max-width:560px\">",
+      `<h2 style=\"margin:0 0 12px\">Resetare parolă UniTrack</h2>`,
+      `<p>Salut, ${safeName},</p>`,
+      "<p>Ai cerut resetarea parolei pentru contul tău. Apasă butonul de mai jos și setează o parolă nouă.</p>",
+      `<p><a href=\"${resetUrl}\" style=\"display:inline-block;background:#6354d9;color:#fff;text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:700\">Resetează parola</a></p>`,
+      `<p style=\"font-size:13px;color:#4b5563\">Linkul expiră în ${env.resetTokenMinutes} minute. Dacă butonul nu merge, deschide manual: <br><span style=\"word-break:break-all\">${resetUrl}</span></p>`,
+      "<p style=\"font-size:13px;color:#4b5563\">Dacă nu ai cerut resetarea, poți ignora acest mesaj.</p>",
+      "</div>"
+    ].join("")
   });
 }
 

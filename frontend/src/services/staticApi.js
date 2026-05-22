@@ -556,6 +556,8 @@ export const staticApi = {
         openaiAdvisorModel: null,
         geminiModel: null,
         geminiAdvisorModel: null,
+        aiDocumentDailyLimit: 40,
+        aiAdvisorDailyLimit: 20,
         corsOrigins: ["GitHub Pages static"],
         trustProxy: false
       }
@@ -586,6 +588,87 @@ export const staticApi = {
     addAudit(state, { actor: currentUser(state), action: "admin.institution_update", entityType: "Institution", entityId: institution.id, metadata: body });
     writeState(state);
     return { institution };
+  },
+  async myInstitutionPrograms() {
+    const state = readState();
+    const user = currentUser(state);
+    return this.adminPrograms({ institutionId: user.InstitutionId });
+  },
+  async createMyInstitutionProgram(body) {
+    const state = readState();
+    const user = currentUser(state);
+    return this.createProgram({ ...body, institutionId: user.InstitutionId });
+  },
+  async updateMyInstitutionProgram(programId, body) {
+    return this.updateProgram(programId, body);
+  },
+  async adminPrograms(query = {}) {
+    const state = readState();
+    const rows = publicInstitutionRows(state)
+      .filter((institution) => !query.institutionId || institution.id === query.institutionId)
+      .flatMap((institution) => (institution.offerPrograms || defaultOfferPrograms).map((program, index) => ({
+        id: program.id || `${institution.id}-program-${index}`,
+        InstitutionId: institution.id,
+        Institution: institution,
+        faculty: program.faculty,
+        name: program.program || program.name,
+        programType: program.programType || "licenta",
+        academicYear: program.academicYear || currentAdmissionYear,
+        deadline: program.deadline || null,
+        annualTuition: program.annualTuition ?? null,
+        seats: program.seats ?? null,
+        language: program.language || "",
+        admissionMethod: program.admissionMethod || "Dosar digital verificat.",
+        website: program.website || institution.website || "",
+        description: program.description || institution.offerSummary || "",
+        status: program.status || "active",
+        requirements: program.requirements || []
+      })));
+    return { programs: rows };
+  },
+  async createProgram(body) {
+    const state = readState();
+    const institution = state.institutions.find((item) => item.id === body.institutionId);
+    if (!institution) throw new Error("Universitatea nu există.");
+    institution.offerPrograms = institution.offerPrograms || [];
+    const program = {
+      id: id("program"),
+      faculty: body.faculty,
+      program: body.name,
+      name: body.name,
+      programType: body.programType,
+      academicYear: body.academicYear,
+      deadline: body.deadline || null,
+      annualTuition: body.annualTuition ?? null,
+      seats: body.seats ?? null,
+      language: body.language || "",
+      admissionMethod: body.admissionMethod || "",
+      website: body.website || institution.website || "",
+      description: body.description || "",
+      status: body.status || "active",
+      requirements: body.requirements || []
+    };
+    institution.offerPrograms.push(program);
+    addAudit(state, { actor: currentUser(state), action: "admin.program_create", entityType: "AdmissionProgram", entityId: program.id, metadata: { institutionId: institution.id, name: program.name } });
+    writeState(state);
+    return { program: { ...program, InstitutionId: institution.id, Institution: institution } };
+  },
+  async updateProgram(programId, body) {
+    const state = readState();
+    let found = null;
+    for (const institution of state.institutions) {
+      institution.offerPrograms = institution.offerPrograms || [];
+      const program = institution.offerPrograms.find((item, index) => (item.id || `${institution.id}-program-${index}`) === programId);
+      if (program) {
+        found = { institution, program };
+        break;
+      }
+    }
+    if (!found) throw new Error("Programul nu există.");
+    Object.assign(found.program, body.name ? { ...body, program: body.name } : body);
+    addAudit(state, { actor: currentUser(state), action: "admin.program_update", entityType: "AdmissionProgram", entityId: programId, metadata: Object.keys(body) });
+    writeState(state);
+    return { program: { ...found.program, InstitutionId: found.institution.id, Institution: found.institution } };
   },
   async adminUsers() {
     const state = readState();

@@ -1,10 +1,11 @@
 import bcrypt from "bcryptjs";
-import { AuditLog, Institution, User } from "../models/index.js";
+import { AdmissionProgram, AuditLog, Institution, ProgramRequirement, User } from "../models/index.js";
 import { env } from "../config/env.js";
 import { writeAudit } from "../services/audit.js";
 import { isSmtpConfigured, sendMailSafe } from "../services/mail.js";
 import { universityCatalog } from "../data/catalog.js";
 import { importCatalogToInstitutions } from "../services/catalogImport.js";
+import { defaultDocuments } from "../data/defaultDocuments.js";
 
 export async function createInstitution(req, res, next) {
   try {
@@ -58,6 +59,105 @@ export async function createUniversityUser(req, res, next) {
     });
     await writeAudit(req, { action: "admin.university_user_create", entityType: "User", entityId: user.id, metadata: { email: user.email, institutionId: institution.id } });
     return res.status(201).json({ user });
+  } catch (error) {
+    next(error);
+  }
+}
+
+function serializeProgram(program) {
+  const plain = program.toJSON ? program.toJSON() : { ...program };
+  const requirements = plain.ProgramRequirements || plain.requirements || [];
+  delete plain.ProgramRequirements;
+  delete plain.requirements;
+  return {
+    ...plain,
+    requirements: requirements
+      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+      .map((requirement) => ({
+        id: requirement.id,
+        documentName: requirement.documentName,
+        category: requirement.category,
+        isOptional: requirement.isOptional,
+        verificationRequired: requirement.verificationRequired,
+        rule: requirement.rule,
+        sortOrder: requirement.sortOrder
+      }))
+  };
+}
+
+function fallbackRequirements() {
+  return defaultDocuments.map((document, index) => ({
+    documentName: document.name,
+    category: document.category,
+    isOptional: document.isOptional,
+    verificationRequired: true,
+    rule: document.isOptional ? "Opțional, dar util pentru departajare." : "Obligatoriu pentru validarea dosarului.",
+    sortOrder: index
+  }));
+}
+
+export async function listAdmissionPrograms(req, res, next) {
+  try {
+    const where = {};
+    if (req.query.institutionId) where.InstitutionId = req.query.institutionId;
+    const programs = await AdmissionProgram.findAll({
+      where,
+      include: [Institution, ProgramRequirement],
+      order: [["academicYear", "DESC"], ["faculty", "ASC"], ["name", "ASC"]]
+    });
+    return res.json({ programs: programs.map(serializeProgram) });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function createAdmissionProgram(req, res, next) {
+  try {
+    const institution = await Institution.findByPk(req.body.institutionId);
+    if (!institution) return res.status(404).json({ message: "Universitatea nu există." });
+    const { institutionId, requirements = [], ...payload } = req.body;
+    const program = await AdmissionProgram.create({ ...payload, InstitutionId: institutionId, source: "admin" });
+    const rows = (requirements.length ? requirements : fallbackRequirements()).map((requirement, index) => ({
+      ...requirement,
+      sortOrder: requirement.sortOrder ?? index,
+      AdmissionProgramId: program.id
+    }));
+    await ProgramRequirement.bulkCreate(rows, { validate: true });
+    await writeAudit(req, {
+      action: "admin.program_create",
+      entityType: "AdmissionProgram",
+      entityId: program.id,
+      metadata: { institutionId, name: program.name, requirements: rows.length }
+    });
+    const created = await AdmissionProgram.findByPk(program.id, { include: [Institution, ProgramRequirement] });
+    return res.status(201).json({ program: serializeProgram(created) });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateAdmissionProgram(req, res, next) {
+  try {
+    const program = await AdmissionProgram.findByPk(req.params.id, { include: [ProgramRequirement] });
+    if (!program) return res.status(404).json({ message: "Programul nu există." });
+    const { requirements, institutionId: _ignoredInstitutionId, ...payload } = req.body;
+    await program.update(payload);
+    if (Array.isArray(requirements)) {
+      await ProgramRequirement.destroy({ where: { AdmissionProgramId: program.id } });
+      await ProgramRequirement.bulkCreate(requirements.map((requirement, index) => ({
+        ...requirement,
+        sortOrder: requirement.sortOrder ?? index,
+        AdmissionProgramId: program.id
+      })), { validate: true });
+    }
+    await writeAudit(req, {
+      action: "admin.program_update",
+      entityType: "AdmissionProgram",
+      entityId: program.id,
+      metadata: { fields: Object.keys(payload), requirements: Array.isArray(requirements) ? requirements.length : undefined }
+    });
+    const updated = await AdmissionProgram.findByPk(program.id, { include: [Institution, ProgramRequirement] });
+    return res.json({ program: serializeProgram(updated) });
   } catch (error) {
     next(error);
   }
@@ -133,6 +233,8 @@ export function systemStatus(_req, res) {
       openaiAdvisorModel: env.openaiApiKey ? env.openaiAdvisorModel : null,
       geminiModel: env.geminiApiKey ? env.geminiDocumentModel : null,
       geminiAdvisorModel: env.geminiApiKey ? env.geminiAdvisorModel : null,
+      aiDocumentDailyLimit: env.aiDocumentDailyLimit,
+      aiAdvisorDailyLimit: env.aiAdvisorDailyLimit,
       corsOrigins: env.corsOrigins,
       trustProxy: env.trustProxy,
       catalogCount: universityCatalog.length

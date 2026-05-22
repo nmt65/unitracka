@@ -205,9 +205,19 @@ async function geminiClassifier(payload) {
 }
 
 export async function classifyDocument(payload) {
+  const remoteConfigured = Boolean(env.openaiApiKey || env.geminiApiKey);
   const remote = await openAiClassifier(payload).catch(() => null) || await geminiClassifier(payload).catch(() => null);
   if (remote) {
     return normalizeRemoteResult(payload, remote);
+  }
+  if (remoteConfigured && /^data:(application\/pdf|image\/)/i.test(String(payload.fileDataUrl || ""))) {
+    return {
+      provider: "unitrack-document-classifier",
+      label: "Necunoscut",
+      confidence: 0.18,
+      accepted: false,
+      explanation: "AI-ul extern nu a putut citi fișierul atașat, deci documentul nu este aprobat automat. Verifică cheia API sau aprobă manual din workspace-ul universității."
+    };
   }
   return localClassifier(payload);
 }

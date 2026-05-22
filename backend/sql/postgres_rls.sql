@@ -39,9 +39,12 @@ ALTER TABLE "Users" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "Institutions" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "Universities" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "AdmissionApplications" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "AdmissionPrograms" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "ProgramRequirements" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "Documents" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "Notifications" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "AuditLogs" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "AiUsages" ENABLE ROW LEVEL SECURITY;
 
 -- Nu folosim FORCE ROW LEVEL SECURITY implicit, ca backend-ul server-side
 -- conectat cu rolul de owner/service sa poata aplica autorizarea din API.
@@ -216,6 +219,124 @@ CREATE POLICY applications_delete_scope
     app.current_user_role() = 'admin'
     OR "StudentId" = app.current_user_id()
   );
+
+DROP POLICY IF EXISTS admission_programs_read_scope ON "AdmissionPrograms";
+DROP POLICY IF EXISTS admission_programs_insert_scope ON "AdmissionPrograms";
+DROP POLICY IF EXISTS admission_programs_update_scope ON "AdmissionPrograms";
+DROP POLICY IF EXISTS admission_programs_delete_scope ON "AdmissionPrograms";
+
+CREATE POLICY admission_programs_read_scope
+  ON "AdmissionPrograms"
+  FOR SELECT
+  USING (
+    status = 'active'
+    OR app.current_user_role() = 'admin'
+    OR (
+      app.current_user_role() = 'university'
+      AND "InstitutionId" = app.current_institution_id()
+    )
+  );
+
+CREATE POLICY admission_programs_insert_scope
+  ON "AdmissionPrograms"
+  FOR INSERT
+  WITH CHECK (
+    app.current_user_role() = 'admin'
+    OR (
+      app.current_user_role() = 'university'
+      AND "InstitutionId" = app.current_institution_id()
+    )
+  );
+
+CREATE POLICY admission_programs_update_scope
+  ON "AdmissionPrograms"
+  FOR UPDATE
+  USING (
+    app.current_user_role() = 'admin'
+    OR (
+      app.current_user_role() = 'university'
+      AND "InstitutionId" = app.current_institution_id()
+    )
+  )
+  WITH CHECK (
+    app.current_user_role() = 'admin'
+    OR (
+      app.current_user_role() = 'university'
+      AND "InstitutionId" = app.current_institution_id()
+    )
+  );
+
+CREATE POLICY admission_programs_delete_scope
+  ON "AdmissionPrograms"
+  FOR DELETE
+  USING (app.current_user_role() = 'admin');
+
+DROP POLICY IF EXISTS program_requirements_read_scope ON "ProgramRequirements";
+DROP POLICY IF EXISTS program_requirements_insert_scope ON "ProgramRequirements";
+DROP POLICY IF EXISTS program_requirements_update_scope ON "ProgramRequirements";
+DROP POLICY IF EXISTS program_requirements_delete_scope ON "ProgramRequirements";
+
+CREATE POLICY program_requirements_read_scope
+  ON "ProgramRequirements"
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM "AdmissionPrograms" ap
+      WHERE ap.id = "ProgramRequirements"."AdmissionProgramId"
+        AND (
+          ap.status = 'active'
+          OR app.current_user_role() = 'admin'
+          OR (
+            app.current_user_role() = 'university'
+            AND ap."InstitutionId" = app.current_institution_id()
+          )
+        )
+    )
+  );
+
+CREATE POLICY program_requirements_insert_scope
+  ON "ProgramRequirements"
+  FOR INSERT
+  WITH CHECK (
+    app.current_user_role() = 'admin'
+    OR EXISTS (
+      SELECT 1
+      FROM "AdmissionPrograms" ap
+      WHERE ap.id = "ProgramRequirements"."AdmissionProgramId"
+        AND app.current_user_role() = 'university'
+        AND ap."InstitutionId" = app.current_institution_id()
+    )
+  );
+
+CREATE POLICY program_requirements_update_scope
+  ON "ProgramRequirements"
+  FOR UPDATE
+  USING (
+    app.current_user_role() = 'admin'
+    OR EXISTS (
+      SELECT 1
+      FROM "AdmissionPrograms" ap
+      WHERE ap.id = "ProgramRequirements"."AdmissionProgramId"
+        AND app.current_user_role() = 'university'
+        AND ap."InstitutionId" = app.current_institution_id()
+    )
+  )
+  WITH CHECK (
+    app.current_user_role() = 'admin'
+    OR EXISTS (
+      SELECT 1
+      FROM "AdmissionPrograms" ap
+      WHERE ap.id = "ProgramRequirements"."AdmissionProgramId"
+        AND app.current_user_role() = 'university'
+        AND ap."InstitutionId" = app.current_institution_id()
+    )
+  );
+
+CREATE POLICY program_requirements_delete_scope
+  ON "ProgramRequirements"
+  FOR DELETE
+  USING (app.current_user_role() = 'admin');
 
 DROP POLICY IF EXISTS documents_read_scope ON "Documents";
 DROP POLICY IF EXISTS documents_write_scope ON "Documents";
@@ -414,5 +535,46 @@ CREATE POLICY audit_logs_update_none
 
 CREATE POLICY audit_logs_delete_admin
   ON "AuditLogs"
+  FOR DELETE
+  USING (app.current_user_role() = 'admin');
+
+DROP POLICY IF EXISTS ai_usage_read_scope ON "AiUsages";
+DROP POLICY IF EXISTS ai_usage_insert_own ON "AiUsages";
+DROP POLICY IF EXISTS ai_usage_update_none ON "AiUsages";
+DROP POLICY IF EXISTS ai_usage_delete_admin ON "AiUsages";
+
+CREATE POLICY ai_usage_read_scope
+  ON "AiUsages"
+  FOR SELECT
+  USING (
+    app.current_user_role() = 'admin'
+    OR "UserId" = app.current_user_id()
+    OR (
+      app.current_user_role() = 'university'
+      AND EXISTS (
+        SELECT 1
+        FROM "AdmissionApplications" aa
+        WHERE aa.id = "AiUsages"."AdmissionApplicationId"
+          AND aa."InstitutionId" = app.current_institution_id()
+      )
+    )
+  );
+
+CREATE POLICY ai_usage_insert_own
+  ON "AiUsages"
+  FOR INSERT
+  WITH CHECK (
+    app.current_user_role() = 'admin'
+    OR "UserId" = app.current_user_id()
+  );
+
+CREATE POLICY ai_usage_update_none
+  ON "AiUsages"
+  FOR UPDATE
+  USING (false)
+  WITH CHECK (false);
+
+CREATE POLICY ai_usage_delete_admin
+  ON "AiUsages"
   FOR DELETE
   USING (app.current_user_role() = 'admin');

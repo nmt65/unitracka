@@ -1,4 +1,4 @@
-import { Document, Institution, University, sequelize } from "../models/index.js";
+import { AdmissionProgram, Document, Institution, ProgramRequirement, University, sequelize } from "../models/index.js";
 import { defaultDocuments } from "../data/defaultDocuments.js";
 import { universityCatalog } from "../data/catalog.js";
 import { daysUntil } from "../utils/dates.js";
@@ -65,9 +65,25 @@ async function ensureStudentUsesApprovedCatalog(payload) {
     return catalogMatch;
   }
 
-  const institutions = await Institution.findAll({ where: { status: "active" }, attributes: ["name", "shortName", "country", "countryCode", "website"] });
+  const institutions = await Institution.findAll({
+    where: { status: "active" },
+    attributes: ["name", "shortName", "country", "countryCode", "website"],
+    include: [{ model: AdmissionProgram, where: { status: "active" }, required: false, include: [ProgramRequirement] }]
+  });
   const institution = institutions.find((item) => normalizeName(item.name) === requested);
-  if (institution) return institution;
+  if (institution) {
+    const programs = institution.AdmissionPrograms || [];
+    if (programs.length && !programs.some((program) => (
+      normalizeName(program.name) === normalizeName(payload.program)
+      && normalizeName(program.faculty) === normalizeName(payload.faculty)
+      && program.programType === payload.programType
+    ))) {
+      const error = new Error("Alege un program din oferta educațională curentă a universității.");
+      error.status = 422;
+      throw error;
+    }
+    return institution;
+  }
 
   const error = new Error("Elevii pot adăuga în tracker doar universități din catalogul public sau instituții active aprobate de admin.");
   error.status = 422;

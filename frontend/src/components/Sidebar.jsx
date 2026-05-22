@@ -73,7 +73,7 @@ export function Sidebar({ active, onChange, counts, user, language = "ro" }) {
       </button>
       <button className={`side-link ${active === "advisor" ? "active" : ""}`} type="button" onClick={() => onChange("advisor")}>
         <Brain size={18} />
-        {t("Consilier AI", language)}
+        {t("Asistent dosar", language)}
       </button>
       {items.map((item) => {
         const Icon = item.icon;

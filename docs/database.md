@@ -8,9 +8,12 @@ UniTrack folosește o bază de date relațională administrată prin Sequelize. 
 | --- | --- |
 | `Users` | conturi student, universitate și administrator |
 | `Institutions` | instituții/universități administrate în sistem |
+| `AdmissionPrograms` | oferta educațională oficială pe an academic |
+| `ProgramRequirements` | documentele cerute de fiecare program |
 | `Universities` | opțiunile urmărite de un student |
 | `AdmissionApplications` | aplicații trimise de studenți către instituții |
 | `Documents` | documente asociate unei opțiuni sau unei aplicații |
+| `AiUsages` | jurnal de consum AI pentru limite și cost control |
 | `Notifications` | notificări interne pentru utilizatori |
 | `AuditLogs` | jurnal pentru acțiuni sensibile |
 
@@ -23,9 +26,14 @@ erDiagram
   Users ||--o{ Notifications : receives
   Users ||--o{ AuditLogs : performs
   Institutions ||--o{ Users : has_staff
+  Institutions ||--o{ AdmissionPrograms : publishes
+  AdmissionPrograms ||--o{ ProgramRequirements : requires
+  AdmissionPrograms ||--o{ AdmissionApplications : selected_for
   Institutions ||--o{ AdmissionApplications : receives
   Universities ||--o{ Documents : requires
   AdmissionApplications ||--o{ Documents : contains
+  Users ||--o{ AiUsages : consumes
+  Documents ||--o{ AiUsages : checked_by
   AdmissionApplications ||--o{ Notifications : triggers
 ```
 
@@ -35,7 +43,10 @@ erDiagram
 - `Users.cnpHash` este unic pentru a permite un singur cont per CNP.
 - CNP-ul nu este salvat în clar; se păstrează doar hash-ul și ultimele 4 cifre.
 - O aplicație este unică pe combinația `StudentId + InstitutionId + program`.
+- O aplicație poate fi legată de `AdmissionProgramId`, astfel încât elevul alege din oferta oficială, nu introduce liber facultăți.
+- Cerințele documentare se generează din `ProgramRequirements`; dacă un program nu are cerințe configurate, backend-ul folosește setul standard.
 - Documentele pot aparține fie unei opțiuni urmărite (`UniversityId`), fie unei aplicații trimise (`AdmissionApplicationId`).
+- `AiUsages` permite limită zilnică pentru verificări documente și consilier AI, ca să protejeze cheia Gemini/OpenAI.
 
 ## Statusuri
 

@@ -1,8 +1,10 @@
-import { AdmissionApplication, Document, Institution, University } from "../models/index.js";
+import { Op } from "sequelize";
+import { AdmissionApplication, AiUsage, Document, Institution, University } from "../models/index.js";
 import { classifyDocument } from "../services/documentAi.js";
 import { adviseStudent } from "../services/studentAdvisor.js";
 import { writeAudit } from "../services/audit.js";
 import { hashText } from "../utils/crypto.js";
+import { env } from "../config/env.js";
 
 function serializeDocument(document) {
   if (!document) return document;
@@ -29,8 +31,77 @@ async function findOwnedDocument(req) {
   return null;
 }
 
+function dayStart() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+function estimatedTokensForPayload(payload) {
+  const raw = [
+    payload.fileName,
+    payload.expectedType,
+    payload.text,
+    payload.personalGoal,
+    payload.cvText,
+    payload.fileDataUrl ? `[file:${Math.ceil(String(payload.fileDataUrl).length / 1024)}kb]` : ""
+  ].filter(Boolean).join("\n");
+  return Math.max(1, Math.ceil(raw.length / 4));
+}
+
+async function enforceAiQuota(req, feature) {
+  const limit = feature === "document" ? env.aiDocumentDailyLimit : env.aiAdvisorDailyLimit;
+  if (req.user.role === "admin") return { limit, used: 0 };
+  const used = await AiUsage.count({
+    where: {
+      UserId: req.user.id,
+      feature,
+      createdAt: { [Op.gte]: dayStart() }
+    }
+  });
+  if (used >= limit) {
+    const label = feature === "document" ? "verificări de documente" : "cereri către consilierul AI";
+    const error = new Error(`Ai atins limita zilnică de ${limit} ${label}. Reîncearcă mâine sau cere adminului să mărească limita.`);
+    error.status = 429;
+    throw error;
+  }
+  return { limit, used };
+}
+
+async function recordAiUsage(req, { feature, result, document = null, application = null, status = "success" }) {
+  return AiUsage.create({
+    UserId: req.user.id,
+    DocumentId: document?.id || null,
+    AdmissionApplicationId: application?.id || document?.AdmissionApplicationId || null,
+    feature,
+    provider: result?.provider || null,
+    model: result?.model || (
+      result?.provider === "gemini" ? env.geminiDocumentModel :
+        result?.provider === "openai" ? env.openaiDocumentModel :
+          null
+    ),
+    status,
+    requestHash: hashText(JSON.stringify({
+      feature,
+      fileName: req.body.fileName,
+      expectedType: req.body.expectedType,
+      applicationId: req.body.applicationId,
+      institutionId: req.body.institutionId,
+      target: req.body.target
+    })),
+    inputBytes: Number(req.body.fileSize || 0) || Buffer.byteLength(JSON.stringify(req.body || {}), "utf8"),
+    estimatedTokens: estimatedTokensForPayload(req.body),
+    metadata: {
+      accepted: result?.accepted,
+      label: result?.label,
+      confidence: result?.confidence,
+      admissionChance: result?.admissionChance
+    }
+  }).catch(() => null);
+}
+
 export async function checkDocument(req, res, next) {
   try {
+    await enforceAiQuota(req, "document");
     const hasAttachedFile = /^data:[^;,]+;base64,/i.test(String(req.body.fileDataUrl || ""));
     if (!hasAttachedFile) {
       return res.status(422).json({ message: "Atașează fișierul real înainte de verificare. Textul sau numele fișierului nu sunt suficiente pentru dosar." });
@@ -61,6 +132,7 @@ export async function checkDocument(req, res, next) {
         metadata: { accepted: result.accepted, provider: result.provider, label: result.label, confidence: result.confidence }
       });
     }
+    await recordAiUsage(req, { feature: "document", result, document });
     return res.json({ result, document: serializeDocument(document) });
   } catch (error) {
     next(error);
@@ -72,6 +144,7 @@ export async function studentAdvice(req, res, next) {
     if (req.user.role !== "student") {
       return res.status(403).json({ message: "Consilierul AI este disponibil pentru conturile de elev." });
     }
+    await enforceAiQuota(req, "advisor");
 
     const universities = await University.findAll({ where: { UserId: req.user.id }, include: [Document], order: [["deadline", "ASC"]] });
     const applications = await AdmissionApplication.findAll({
@@ -105,6 +178,11 @@ export async function studentAdvice(req, res, next) {
       documents
     });
 
+    await recordAiUsage(req, {
+      feature: "advisor",
+      result: advice,
+      application: target instanceof AdmissionApplication ? target : null
+    });
     await writeAudit(req, {
       action: "ai.student_advice",
       entityType: target?.constructor?.name || "Institution",

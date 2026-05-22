@@ -81,6 +81,57 @@ export const Institution = sequelize.define("Institution", {
   description: { type: DataTypes.TEXT, allowNull: true }
 });
 
+export const AdmissionProgram = sequelize.define(
+  "AdmissionProgram",
+  {
+    id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+    faculty: { type: DataTypes.STRING(180), allowNull: false },
+    name: { type: DataTypes.STRING(180), allowNull: false },
+    programType: { type: DataTypes.ENUM("licenta", "master", "doctorat"), defaultValue: "licenta" },
+    academicYear: { type: DataTypes.STRING(20), defaultValue: "2026-2027" },
+    deadline: { type: DataTypes.DATEONLY, allowNull: true },
+    annualTuition: { type: DataTypes.FLOAT, allowNull: true },
+    seats: { type: DataTypes.INTEGER, allowNull: true },
+    language: { type: DataTypes.STRING(80), allowNull: true },
+    admissionMethod: { type: DataTypes.TEXT, allowNull: true },
+    website: { type: DataTypes.STRING(500), allowNull: true },
+    description: { type: DataTypes.TEXT, allowNull: true },
+    status: { type: DataTypes.ENUM("active", "pending", "archived"), defaultValue: "active" },
+    source: { type: DataTypes.STRING(60), defaultValue: "manual" }
+  },
+  {
+    indexes: [
+      {
+        name: "program_institution_year_name_unique",
+        unique: true,
+        fields: ["InstitutionId", "academicYear", "faculty", "name", "programType"]
+      }
+    ]
+  }
+);
+
+export const ProgramRequirement = sequelize.define(
+  "ProgramRequirement",
+  {
+    id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+    documentName: { type: DataTypes.STRING(180), allowNull: false },
+    category: { type: DataTypes.STRING(80), defaultValue: "Admitere" },
+    isOptional: { type: DataTypes.BOOLEAN, defaultValue: false },
+    verificationRequired: { type: DataTypes.BOOLEAN, defaultValue: true },
+    rule: { type: DataTypes.TEXT, allowNull: true },
+    sortOrder: { type: DataTypes.INTEGER, defaultValue: 0 }
+  },
+  {
+    indexes: [
+      {
+        name: "program_requirement_unique",
+        unique: true,
+        fields: ["AdmissionProgramId", "documentName"]
+      }
+    ]
+  }
+);
+
 export const University = sequelize.define("University", {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
   name: { type: DataTypes.STRING(180), allowNull: false },
@@ -135,6 +186,9 @@ export const Document = sequelize.define("Document", {
   fileName: { type: DataTypes.STRING(240), allowNull: true },
   mimeType: { type: DataTypes.STRING(120), allowNull: true },
   fileSize: { type: DataTypes.INTEGER, allowNull: true },
+  storageProvider: { type: DataTypes.STRING(40), allowNull: true },
+  storageBucket: { type: DataTypes.STRING(120), allowNull: true },
+  storagePath: { type: DataTypes.STRING(600), allowNull: true },
   fileDataUrl: { type: DataTypes.TEXT, allowNull: true },
   fileSha256: { type: DataTypes.STRING(64), allowNull: true },
   extractedText: { type: DataTypes.TEXT, allowNull: true },
@@ -146,6 +200,31 @@ export const Document = sequelize.define("Document", {
   aiLabel: { type: DataTypes.STRING(120), allowNull: true },
   aiConfidence: { type: DataTypes.FLOAT, allowNull: true },
   aiExplanation: { type: DataTypes.TEXT, allowNull: true }
+});
+
+export const AiUsage = sequelize.define("AiUsage", {
+  id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  feature: { type: DataTypes.ENUM("document", "advisor"), allowNull: false },
+  provider: { type: DataTypes.STRING(40), allowNull: true },
+  model: { type: DataTypes.STRING(120), allowNull: true },
+  status: { type: DataTypes.ENUM("success", "failed", "skipped"), defaultValue: "success" },
+  requestHash: { type: DataTypes.STRING(64), allowNull: true },
+  inputBytes: { type: DataTypes.INTEGER, allowNull: true },
+  estimatedTokens: { type: DataTypes.INTEGER, allowNull: true },
+  metadata: {
+    type: DataTypes.TEXT,
+    defaultValue: "{}",
+    get() {
+      try {
+        return JSON.parse(this.getDataValue("metadata") || "{}");
+      } catch {
+        return {};
+      }
+    },
+    set(value) {
+      this.setDataValue("metadata", JSON.stringify(value || {}));
+    }
+  }
 });
 
 export const Notification = sequelize.define("Notification", {
@@ -187,8 +266,14 @@ University.hasMany(Document, { foreignKey: { allowNull: true }, onDelete: "CASCA
 Document.belongsTo(University);
 Institution.hasMany(User, { foreignKey: { allowNull: true }, onDelete: "SET NULL" });
 User.belongsTo(Institution);
+Institution.hasMany(AdmissionProgram, { foreignKey: { allowNull: false }, onDelete: "CASCADE" });
+AdmissionProgram.belongsTo(Institution);
+AdmissionProgram.hasMany(ProgramRequirement, { foreignKey: { allowNull: false }, onDelete: "CASCADE" });
+ProgramRequirement.belongsTo(AdmissionProgram);
 Institution.hasMany(AdmissionApplication, { foreignKey: { allowNull: false }, onDelete: "CASCADE" });
 AdmissionApplication.belongsTo(Institution);
+AdmissionProgram.hasMany(AdmissionApplication, { foreignKey: { name: "AdmissionProgramId", allowNull: true }, onDelete: "SET NULL" });
+AdmissionApplication.belongsTo(AdmissionProgram, { foreignKey: { name: "AdmissionProgramId", allowNull: true } });
 User.hasMany(AdmissionApplication, { as: "StudentApplications", foreignKey: { name: "StudentId", allowNull: false }, onDelete: "CASCADE" });
 AdmissionApplication.belongsTo(User, { as: "Student", foreignKey: { name: "StudentId", allowNull: false } });
 AdmissionApplication.hasMany(Document, { foreignKey: { allowNull: true }, onDelete: "CASCADE" });
@@ -199,19 +284,36 @@ AdmissionApplication.hasMany(Notification, { foreignKey: { allowNull: true }, on
 Notification.belongsTo(AdmissionApplication);
 User.hasMany(AuditLog, { foreignKey: { name: "ActorId", allowNull: true }, onDelete: "SET NULL" });
 AuditLog.belongsTo(User, { as: "Actor", foreignKey: { name: "ActorId", allowNull: true } });
+User.hasMany(AiUsage, { foreignKey: { allowNull: true }, onDelete: "SET NULL" });
+AiUsage.belongsTo(User);
+AdmissionApplication.hasMany(AiUsage, { foreignKey: { allowNull: true }, onDelete: "SET NULL" });
+AiUsage.belongsTo(AdmissionApplication);
+Document.hasMany(AiUsage, { foreignKey: { allowNull: true }, onDelete: "SET NULL" });
+AiUsage.belongsTo(Document);
 
 export async function initDb() {
   await sequelize.authenticate();
   const syncOptions = env.dbDialect === "sqlite" ? {} : { alter: env.nodeEnv !== "production" };
   await sequelize.sync(syncOptions);
-  if (env.dbDialect === "sqlite") {
-    const queryInterface = sequelize.getQueryInterface();
-    const documentColumns = await queryInterface.describeTable("Documents").catch(() => null);
-    if (documentColumns && !documentColumns.fileSize) {
-      await queryInterface.addColumn("Documents", "fileSize", { type: DataTypes.INTEGER, allowNull: true });
-    }
-    if (documentColumns && !documentColumns.fileDataUrl) {
-      await queryInterface.addColumn("Documents", "fileDataUrl", { type: DataTypes.TEXT, allowNull: true });
-    }
+  const queryInterface = sequelize.getQueryInterface();
+  const documentColumns = await queryInterface.describeTable("Documents").catch(() => null);
+  if (documentColumns && !documentColumns.fileSize) {
+    await queryInterface.addColumn("Documents", "fileSize", { type: DataTypes.INTEGER, allowNull: true });
+  }
+  if (documentColumns && !documentColumns.fileDataUrl) {
+    await queryInterface.addColumn("Documents", "fileDataUrl", { type: DataTypes.TEXT, allowNull: true });
+  }
+  if (documentColumns && !documentColumns.storageProvider) {
+    await queryInterface.addColumn("Documents", "storageProvider", { type: DataTypes.STRING(40), allowNull: true });
+  }
+  if (documentColumns && !documentColumns.storageBucket) {
+    await queryInterface.addColumn("Documents", "storageBucket", { type: DataTypes.STRING(120), allowNull: true });
+  }
+  if (documentColumns && !documentColumns.storagePath) {
+    await queryInterface.addColumn("Documents", "storagePath", { type: DataTypes.STRING(600), allowNull: true });
+  }
+  const applicationColumns = await queryInterface.describeTable("AdmissionApplications").catch(() => null);
+  if (applicationColumns && !applicationColumns.AdmissionProgramId) {
+    await queryInterface.addColumn("AdmissionApplications", "AdmissionProgramId", { type: DataTypes.UUID, allowNull: true });
   }
 }

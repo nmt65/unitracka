@@ -105,7 +105,7 @@ export function Documents({ universities, onDeleteDocument }) {
               <div className="doc-checklist-card">
                 {visibleDocs.map((doc) => (
                   <div key={doc.id} className={`doc-row ${doc.isCompleted ? "done" : ""}`}>
-                    <button className="doc-toggle-button locked" type="button" disabled title="Documentele se completează doar după verificare AI sau aprobare de universitate.">
+                    <button className="doc-toggle-button locked" type="button" disabled title="Documentele se completează doar după verificare automată sau aprobare de universitate.">
                       <span className="doc-check">{doc.isCompleted ? <Check size={15} /> : <Circle size={19} />}</span>
                       <span className="doc-row-content">
                         <strong>{doc.name}</strong>

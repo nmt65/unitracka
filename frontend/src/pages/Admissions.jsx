@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Brain, CheckCircle2, Circle, ExternalLink, Eye, FileText, Plus, Send, Upload } from "lucide-react";
+import { ClipboardCheck, CheckCircle2, Circle, ExternalLink, Eye, FileText, Plus, Send, Upload } from "lucide-react";
 import { api } from "../services/api.js";
 import { getProgramsForInstitution, programChoiceValue } from "../utils/programCatalog.js";
 import { programTypes } from "../utils/status.js";
@@ -52,7 +52,7 @@ function inferExpectedType(fileName, text) {
 export function Admissions({ onToast }) {
   const [institutions, setInstitutions] = useState([]);
   const [applications, setApplications] = useState([]);
-  const [form, setForm] = useState({ institutionId: "", program: "Informatică", faculty: "Facultatea de Matematică și Informatică", programType: "licenta", notes: "" });
+  const [form, setForm] = useState({ institutionId: "", programId: "", program: "Informatică", faculty: "Facultatea de Matematică și Informatică", programType: "licenta", notes: "" });
   const [aiForm, setAiForm] = useState({ documentId: "", expectedType: "", fileName: "", mimeType: "", fileSize: null, fileDataUrl: "", text: "" });
   const [aiResult, setAiResult] = useState(null);
   const [customDocs, setCustomDocs] = useState({});
@@ -95,7 +95,7 @@ export function Admissions({ onToast }) {
     const current = programOptions.find((option) => option.program === form.program && option.faculty === form.faculty);
     if (current) return;
     const first = programOptions[0];
-    setForm((value) => ({ ...value, program: first.program, faculty: first.faculty, programType: first.programType }));
+    setForm((value) => ({ ...value, programId: first.id || "", program: first.program, faculty: first.faculty, programType: first.programType }));
   }, [form.institutionId, programOptions]);
 
   function updateForm(event) {
@@ -103,8 +103,8 @@ export function Admissions({ onToast }) {
   }
 
   function updateProgramChoice(event) {
-    const [faculty, program, programType] = event.target.value.split("|||");
-    setForm((current) => ({ ...current, faculty, program, programType }));
+    const [programId, faculty, program, programType] = event.target.value.split("|||");
+    setForm((current) => ({ ...current, programId, faculty, program, programType }));
   }
 
   function updateAi(event) {
@@ -156,7 +156,7 @@ export function Admissions({ onToast }) {
     }));
     onToast(canReadText
       ? `Fișier citit și atașat în dosar${detectedType ? `; pare ${detectedType}.` : "."}`
-      : "Fișier atașat. Gemini/OpenAI va citi fișierul dacă cheia API este setată; altfel adaugă text OCR extras real.");
+      : "Fișier atașat. Pentru verificare avansată trebuie configurată cheia providerului pe server; altfel adaugă text OCR extras real.");
   }
 
   async function submitApplication(event) {
@@ -195,7 +195,7 @@ export function Admissions({ onToast }) {
     try {
       const data = await api.checkDocumentAi(aiForm);
       setAiResult(data.result);
-      onToast(data.result.accepted ? "Document verificat și marcat în sistem." : "Document respins de verificarea AI.");
+      onToast(data.result.accepted ? "Document verificat și marcat în sistem." : "Document respins la verificarea automată.");
       await load();
     } catch (error) {
       onToast(error.message);
@@ -224,7 +224,7 @@ export function Admissions({ onToast }) {
       <div className="page-heading">
         <div>
           <h1>Admitere</h1>
-          <p>Trimite aplicații către universități și verifică documentele cu AI înainte de evaluare.</p>
+          <p>Trimite aplicații către universități și verifică documentele înainte de evaluare.</p>
         </div>
       </div>
       <div className="admin-grid">
@@ -245,7 +245,7 @@ export function Admissions({ onToast }) {
               </div>
             )}
             <label className="wide">Program / facultate
-              <select value={programChoiceValue({ faculty: form.faculty, program: form.program, programType: form.programType })} onChange={updateProgramChoice}>
+              <select value={programChoiceValue({ id: form.programId, faculty: form.faculty, program: form.program, programType: form.programType })} onChange={updateProgramChoice}>
                 {programOptions.map((option) => (
                   <option key={programChoiceValue(option)} value={programChoiceValue(option)}>
                     {option.program} · {option.faculty} · {programTypes.find((entry) => entry.value === option.programType)?.label || option.programType}
@@ -262,13 +262,13 @@ export function Admissions({ onToast }) {
           <div className="profile-actions"><button className="primary-button" disabled={sending || !form.institutionId || duplicateApplication}>{sending ? "Se trimite..." : "Trimite către universitate"}</button></div>
         </form>
         <form className="profile-panel admin-form" onSubmit={checkDocument}>
-          <h2><Brain size={17} /> Verificare document cu AI</h2>
+          <h2><ClipboardCheck size={17} /> Verificare document</h2>
           <div className="profile-form">
             <label>Document<select name="documentId" value={aiForm.documentId} onChange={updateAi} disabled={allDocs.length === 0}>{allDocs.map((doc) => <option key={doc.id} value={doc.id}>{doc.name} · {doc.appName}</option>)}</select></label>
             <label>Tip așteptat<input name="expectedType" value={aiForm.expectedType} readOnly /></label>
             <label className="wide">Atașează fișier
               <span className="file-control"><Upload size={17} /><input type="file" onChange={handleDocumentFile} accept=".txt,.csv,.json,.xml,.pdf,.doc,.docx,image/*,application/pdf" /></span>
-              <small className="field-note">Atașează documentul real. PDF-urile și imaginile sunt trimise către Gemini; OpenAI citește imaginile și textul extras. Fără AI extern, lipește text OCR real.</small>
+              <small className="field-note">Atașează documentul real. Pentru PDF-uri scanate sau imagini, verificarea avansată are nevoie de cheia configurată pe server; altfel folosește textul OCR introdus aici.</small>
             </label>
             <label className="wide">Nume fișier<input name="fileName" value={aiForm.fileName} onChange={updateAi} /></label>
             <label className="wide">Text extras / OCR<textarea name="text" value={aiForm.text} onChange={updateAi} /></label>

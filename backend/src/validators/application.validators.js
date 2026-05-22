@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const applicationSchema = z.object({
   institutionId: z.string().uuid(),
+  programId: z.string().uuid().optional().nullable(),
   program: z.string().min(2).max(180),
   faculty: z.string().max(180).optional().nullable(),
   programType: z.enum(["licenta", "master", "doctorat"]).default("licenta"),

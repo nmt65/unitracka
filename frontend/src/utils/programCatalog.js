@@ -83,5 +83,5 @@ export function getProgramsForInstitution(institution) {
 }
 
 export function programChoiceValue(option) {
-  return `${option.faculty}|||${option.program}|||${option.programType}`;
+  return `${option.id || option.programId || ""}|||${option.faculty}|||${option.program}|||${option.programType}`;
 }

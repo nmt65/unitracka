@@ -98,9 +98,9 @@ export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMod
         if (data.resetToken) {
           setForm((current) => ({ ...current, resetToken: data.resetToken, password: "" }));
           setMode("reset");
-          setNotice(`Token resetare local: ${data.resetToken}`);
+          setNotice(`Cod resetare local: ${data.resetToken}`);
         } else if (data.mailConfigured === false) {
-          setError(t("Emailul de resetare nu poate fi trimis încă: SMTP nu este configurat pe server.", language));
+          setNotice(t("Dacă emailul există, am pregătit resetarea. Dacă nu primești mesajul, administratorul trebuie să verifice configurarea emailului.", language));
         } else {
           setNotice(data.message);
         }
@@ -108,6 +108,7 @@ export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMod
       if (mode === "reset") {
         await api.resetPassword({ token: form.resetToken, password: form.password });
         setMode("login");
+        window.history.replaceState({}, "", window.location.pathname);
         setNotice(t("Parola a fost resetată. Te poți autentifica.", language));
       }
     } catch (err) {
@@ -136,8 +137,8 @@ export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMod
         <div className="auth-visual">
           <div className="brand large"><span className="brand-dot" /> UniTrack</div>
           <GraduationCap size={72} />
-          <h1>{t("Portal complet pentru admitere.", language)}</h1>
-          <p>{t("Cont unic per CNP, workspace pentru universități, verificare documente cu AI și statusuri urmărite cap-coadă.", language)}</p>
+          <h1>{t("Admitere, dosare și statusuri într-un singur loc.", language)}</h1>
+          <p>{t("Cont unic per CNP, universități aprobate, documente verificate și aplicații urmărite până la răspuns.", language)}</p>
           <div className="auth-proof-list" aria-label={t("Capabilități platformă", language)}>
             <span><ShieldCheck size={16} /> {t("CNP hash-uit, fără stocare în clar", language)}</span>
             <span><CheckCircle2 size={16} /> {t("RLS, CSRF, rate-limit și validare server", language)}</span>
@@ -174,7 +175,7 @@ export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMod
           </label>
           {mode === "reset" && (
             <label>
-              {t("Token resetare", language)}
+              {t("Cod resetare", language)}
               <span className="input-icon"><RotateCcw size={17} /><input name="resetToken" value={form.resetToken} onChange={updateField} required /></span>
             </label>
           )}

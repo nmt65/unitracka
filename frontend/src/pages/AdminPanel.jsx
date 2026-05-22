@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Brain, Copy, Database, MailCheck, Plus, UserPlus } from "lucide-react";
+import { BookOpen, Brain, Copy, Database, MailCheck, Plus, UserPlus } from "lucide-react";
 import { api } from "../services/api.js";
 
 const emptyInstitution = {
@@ -14,6 +14,22 @@ const emptyInstitution = {
   description: ""
 };
 
+const emptyProgram = {
+  institutionId: "",
+  faculty: "",
+  name: "",
+  programType: "licenta",
+  academicYear: "2026-2027",
+  deadline: "",
+  annualTuition: "",
+  seats: "",
+  language: "Română",
+  admissionMethod: "",
+  website: "",
+  description: "",
+  status: "active"
+};
+
 const roleLabels = {
   admin: "Admin",
   student: "Elev",
@@ -22,22 +38,26 @@ const roleLabels = {
 
 export function AdminPanel({ onToast }) {
   const [institutions, setInstitutions] = useState([]);
+  const [programs, setPrograms] = useState([]);
   const [users, setUsers] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
   const [systemStatus, setSystemStatus] = useState(null);
   const [institutionForm, setInstitutionForm] = useState(emptyInstitution);
+  const [programForm, setProgramForm] = useState(emptyProgram);
   const [staffForm, setStaffForm] = useState({ email: "", password: "", name: "", institutionId: "" });
   const [testEmail, setTestEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [importingCatalog, setImportingCatalog] = useState(false);
 
   async function load() {
-    const [statusData, institutionData, userData, auditData] = await Promise.all([api.adminSystemStatus(), api.adminInstitutions(), api.adminUsers(), api.adminAuditLogs()]);
+    const [statusData, institutionData, programData, userData, auditData] = await Promise.all([api.adminSystemStatus(), api.adminInstitutions(), api.adminPrograms(), api.adminUsers(), api.adminAuditLogs()]);
     setSystemStatus(statusData.status || null);
     setInstitutions(institutionData.institutions || []);
+    setPrograms(programData.programs || []);
     setUsers(userData.users || []);
     setAuditLogs(auditData.logs || []);
     setStaffForm((current) => ({ ...current, institutionId: current.institutionId || institutionData.institutions?.[0]?.id || "" }));
+    setProgramForm((current) => ({ ...current, institutionId: current.institutionId || institutionData.institutions?.[0]?.id || "" }));
   }
 
   useEffect(() => {
@@ -57,6 +77,10 @@ export function AdminPanel({ onToast }) {
 
   function updateStaff(event) {
     setStaffForm((current) => ({ ...current, [event.target.name]: event.target.value }));
+  }
+
+  function updateProgram(event) {
+    setProgramForm((current) => ({ ...current, [event.target.name]: event.target.value }));
   }
 
   async function createInstitution(event) {
@@ -81,6 +105,26 @@ export function AdminPanel({ onToast }) {
       await api.createUniversityUser(staffForm);
       setStaffForm({ email: "", password: "", name: "", institutionId: institutions[0]?.id || "" });
       onToast("Cont universitate creat.");
+      await load();
+    } catch (error) {
+      onToast(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function createProgram(event) {
+    event.preventDefault();
+    setLoading(true);
+    try {
+      await api.createProgram({
+        ...programForm,
+        annualTuition: programForm.annualTuition === "" ? null : Number(programForm.annualTuition),
+        seats: programForm.seats === "" ? null : Number(programForm.seats),
+        deadline: programForm.deadline || null
+      });
+      setProgramForm((current) => ({ ...emptyProgram, institutionId: current.institutionId || institutions[0]?.id || "" }));
+      onToast("Program de admitere adăugat cu cerințe implicite.");
       await load();
     } catch (error) {
       onToast(error.message);
@@ -135,7 +179,7 @@ export function AdminPanel({ onToast }) {
       "GEMINI_DOCUMENT_MODEL=gemini-1.5-flash",
       "GEMINI_ADVISOR_MODEL=gemini-1.5-flash"
     ].join("\n"));
-    onToast("Variabilele AI au fost copiate.");
+    onToast("Variabilele de analiză au fost copiate.");
   }
 
   async function copyGmailSmtpEnv() {
@@ -180,8 +224,16 @@ export function AdminPanel({ onToast }) {
             <span>{systemStatus.smtpHost || "Email resetări/notificări"}</span>
           </article>
           <article className={systemStatus.aiConfigured ? "ok" : "warn"}>
-            <strong>{systemStatus.aiConfigured ? "AI extern" : "AI local"}</strong>
-            <span>{systemStatus.openaiModel || systemStatus.geminiModel || "fallback euristic"}</span>
+            <strong>{systemStatus.aiConfigured ? "Analiză avansată" : "Analiză locală"}</strong>
+            <span>{systemStatus.openaiModel || systemStatus.geminiModel || "verificare locală"}</span>
+          </article>
+          <article>
+            <strong>{systemStatus.aiDocumentDailyLimit || 0}/zi</strong>
+            <span>Limită verificări documente</span>
+          </article>
+          <article>
+            <strong>{systemStatus.aiAdvisorDailyLimit || 0}/zi</strong>
+            <span>Limită asistent dosar</span>
           </article>
           <article className={systemStatus.seedDemo ? "warn" : "ok"}>
             <strong>{systemStatus.seedDemo ? "Demo seed ON" : "Demo seed OFF"}</strong>
@@ -215,17 +267,17 @@ export function AdminPanel({ onToast }) {
 
       {systemStatus && (
         <section className={`profile-panel ai-config-panel ${systemStatus.aiConfigured ? "ready" : "missing"}`}>
-          <h2><Brain size={17} /> Configurare AI live</h2>
+          <h2><Brain size={17} /> Verificare automată</h2>
           <div className="ai-config-body">
             <div>
-              <strong>{systemStatus.aiConfigured ? "AI extern activ" : "AI extern neconfigurat"}</strong>
+              <strong>{systemStatus.aiConfigured ? "Motor de analiză activ" : "Motor de analiză local"}</strong>
               <p>
                 {systemStatus.aiConfigured
-                  ? `Documentele și consilierul folosesc ${systemStatus.openaiModel || systemStatus.geminiModel}.`
-                  : "Momentan rulează clasificatorul local. Pentru citire mai bună pe PDF-uri, imagini și CV-uri reale, setează cheia API în Render > Environment."}
+                  ? `Documentele și asistentul folosesc ${systemStatus.openaiModel || systemStatus.geminiModel}.`
+                  : "Momentan rulează verificarea locală. Pentru PDF-uri scanate, imagini și CV-uri reale, setează cheia providerului în Render > Environment."}
               </p>
             </div>
-            <button className="soft-button" type="button" onClick={copyAiEnv}><Copy size={16} /> Copiază env AI</button>
+            <button className="soft-button" type="button" onClick={copyAiEnv}><Copy size={16} /> Copiază env analiză</button>
           </div>
         </section>
       )}
@@ -266,6 +318,26 @@ export function AdminPanel({ onToast }) {
           <div className="profile-actions"><button className="primary-button" disabled={loading}>Salvează universitate</button></div>
         </form>
 
+        <form className="profile-panel admin-form" onSubmit={createProgram}>
+          <h2><BookOpen size={17} /> Adaugă program de admitere</h2>
+          <div className="profile-form">
+            <label>Universitate<select name="institutionId" value={programForm.institutionId} onChange={updateProgram} required>{institutions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+            <label>Tip<select name="programType" value={programForm.programType} onChange={updateProgram}><option value="licenta">Licență</option><option value="master">Master</option><option value="doctorat">Doctorat</option></select></label>
+            <label>Facultate<input name="faculty" value={programForm.faculty} onChange={updateProgram} required placeholder="Facultatea de..." /></label>
+            <label>Program<input name="name" value={programForm.name} onChange={updateProgram} required placeholder="Informatică" /></label>
+            <label>An academic<input name="academicYear" value={programForm.academicYear} onChange={updateProgram} required /></label>
+            <label>Deadline<input name="deadline" type="date" value={programForm.deadline} onChange={updateProgram} /></label>
+            <label>Locuri<input name="seats" type="number" min="1" value={programForm.seats} onChange={updateProgram} /></label>
+            <label>Taxă anuală<input name="annualTuition" type="number" min="0" step="0.01" value={programForm.annualTuition} onChange={updateProgram} /></label>
+            <label>Limbă<input name="language" value={programForm.language} onChange={updateProgram} /></label>
+            <label className="wide">Website<input name="website" type="url" value={programForm.website} onChange={updateProgram} placeholder="https://..." /></label>
+            <label className="wide">Metodă admitere<textarea name="admissionMethod" value={programForm.admissionMethod} onChange={updateProgram} placeholder="Ex: dosar, eseu motivațional, interviu, probă scrisă..." /></label>
+            <label className="wide">Descriere scurtă<textarea name="description" value={programForm.description} onChange={updateProgram} placeholder="Ce oferă programul, pe scurt." /></label>
+          </div>
+          <p className="field-note">La creare se atașează automat setul standard de documente obligatorii; le putem rafina apoi pe fiecare program.</p>
+          <div className="profile-actions"><button className="primary-button" disabled={loading || !programForm.institutionId}>Salvează program</button></div>
+        </form>
+
         <form className="profile-panel admin-form" onSubmit={createStaff}>
           <h2><UserPlus size={17} /> Creează cont universitate</h2>
           <div className="profile-form">
@@ -277,6 +349,28 @@ export function AdminPanel({ onToast }) {
           <div className="profile-actions"><button className="primary-button" disabled={loading}>Creează cont</button></div>
         </form>
       </div>
+
+      <section className="university-table-card admin-list">
+        <header className="table-card-heading">
+          <div>
+            <h2>Oferta educațională 2026-2027</h2>
+            <p>Programele apar în admitere și comparație; elevii nu mai introduc facultăți după capul lor.</p>
+          </div>
+        </header>
+        <table className="university-table admin-table">
+          <thead><tr><th>Program</th><th>Universitate</th><th>Tip</th><th>Deadline</th><th>Locuri</th><th>Cerințe</th></tr></thead>
+          <tbody>{programs.slice(0, 80).map((program) => (
+            <tr key={program.id}>
+              <td><strong>{program.name}</strong><small>{program.faculty}</small></td>
+              <td>{program.Institution?.shortName || institutions.find((item) => item.id === program.InstitutionId)?.shortName || "-"}</td>
+              <td>{program.programType}</td>
+              <td>{program.deadline || "-"}</td>
+              <td>{program.seats || "-"}</td>
+              <td>{program.requirements?.length || 0} documente</td>
+            </tr>
+          ))}</tbody>
+        </table>
+      </section>
 
       <section className="university-table-card admin-list">
         <table className="university-table admin-table">
@@ -327,7 +421,7 @@ export function AdminPanel({ onToast }) {
         <header className="table-card-heading">
           <div>
             <h2>Audit securitate</h2>
-            <p>Ultimele acțiuni importante: login, resetare, aplicații, AI documente și operațiuni admin.</p>
+            <p>Ultimele acțiuni importante: login, resetare, aplicații, verificări de documente și operațiuni admin.</p>
           </div>
         </header>
         <table className="university-table audit-table">

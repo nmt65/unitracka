@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Brain, Sparkles } from "lucide-react";
+import { ClipboardList, Sparkles } from "lucide-react";
 import { api } from "../services/api.js";
 
 function Score({ label, value }) {
@@ -56,7 +56,7 @@ export function StudentAdvisor({ universities = [], onToast }) {
       };
       const data = await api.studentAdvisor(payload);
       setAdvice(data.advice);
-      onToast("Consilierul AI a analizat profilul.");
+      onToast("Asistentul a analizat profilul.");
     } catch (error) {
       onToast(error.message);
     } finally {
@@ -68,14 +68,14 @@ export function StudentAdvisor({ universities = [], onToast }) {
     <section className="unitrack-page advisor-page">
       <div className="page-heading">
         <div>
-          <h1>Consilier AI admitere</h1>
+          <h1>Asistent dosar</h1>
           <p>Primești scoruri orientative pentru CV, aplicație și potrivirea cu universitatea.</p>
         </div>
       </div>
 
       <div className="admin-grid">
         <form className="profile-panel admin-form" onSubmit={submit}>
-          <h2><Brain size={17} /> Analiză profil</h2>
+          <h2><ClipboardList size={17} /> Analiză profil</h2>
           <div className="profile-form">
             <label>
               Aplicație trimisă
@@ -105,7 +105,7 @@ export function StudentAdvisor({ universities = [], onToast }) {
             </label>
             <label className="wide">
               Obiectiv personal
-              <input name="personalGoal" value={form.personalGoal} onChange={updateField} placeholder="ex. vreau informatică/AI în Europa" />
+              <input name="personalGoal" value={form.personalGoal} onChange={updateField} placeholder="ex. vreau informatică în Europa" />
             </label>
             <label className="wide">
               CV / experiență

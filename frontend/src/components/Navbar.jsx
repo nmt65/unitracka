@@ -5,7 +5,7 @@ import { t } from "../i18n.js";
 const pageTitles = {
   dashboard: "Dashboard",
   admissions: "Admitere",
-  advisor: "Consilier AI",
+  advisor: "Asistent dosar",
   universities: "Universități",
   documents: "Documente",
   compare: "Comparare",

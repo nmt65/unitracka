@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../services/api.js";
-import { CheckCircle2, Circle, Download, Eye, FileText, Search, X } from "lucide-react";
+import { BookOpen, CheckCircle2, Circle, Download, Eye, FileText, Plus, Search, X } from "lucide-react";
 
 const statusLabels = {
   submitted: "Trimisă",
@@ -17,9 +17,26 @@ const documentStatusLabels = {
   rejected: "Respins"
 };
 
+const emptyProgram = {
+  faculty: "",
+  name: "",
+  programType: "licenta",
+  academicYear: "2026-2027",
+  deadline: "",
+  annualTuition: "",
+  seats: "",
+  language: "Română",
+  admissionMethod: "",
+  website: "",
+  description: "",
+  status: "active"
+};
+
 export function UniversityWorkspace({ user, onToast }) {
   const [applications, setApplications] = useState([]);
   const [institution, setInstitution] = useState(null);
+  const [programs, setPrograms] = useState([]);
+  const [programForm, setProgramForm] = useState(emptyProgram);
   const [institutionForm, setInstitutionForm] = useState({ website: "", contactEmail: "", description: "" });
   const [filter, setFilter] = useState({ status: "all", sort: "newest", documents: "all", search: "" });
   const [selectedDocument, setSelectedDocument] = useState(null);
@@ -30,7 +47,9 @@ export function UniversityWorkspace({ user, onToast }) {
       api.workspaceApplications(filter),
       api.myInstitution().catch(() => ({ institution: null }))
     ]);
+    const programData = await api.myInstitutionPrograms().catch(() => ({ programs: [] }));
     setApplications(data.applications || []);
+    setPrograms(programData.programs || []);
     setReviewNotes(Object.fromEntries((data.applications || []).map((item) => [item.id, item.reviewerNotes || ""])));
     if (institutionData.institution) {
       setInstitution(institutionData.institution);
@@ -66,6 +85,10 @@ export function UniversityWorkspace({ user, onToast }) {
 
   function updateInstitutionField(event) {
     setInstitutionForm((current) => ({ ...current, [event.target.name]: event.target.value }));
+  }
+
+  function updateProgramField(event) {
+    setProgramForm((current) => ({ ...current, [event.target.name]: event.target.value }));
   }
 
   function updateReviewNote(id, value) {
@@ -117,6 +140,23 @@ export function UniversityWorkspace({ user, onToast }) {
     }
   }
 
+  async function createProgram(event) {
+    event.preventDefault();
+    try {
+      await api.createMyInstitutionProgram({
+        ...programForm,
+        annualTuition: programForm.annualTuition === "" ? null : Number(programForm.annualTuition),
+        seats: programForm.seats === "" ? null : Number(programForm.seats),
+        deadline: programForm.deadline || null
+      });
+      setProgramForm(emptyProgram);
+      onToast("Program adăugat în oferta universității.");
+      await load();
+    } catch (error) {
+      onToast(error.message);
+    }
+  }
+
   return (
     <section className="unitrack-page">
       <div className="page-heading">
@@ -159,6 +199,62 @@ export function UniversityWorkspace({ user, onToast }) {
               {institutionForm.website && <a className="soft-button" href={institutionForm.website} target="_blank" rel="noreferrer">Vezi site oficial</a>}
             </div>
           </form>
+        </section>
+      )}
+      {institution && (
+        <section className="profile-panel university-offer-panel">
+          <h2><BookOpen size={17} /> Oferta educațională</h2>
+          <form className="profile-form" onSubmit={createProgram}>
+            <label>
+              Facultate
+              <input name="faculty" value={programForm.faculty} onChange={updateProgramField} required placeholder="Facultatea de..." />
+            </label>
+            <label>
+              Program
+              <input name="name" value={programForm.name} onChange={updateProgramField} required placeholder="Informatică" />
+            </label>
+            <label>
+              Tip
+              <select name="programType" value={programForm.programType} onChange={updateProgramField}>
+                <option value="licenta">Licență</option>
+                <option value="master">Master</option>
+                <option value="doctorat">Doctorat</option>
+              </select>
+            </label>
+            <label>
+              Deadline
+              <input name="deadline" type="date" value={programForm.deadline} onChange={updateProgramField} />
+            </label>
+            <label>
+              Locuri
+              <input name="seats" type="number" min="1" value={programForm.seats} onChange={updateProgramField} />
+            </label>
+            <label>
+              Taxă anuală
+              <input name="annualTuition" type="number" min="0" step="0.01" value={programForm.annualTuition} onChange={updateProgramField} />
+            </label>
+            <label className="wide">
+              Metodă admitere
+              <textarea name="admissionMethod" value={programForm.admissionMethod} onChange={updateProgramField} rows="3" placeholder="Dosar, probă, interviu, criterii de departajare..." />
+            </label>
+            <div className="profile-actions inline-actions">
+              <button className="primary-button" type="submit"><Plus size={17} /> Adaugă program</button>
+            </div>
+          </form>
+          <div className="program-list">
+            {programs.length === 0 && <p className="muted">Nu ai programe configurate încă. Elevii văd momentan oferta de catalog.</p>}
+            {programs.slice(0, 12).map((program) => (
+              <article key={program.id}>
+                <span className="uni-logo tone-primary">{program.name.slice(0, 2).toUpperCase()}</span>
+                <span>
+                  <strong>{program.name}</strong>
+                  <small>{program.faculty} · {program.programType} · {program.academicYear}</small>
+                </span>
+                <em>{program.deadline || "fără deadline"}</em>
+                <small>{program.requirements?.length || 0} documente</small>
+              </article>
+            ))}
+          </div>
         </section>
       )}
       <div className="filter-bar">
@@ -246,7 +342,7 @@ export function UniversityWorkspace({ user, onToast }) {
                     {doc.fileName || "fără fișier"}
                   </small>
                   <em>{documentStatusLabels[doc.verificationStatus] || doc.verificationStatus}</em>
-                  <small>{doc.aiLabel ? `${doc.aiLabel} · ${Math.round((doc.aiConfidence || 0) * 100)}%` : "neverificat AI"}</small>
+                  <small>{doc.aiLabel ? `${doc.aiLabel} · ${Math.round((doc.aiConfidence || 0) * 100)}%` : "neverificat automat"}</small>
                   {doc.fileSize ? (
                     <button className="tiny-link as-button" type="button" onClick={() => setSelectedDocument({ ...doc, application })}>
                       <Eye size={14} /> Vezi document
@@ -272,7 +368,7 @@ export function UniversityWorkspace({ user, onToast }) {
             </header>
             <div className="document-meta-grid">
               <span><strong>Status</strong>{documentStatusLabels[selectedDocument.verificationStatus] || selectedDocument.verificationStatus}</span>
-              <span><strong>AI</strong>{selectedDocument.aiLabel ? `${selectedDocument.aiLabel} · ${Math.round((selectedDocument.aiConfidence || 0) * 100)}%` : "Neverificat"}</span>
+              <span><strong>Verificare</strong>{selectedDocument.aiLabel ? `${selectedDocument.aiLabel} · ${Math.round((selectedDocument.aiConfidence || 0) * 100)}%` : "Neverificat"}</span>
               <span><strong>Fișier</strong>{selectedDocument.fileName || "-"}</span>
             </div>
             {selectedDocument.aiExplanation && <p className="field-note">{selectedDocument.aiExplanation}</p>}

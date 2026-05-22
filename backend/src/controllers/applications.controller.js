@@ -1,4 +1,4 @@
-import { AdmissionApplication, Document, Institution, Notification, University, User } from "../models/index.js";
+import { AdmissionApplication, AdmissionProgram, Document, Institution, Notification, ProgramRequirement, University, User } from "../models/index.js";
 import { defaultDocuments } from "../data/defaultDocuments.js";
 import { universityCatalog } from "../data/catalog.js";
 import { writeAudit } from "../services/audit.js";
@@ -7,6 +7,7 @@ import { sendApplicationStatusEmail, sendApplicationSubmittedEmail } from "../se
 function includeAll() {
   return [
     Institution,
+    { model: AdmissionProgram, include: [ProgramRequirement] },
     { model: User, as: "Student", attributes: ["id", "name", "email", "bacAverage", "languageResults", "cnpLast4"] },
     Document
   ];
@@ -55,6 +56,67 @@ function normalizeValue(value) {
 
 function catalogForInstitution(institution) {
   return universityCatalog.find((item) => normalizeValue(item.name) === normalizeValue(institution.name));
+}
+
+async function resolveProgram(institution, payload) {
+  if (payload.programId) {
+    return AdmissionProgram.findOne({
+      where: { id: payload.programId, InstitutionId: institution.id, status: "active" },
+      include: [ProgramRequirement]
+    });
+  }
+
+  const dbPrograms = await AdmissionProgram.findAll({
+    where: { InstitutionId: institution.id, status: "active" },
+    include: [ProgramRequirement]
+  });
+  if (dbPrograms.length) {
+    return dbPrograms.find((program) => (
+      normalizeValue(program.name) === normalizeValue(payload.program)
+      && normalizeValue(program.faculty) === normalizeValue(payload.faculty)
+      && program.programType === payload.programType
+    )) || null;
+  }
+
+  const catalog = catalogForInstitution(institution);
+  if (!catalog?.offerPrograms?.length) return {
+    name: payload.program,
+    faculty: payload.faculty || "Oferta educațională oficială",
+    programType: payload.programType,
+    deadline: null,
+    website: institution.website,
+    ProgramRequirements: []
+  };
+  const offer = catalog.offerPrograms.find((program) => (
+    normalizeValue(program.program) === normalizeValue(payload.program)
+    && normalizeValue(program.faculty) === normalizeValue(payload.faculty)
+    && program.programType === payload.programType
+  ));
+  if (!offer) return null;
+  return {
+    name: offer.program,
+    faculty: offer.faculty,
+    programType: offer.programType,
+    deadline: offer.deadline || null,
+    website: offer.website || institution.website,
+    ProgramRequirements: []
+  };
+}
+
+function requirementsForProgram(program) {
+  const requirements = program?.ProgramRequirements || program?.requirements || [];
+  if (requirements.length) {
+    return requirements
+      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+      .map((requirement) => ({
+        name: requirement.documentName,
+        category: requirement.category,
+        isOptional: requirement.isOptional,
+        isCompleted: false,
+        verificationStatus: "missing"
+      }));
+  }
+  return defaultDocuments.map((doc) => ({ ...doc, isCompleted: false, verificationStatus: "missing" }));
 }
 
 function matchesCurrentOffer(institution, payload) {
@@ -130,14 +192,15 @@ export async function createApplication(req, res, next) {
   try {
     const institution = await Institution.findOne({ where: { id: req.body.institutionId, status: "active" } });
     if (!institution) return res.status(404).json({ message: "Universitatea nu există sau nu este activă." });
-    if (!matchesCurrentOffer(institution, req.body)) {
+    const selectedProgram = await resolveProgram(institution, req.body);
+    if (!selectedProgram && !matchesCurrentOffer(institution, req.body)) {
       return res.status(422).json({ message: "Alege un program din oferta educațională curentă a universității." });
     }
     const duplicate = await AdmissionApplication.findOne({
       where: {
         StudentId: req.user.id,
         InstitutionId: institution.id,
-        program: req.body.program
+        program: selectedProgram?.name || req.body.program
       }
     });
     if (duplicate) return res.status(409).json({ message: "Ai deja o aplicație pentru această universitate și acest program." });
@@ -145,12 +208,16 @@ export async function createApplication(req, res, next) {
     const { admissionScore: _ignoredAdmissionScore, ...payload } = req.body;
     const application = await AdmissionApplication.create({
       ...payload,
+      AdmissionProgramId: selectedProgram?.id || null,
+      program: selectedProgram?.name || payload.program,
+      faculty: selectedProgram?.faculty || payload.faculty,
+      programType: selectedProgram?.programType || payload.programType,
       admissionScore: null,
       StudentId: req.user.id,
       InstitutionId: institution.id,
       submittedAt: new Date()
     });
-    await Document.bulkCreate(defaultDocuments.map((doc) => ({
+    await Document.bulkCreate(requirementsForProgram(selectedProgram).map((doc) => ({
       ...doc,
       isCompleted: false,
       verificationStatus: "missing",
