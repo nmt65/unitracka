@@ -349,7 +349,7 @@ function translateTree(root, language) {
     }
   });
   const nodes = [];
-  while (walker.nextNode()) nodes.push(walker.currentNode);
+  while (walker.nextNode() && nodes.length < 1200) nodes.push(walker.currentNode);
   nodes.forEach((node) => {
     const nextValue = translateValue(node.nodeValue, language);
     if (nextValue !== node.nodeValue) node.nodeValue = nextValue;
@@ -369,8 +369,6 @@ export function applyDomLanguage(language) {
   const root = document.getElementById("root");
   if (!root) return () => {};
   document.documentElement.lang = language === "en" ? "en" : "ro";
-  translateTree(root, language);
-  const observer = new MutationObserver(() => translateTree(root, language));
-  observer.observe(root, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["placeholder", "title", "aria-label"] });
-  return () => observer.disconnect();
+  const frame = window.requestAnimationFrame(() => translateTree(root, language));
+  return () => window.cancelAnimationFrame(frame);
 }
