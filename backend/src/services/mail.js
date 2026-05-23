@@ -7,9 +7,20 @@ export function isSmtpConfigured() {
   return Boolean(env.smtp.host && env.smtp.user && env.smtp.pass);
 }
 
+function isGmailSmtp() {
+  return /gmail/i.test(env.smtp.host);
+}
+
+function mailFrom() {
+  if (isGmailSmtp() && !String(env.smtp.from || "").includes(env.smtp.user)) {
+    return `UniTrack <${env.smtp.user}>`;
+  }
+  return env.smtp.from;
+}
+
 function getTransporter() {
   if (!transporter) {
-    const isGmail = /gmail/i.test(env.smtp.host);
+    const isGmail = isGmailSmtp();
     const smtpPass = isGmail ? env.smtp.pass.replace(/\s+/g, "") : env.smtp.pass;
     transporter = nodemailer.createTransport({
       host: env.smtp.host,
@@ -38,7 +49,7 @@ function friendlyMailReason(error) {
 export async function sendMailSafe(message) {
   if (!isSmtpConfigured()) return { sent: false, reason: "SMTP neconfigurat" };
   try {
-    await getTransporter().sendMail({ from: env.smtp.from, ...message });
+    await getTransporter().sendMail({ from: mailFrom(), ...message });
     return { sent: true };
   } catch (error) {
     const reason = friendlyMailReason(error);
