@@ -22,12 +22,17 @@ async function request(path, options = {}) {
   if (unsafe) headers["X-CSRF-Token"] = await ensureCsrf();
   if (options.body && !(options.body instanceof FormData)) headers["Content-Type"] = "application/json";
 
-  const response = await fetch(`${API_BASE}${path}`, {
-    method,
-    credentials: "include",
-    headers,
-    body: options.body && !(options.body instanceof FormData) ? JSON.stringify(options.body) : options.body
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      method,
+      credentials: "include",
+      headers,
+      body: options.body && !(options.body instanceof FormData) ? JSON.stringify(options.body) : options.body
+    });
+  } catch {
+    throw new Error("Conexiunea cu serverul a picat. Așteaptă câteva secunde și reîncearcă.");
+  }
 
   if (response.status === 204) return null;
 
@@ -56,6 +61,8 @@ async function downloadExport(type) {
 }
 
 const liveApi = {
+  health: () => request("/health"),
+  ready: () => request("/ready"),
   me: () => request("/auth/me"),
   login: (body) => request("/auth/login", { method: "POST", body }),
   register: (body) => request("/auth/register", { method: "POST", body }),

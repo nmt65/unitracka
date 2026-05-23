@@ -42,6 +42,28 @@ export function App() {
   }, [darkMode]);
 
   useEffect(() => {
+    let stopped = false;
+    async function keepApiAwake() {
+      try {
+        await api.health?.();
+      } catch {
+        if (!stopped && user) setToast("Serverul pornește mai greu. Reîncercăm automat.");
+      }
+    }
+    keepApiAwake();
+    const timer = window.setInterval(keepApiAwake, 240000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") keepApiAwake();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
     localStorage.setItem("unitrack-language", language);
     return applyDomLanguage(language);
   }, [language, active, user?.id, toast, notifications.length, universities.length]);

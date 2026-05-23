@@ -9,14 +9,30 @@ export function isSmtpConfigured() {
 
 function getTransporter() {
   if (!transporter) {
+    const isGmail = /gmail/i.test(env.smtp.host);
+    const smtpPass = isGmail ? env.smtp.pass.replace(/\s+/g, "") : env.smtp.pass;
     transporter = nodemailer.createTransport({
       host: env.smtp.host,
       port: env.smtp.port,
       secure: env.smtp.port === 465,
-      auth: { user: env.smtp.user, pass: env.smtp.pass }
+      auth: { user: env.smtp.user, pass: smtpPass },
+      connectionTimeout: 12000,
+      greetingTimeout: 12000,
+      socketTimeout: 20000
     });
   }
   return transporter;
+}
+
+function friendlyMailReason(error) {
+  const message = error?.message || "Emailul nu a putut fi trimis.";
+  if (/Invalid login|EAUTH|535|534|Username and Password/i.test(message)) {
+    return "Autentificarea SMTP a fost respinsă. Pentru Gmail folosește App Password, nu parola normală a contului.";
+  }
+  if (/ETIMEDOUT|ECONNECTION|ECONNREFUSED|ENOTFOUND|timeout/i.test(message)) {
+    return "Serverul SMTP nu a răspuns la timp. Verifică SMTP_HOST, SMTP_PORT și conexiunea Render.";
+  }
+  return message;
 }
 
 export async function sendMailSafe(message) {
@@ -25,8 +41,9 @@ export async function sendMailSafe(message) {
     await getTransporter().sendMail({ from: env.smtp.from, ...message });
     return { sent: true };
   } catch (error) {
-    console.warn(`Email netrimis: ${error.message}`);
-    return { sent: false, reason: error.message };
+    const reason = friendlyMailReason(error);
+    console.warn(`Email netrimis: ${reason}`);
+    return { sent: false, reason };
   }
 }
 
