@@ -122,11 +122,15 @@ export async function forgotPassword(req, res, next) {
     }
     return res.json({
       message: isSmtpConfigured()
-        ? "Dacă emailul există, am generat instrucțiuni pentru resetarea parolei."
+        ? delivery.sent
+          ? "Dacă emailul există, am trimis instrucțiunile pentru resetarea parolei."
+          : user
+            ? "Contul există, dar emailul de resetare nu a putut fi trimis."
+            : "Dacă emailul există, am generat instrucțiuni pentru resetarea parolei."
         : "Resetarea a fost generată, dar emailul nu poate fi trimis până când SMTP este configurat pe Render.",
       mailConfigured: isSmtpConfigured(),
       mailSent: delivery.sent,
-      mailReason: env.nodeEnv === "production" ? undefined : delivery.reason,
+      mailReason: user && !delivery.sent ? delivery.reason : env.nodeEnv === "production" ? undefined : delivery.reason,
       resetToken: env.nodeEnv === "production" ? undefined : devResetToken
     });
   } catch (error) {

@@ -101,6 +101,8 @@ export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMod
           setNotice(`Cod resetare local: ${data.resetToken}`);
         } else if (data.mailConfigured === false) {
           setNotice(t("Dacă emailul există, am pregătit resetarea. Dacă nu primești mesajul, administratorul trebuie să verifice configurarea emailului.", language));
+        } else if (data.mailSent === false && data.mailReason) {
+          setError(data.mailReason);
         } else {
           setNotice(data.message);
         }
