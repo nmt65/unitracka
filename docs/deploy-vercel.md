@@ -8,10 +8,11 @@ Vercel frontend -> /api proxy -> Render API -> Supabase PostgreSQL
 
 ## Setări Vercel
 
-Fișierul `vercel.json` configurează:
+Recomandat: în Vercel setează **Root Directory** la `frontend`. Fișierul `frontend/vercel.json` configurează:
 
-- build: `npm run build --prefix frontend`;
-- output: `frontend/dist`;
+- framework: Vite;
+- build: `npm run build`;
+- output: `dist`;
 - proxy `/api/*` către `https://unitrack-api-79l5.onrender.com/api/*`;
 - fallback SPA către `index.html`;
 - headere de securitate pentru frontend.
@@ -19,7 +20,7 @@ Fișierul `vercel.json` configurează:
 Comandă CLI:
 
 ```bash
-npx vercel --prod
+npx vercel --prod --cwd frontend
 ```
 
 ## Setări Render după mutare

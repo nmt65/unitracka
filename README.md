@@ -188,7 +188,7 @@ Varianta completă de producție folosește frontend Vercel, backend Node.js pe 
 https://unitrack.sbs -> Vercel frontend -> Render API -> Supabase PostgreSQL
 ```
 
-Deploy-ul Vercel este configurat prin `vercel.json`. Domeniul principal este `unitrack.sbs`, iar aliasul este `www.unitrack.sbs`.
+Deploy-ul Vercel este configurat prin `frontend/vercel.json`. În Vercel, setează Root Directory la `frontend`. Domeniul principal este `unitrack.sbs`, iar aliasul este `www.unitrack.sbs`.
 
 DNS-ul extern trebuie setat în Hostinger astfel:
 
