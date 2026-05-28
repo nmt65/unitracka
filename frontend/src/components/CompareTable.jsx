@@ -80,6 +80,7 @@ export function CompareTable({ universities = [] }) {
           {ranked.map((uni) => (
             <article key={uni.id}>
               <span className="uni-logo tone-primary">{shortName(uni)}</span>
+              <span className="compare-score-name">{uni.name}</span>
               <strong>{uni.compareScore}</strong>
               <small>{scoreLabel(uni.compareScore)}</small>
               <div className="readiness-track"><i style={{ width: `${uni.compareScore}%` }} /></div>

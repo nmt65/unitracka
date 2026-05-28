@@ -198,7 +198,7 @@ export function Universities({ user, universities, onAdd, onEdit, onNavigate, on
         </div>
       ) : (
         <div className="university-table-card">
-          <table className="university-table">
+          <table className="university-table tracker-table">
             <thead>
               <tr>
                 <th>Universitate</th>

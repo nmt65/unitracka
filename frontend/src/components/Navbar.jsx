@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bell, CheckCheck, Inbox, Languages, LogOut, Moon, Search, Sun } from "lucide-react";
 import { t } from "../i18n.js";
 
@@ -15,6 +15,7 @@ const pageTitles = {
 
 export function Navbar({ user, active, onChange, onLogout, darkMode, onToggleTheme, language = "ro", onToggleLanguage, notifications = [], onMarkNotificationRead }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const notificationRef = useRef(null);
   const unreadCount = useMemo(() => notifications.filter((item) => !item.readAt).length, [notifications]);
   const latestNotifications = notifications.slice(0, 6);
   const pageTitle = user?.role === "admin" && active === "dashboard"
@@ -22,6 +23,25 @@ export function Navbar({ user, active, onChange, onLogout, darkMode, onToggleThe
     : user?.role === "university" && active === "dashboard"
       ? "Aplicații primite"
       : pageTitles[active] || "UniTrack";
+
+  useEffect(() => {
+    if (!notificationsOpen) return undefined;
+    function closeOnOutsideClick(event) {
+      if (!notificationRef.current?.contains(event.target)) {
+        setNotificationsOpen(false);
+      }
+    }
+    function closeOnEscape(event) {
+      if (event.key === "Escape") setNotificationsOpen(false);
+    }
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [notificationsOpen]);
+
   return (
     <header className="topbar">
       <div className="topbar-title">
@@ -35,7 +55,7 @@ export function Navbar({ user, active, onChange, onLogout, darkMode, onToggleThe
             <span>{t("Caută", language)}</span>
           </button>
         )}
-        <div className="notification-wrap">
+        <div className="notification-wrap" ref={notificationRef}>
           <button
             className={`top-icon ${unreadCount ? "has-dot" : ""}`}
             type="button"
