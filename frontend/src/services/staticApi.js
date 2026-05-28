@@ -1,4 +1,4 @@
-import { currentAdmissionYear as sharedCurrentAdmissionYear, universityCatalog as sharedUniversityCatalog } from "../../../backend/src/data/catalog.js";
+import { currentAdmissionYear as sharedCurrentAdmissionYear, universityCatalog as sharedUniversityCatalog } from "../data/catalog.js";
 
 const STORE_KEY = "unitrack_static_state_v2";
 const SESSION_KEY = "unitrack_static_session_v2";
