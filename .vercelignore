@@ -1,0 +1,13 @@
+backend/
+docs/*.png
+backend/data/
+backend/node_modules/
+frontend/node_modules/
+node_modules/
+.git/
+.netlify/
+*.zip
+*.log
+*.err
+*.sqlite
+*.sqlite-*

@@ -182,25 +182,25 @@ Pentru build static compatibil cu GitHub Pages:
 npm run build:pages
 ```
 
-Varianta completă de producție folosește frontend Netlify, backend Node.js pe Render și PostgreSQL în Supabase:
+Varianta completă de producție folosește frontend Vercel, backend Node.js pe Render și PostgreSQL în Supabase:
 
 ```text
-https://unitrack.sbs -> Netlify frontend -> Render API -> Supabase PostgreSQL
+https://unitrack.sbs -> Vercel frontend -> Render API -> Supabase PostgreSQL
 ```
 
-Deploy-ul Netlify este configurat prin `netlify.toml`. Domeniul principal este `unitrack.sbs`, iar aliasul este `www.unitrack.sbs`.
+Deploy-ul Vercel este configurat prin `vercel.json`. Domeniul principal este `unitrack.sbs`, iar aliasul este `www.unitrack.sbs`.
 
 DNS-ul extern trebuie setat în Hostinger astfel:
 
 ```text
-A      @      75.2.60.5
-CNAME  www    unitrack-640.netlify.app
+A      @      76.76.21.21
+CNAME  www    cname.vercel-dns.com
 ```
 
-Până se propagă DNS-ul și se emite certificatul SSL, aplicația rămâne accesibilă pe:
+Până se propagă DNS-ul și se emite certificatul SSL, aplicația rămâne accesibilă pe URL-ul `.vercel.app` generat la deploy.
 
 ```text
-https://unitrack-640.netlify.app
+https://<proiectul-tau>.vercel.app
 ```
 
 GitHub Pages poate rula doar frontend static. Varianta statică rămâne utilă pentru demo-uri, dar varianta live are nevoie de backend Node.js separat și bază de date PostgreSQL.

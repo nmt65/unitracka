@@ -5,9 +5,42 @@ const STATIC_MODE = import.meta.env.VITE_STATIC_MODE === "true";
 
 let csrfToken = "";
 
+function delay(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 22000) {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
+async function fetchWithRetry(url, options = {}, { retries = 1, timeoutMs = 22000 } = {}) {
+  const method = options.method || "GET";
+  const canRetry = ["GET", "HEAD", "OPTIONS"].includes(method);
+  let lastError;
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      const response = await fetchWithTimeout(url, options, timeoutMs);
+      if (!canRetry || ![408, 429, 500, 502, 503, 504].includes(response.status) || attempt === retries) {
+        return response;
+      }
+    } catch (error) {
+      lastError = error;
+      if (!canRetry || attempt === retries) throw error;
+    }
+    await delay(900 + attempt * 600);
+  }
+  throw lastError || new Error("Serverul nu a răspuns.");
+}
+
 async function ensureCsrf() {
   if (csrfToken) return csrfToken;
-  const response = await fetch(`${API_BASE}/auth/csrf-token`, { credentials: "include" });
+  const response = await fetchWithRetry(`${API_BASE}/auth/csrf-token`, { credentials: "include" }, { retries: 2 });
   if (!response.ok) throw new Error("Nu am putut initializa sesiunea securizata.");
   const data = await response.json();
   csrfToken = data.csrfToken;
@@ -24,12 +57,12 @@ async function request(path, options = {}) {
 
   let response;
   try {
-    response = await fetch(`${API_BASE}${path}`, {
+    response = await fetchWithRetry(`${API_BASE}${path}`, {
       method,
       credentials: "include",
       headers,
       body: options.body && !(options.body instanceof FormData) ? JSON.stringify(options.body) : options.body
-    });
+    }, { retries: ["GET", "HEAD", "OPTIONS"].includes(method) ? 2 : 0 });
   } catch {
     throw new Error("Conexiunea cu serverul a picat. Așteaptă câteva secunde și reîncearcă.");
   }
@@ -46,7 +79,7 @@ async function request(path, options = {}) {
 }
 
 async function downloadExport(type) {
-  const response = await fetch(`${API_BASE}/exports/${type}`, { credentials: "include" });
+  const response = await fetchWithRetry(`${API_BASE}/exports/${type}`, { credentials: "include" }, { retries: 2 });
   if (!response.ok) throw new Error("Exportul nu a putut fi generat.");
   const blob = await response.blob();
   const disposition = response.headers.get("content-disposition") || "";

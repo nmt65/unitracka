@@ -36,6 +36,7 @@ export function App() {
   const [darkMode, setDarkMode] = useState(true);
   const [language, setLanguage] = useState(() => localStorage.getItem("unitrack-language") || "ro");
   const [notifications, setNotifications] = useState([]);
+  const [serverNotice, setServerNotice] = useState("");
 
   useEffect(() => {
     document.body.classList.toggle("dark", darkMode);
@@ -46,8 +47,9 @@ export function App() {
     async function keepApiAwake() {
       try {
         await api.health?.();
+        if (!stopped) setServerNotice("");
       } catch {
-        if (!stopped && user) setToast("Serverul pornește mai greu. Reîncercăm automat.");
+        if (!stopped && user) setServerNotice("Serverul se trezește mai greu. Reîncercăm automat.");
       }
     }
     keepApiAwake();
@@ -213,6 +215,7 @@ export function App() {
 
   return (
     <div className="app-shell">
+      {serverNotice && <div className="connection-banner" role="status">{serverNotice}</div>}
       <Navbar
         user={user}
         active={active}
