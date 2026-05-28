@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, Copy, KeyRound, Link2, LogOut, Save, Trash2 } from "lucide-react";
+import { AlertTriangle, BellRing, CheckCircle2, Copy, FileCheck2, KeyRound, Link2, LogOut, Mail, Save, ShieldCheck, Sparkles, Target, Trash2 } from "lucide-react";
 import { api } from "../services/api.js";
 import { StatCards } from "../components/StatCards.jsx";
 
@@ -31,6 +31,17 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
   ], [universities, applicationDocs]);
   const hasAcademicEvidence = hasVerifiedEvidence(evidenceSources, "bac|bacalaureat|matricol");
   const hasLanguageEvidence = hasVerifiedEvidence(evidenceSources, "limb|ielts|toefl|cambridge");
+  const allDocs = evidenceSources.flatMap((source) => source.documents || []);
+  const verifiedDocs = allDocs.filter((doc) => doc.verificationStatus === "verified" || doc.isCompleted);
+  const requiredMissing = universities.reduce((sum, uni) => sum + Number(uni.remainingRequiredDocuments || 0), 0);
+  const readinessScore = Math.min(100, Math.round(
+    (hasAcademicEvidence ? 24 : 0)
+    + (hasLanguageEvidence ? 16 : 0)
+    + Math.min(30, verifiedDocs.length * 4)
+    + Math.min(18, accepted.length * 9)
+    + (user.emailNotifications ? 12 : 0)
+  ));
+  const nextDeadline = (stats?.upcomingDeadlines || []).find((item) => item.daysUntilDeadline >= 0);
   const publicProfileUrl = new URL(`public/${user.publicShareId}`, window.location.href).toString();
   const [form, setForm] = useState({
     name: user.name || "",
@@ -157,6 +168,19 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
           </div>
         </div>
 
+        <section className="profile-hero account-hero">
+          <div>
+            <span className="hero-kicker"><ShieldCheck size={16} /> Cont securizat</span>
+            <h2>{user.name}</h2>
+            <p>{isUniversity ? "Workspace-ul tău gestionează aplicații, documente și feedback pentru candidați." : "Ai control asupra catalogului, conturilor instituționale și sănătății sistemului."}</p>
+          </div>
+          <div className="profile-hero-grid">
+            <span><strong>{user.emailNotifications ? "Activ" : "Oprit"}</strong><small>Email notificări</small></span>
+            <span><strong>{user.notifyBeforeDays || 14} zile</strong><small>Reminder deadline</small></span>
+            <span><strong>{user.role}</strong><small>Rol platformă</small></span>
+          </div>
+        </section>
+
         {isUniversity && user.institution && (
           <section className="profile-panel account-context-panel">
             <h2>Workspace asociat</h2>
@@ -247,6 +271,47 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
           <p>Completează profilul pentru a urmări progresul aplicațiilor tale</p>
         </div>
       </div>
+
+      <section className="profile-hero">
+        <div className="profile-hero-main">
+          <span className="hero-kicker"><Sparkles size={16} /> Dosar inteligent</span>
+          <h2>{user.name}</h2>
+          <p>Profilul tău devine credibil doar când notele, certificatele și documentele sunt verificate. Aici vezi rapid ce lipsește ca dosarul să fie gata de trimis.</p>
+          <div className="profile-hero-actions">
+            <button className="soft-button" type="button" onClick={copyLink}><Copy size={16} /> Copiază profil public</button>
+            <button className="soft-button" type="button" onClick={rotateLink}><Link2 size={16} /> Regenerează link</button>
+          </div>
+        </div>
+        <div className="readiness-card">
+          <span>Scor pregătire</span>
+          <strong>{readinessScore}%</strong>
+          <div className="readiness-track"><i style={{ width: `${readinessScore}%` }} /></div>
+          <small>{requiredMissing ? `${requiredMissing} documente obligatorii lipsă` : "Dosarele din tracker arată complet"}</small>
+        </div>
+      </section>
+
+      <section className="profile-insights">
+        <article className={hasAcademicEvidence ? "ok" : "warn"}>
+          <FileCheck2 size={18} />
+          <strong>{hasAcademicEvidence ? "Note validate" : "Note blocate"}</strong>
+          <span>{hasAcademicEvidence ? "BAC / foaie matricolă verificată" : "Încarcă dovada înainte să modifici media"}</span>
+        </article>
+        <article className={hasLanguageEvidence ? "ok" : "warn"}>
+          <Target size={18} />
+          <strong>{hasLanguageEvidence ? "Limbi validate" : "Certificat necesar"}</strong>
+          <span>{hasLanguageEvidence ? "Scorurile pot fi folosite în aplicații" : "IELTS/TOEFL se salvează după document"}</span>
+        </article>
+        <article>
+          <BellRing size={18} />
+          <strong>{user.emailNotifications ? "Reminder activ" : "Reminder oprit"}</strong>
+          <span>{nextDeadline ? `Următorul deadline: ${nextDeadline.name} în ${nextDeadline.daysUntilDeadline} zile` : "Nu ai deadline-uri active"}</span>
+        </article>
+        <article>
+          <Mail size={18} />
+          <strong>{verifiedDocs.length}/{allDocs.length || 0}</strong>
+          <span>documente verificate în tracker și aplicații</span>
+        </article>
+      </section>
       <StatCards stats={stats} />
 
       <section className="accepted-panel">

@@ -258,5 +258,8 @@ const romanianUniversities = [
   source: "ARACIS / Ministerul Educației"
 }));
 
-export const universityCatalog = [...europeTop2026, ...romanianUniversities]
+const curatedEurope = europeTop2026.slice(0, 60);
+const curatedRomania = romanianUniversities.slice(0, 35);
+
+export const universityCatalog = [...curatedEurope, ...curatedRomania]
   .filter((item, index, list) => list.findIndex((candidate) => candidate.name === item.name) === index);

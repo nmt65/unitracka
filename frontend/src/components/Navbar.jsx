@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Bell, Languages, LogOut, Moon, Search, Sun } from "lucide-react";
+import { Bell, CheckCheck, Inbox, Languages, LogOut, Moon, Search, Sun } from "lucide-react";
 import { t } from "../i18n.js";
 
 const pageTitles = {
@@ -16,6 +16,7 @@ const pageTitles = {
 export function Navbar({ user, active, onChange, onLogout, darkMode, onToggleTheme, language = "ro", onToggleLanguage, notifications = [], onMarkNotificationRead }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const unreadCount = useMemo(() => notifications.filter((item) => !item.readAt).length, [notifications]);
+  const latestNotifications = notifications.slice(0, 6);
   const pageTitle = user?.role === "admin" && active === "dashboard"
     ? "Panou Admin"
     : user?.role === "university" && active === "dashboard"
@@ -29,8 +30,9 @@ export function Navbar({ user, active, onChange, onLogout, darkMode, onToggleThe
       </div>
       <div className="topbar-actions">
         {user?.role === "student" && (
-          <button className="top-icon" type="button" title={t("Caută universități", language)} onClick={() => onChange("universities")}>
+          <button className="top-icon top-icon-labeled" type="button" title={t("Caută universități", language)} onClick={() => onChange("universities")}>
             <Search size={18} />
+            <span>{t("Caută", language)}</span>
           </button>
         )}
         <div className="notification-wrap">
@@ -47,23 +49,45 @@ export function Navbar({ user, active, onChange, onLogout, darkMode, onToggleThe
           {notificationsOpen && (
             <section className="notification-panel" aria-label="Notificări">
               <header>
-                <strong>{t("Notificări", language)}</strong>
+                <span className="notification-title">
+                  <Inbox size={16} />
+                  <strong>{t("Notificări", language)}</strong>
+                </span>
                 <small>{unreadCount ? `${unreadCount} ${t("necitite", language)}` : t("La zi", language)}</small>
               </header>
               {notifications.length === 0 ? (
-                <p>{t("Nu ai notificări noi.", language)}</p>
+                <div className="notification-empty">
+                  <Inbox size={22} />
+                  <p>{t("Nu ai notificări noi.", language)}</p>
+                </div>
               ) : (
-                notifications.slice(0, 6).map((item) => (
+                latestNotifications.map((item) => (
                   <button
                     key={item.id}
                     className={item.readAt ? "read" : ""}
                     type="button"
                     onClick={() => onMarkNotificationRead?.(item.id)}
                   >
-                    <strong>{item.title}</strong>
-                    <span>{item.body}</span>
+                    <span className={`notification-dot tone-${item.type || "system"}`} />
+                    <span>
+                      <strong>{item.title}</strong>
+                      <em>{item.body}</em>
+                      <small>{item.createdAt ? new Date(item.createdAt).toLocaleString("ro-RO") : t("Acum", language)}</small>
+                    </span>
                   </button>
                 ))
+              )}
+              {notifications.length > 0 && (
+                <footer>
+                  <button
+                    className="notification-footer-action"
+                    type="button"
+                    onClick={() => latestNotifications.filter((item) => !item.readAt).forEach((item) => onMarkNotificationRead?.(item.id))}
+                    disabled={!unreadCount}
+                  >
+                    <CheckCheck size={15} /> {t("Marchează citite", language)}
+                  </button>
+                </footer>
               )}
             </section>
           )}
@@ -78,7 +102,7 @@ export function Navbar({ user, active, onChange, onLogout, darkMode, onToggleThe
         <button className="top-icon" type="button" title={t("Deconectare", language)} onClick={onLogout}>
           <LogOut size={18} />
         </button>
-        <div className="top-avatar" title={user?.email}>{user?.name?.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase() || "AM"}</div>
+        <button className="top-avatar" type="button" title={user?.email} onClick={() => onChange("profile")}>{user?.name?.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase() || "AM"}</button>
       </div>
     </header>
   );

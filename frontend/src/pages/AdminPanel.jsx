@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BookOpen, Brain, Copy, Database, MailCheck, Plus, UserPlus } from "lucide-react";
+import { Activity, BookOpen, Brain, Copy, Database, Gauge, MailCheck, Plus, ShieldCheck, UserPlus } from "lucide-react";
 import { api } from "../services/api.js";
 
 const emptyInstitution = {
@@ -201,6 +201,42 @@ export function AdminPanel({ onToast }) {
           <p>Doar adminul adaugă universități și conturi instituționale.</p>
         </div>
       </div>
+
+      <section className="admin-command-center">
+        <div>
+          <span className="hero-kicker"><ShieldCheck size={16} /> Control center</span>
+          <h2>Platforma trebuie să arate ca un produs live, matur și ușor de controlat.</h2>
+          <p>De aici controlezi catalogul public, oferta educațională, conturile universităților, emailurile și verificarea automată a documentelor.</p>
+        </div>
+        <div className="admin-health-ring">
+          <Gauge size={24} />
+          <strong>{systemStatus?.smtpConfigured && systemStatus?.database === "postgres" ? "92" : "74"}%</strong>
+          <span>health score</span>
+        </div>
+      </section>
+
+      <section className="admin-ops-grid">
+        <article className={systemStatus?.database === "postgres" ? "ok" : "warn"}>
+          <Database size={18} />
+          <strong>PostgreSQL</strong>
+          <span>{systemStatus?.database || "se verifică"}</span>
+        </article>
+        <article className={systemStatus?.smtpConfigured ? "ok" : "warn"}>
+          <MailCheck size={18} />
+          <strong>Email resetare</strong>
+          <span>{systemStatus?.smtpConfigured ? "SMTP activ" : "neconfigurat"}</span>
+        </article>
+        <article className={systemStatus?.aiConfigured ? "ok" : "warn"}>
+          <Brain size={18} />
+          <strong>Document AI</strong>
+          <span>{systemStatus?.aiConfigured ? "provider activ" : "fallback local"}</span>
+        </article>
+        <article>
+          <Activity size={18} />
+          <strong>{auditLogs.length}</strong>
+          <span>evenimente audit</span>
+        </article>
+      </section>
 
       <div className="stats-grid compact-stats">
         <article className="stat-card"><strong>{stats.institutions}</strong><span>Universități</span><small>în platformă</small></article>

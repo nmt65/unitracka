@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { CalendarDays, Plus } from "lucide-react";
 import { EmptyState } from "../components/EmptyState.jsx";
 import { ProgressBar } from "../components/ProgressBar.jsx";
@@ -22,6 +23,7 @@ function progressTone(value) {
 }
 
 export function Dashboard({ user, universities, stats, onAdd, onEdit, onManageUniversities }) {
+  const [activeTab, setActiveTab] = useState("Toate");
   const firstName = user?.name?.split(" ")[0] || "Andrei";
   const addLabel = user?.role === "admin" ? "Adaugă universitate" : "Adaugă aplicație";
   const urgentCount = universities.filter((uni) => uni.daysUntilDeadline >= 0 && uni.daysUntilDeadline <= 14).length;
@@ -33,6 +35,13 @@ export function Dashboard({ user, universities, stats, onAdd, onEdit, onManageUn
     ["Acceptate", universities.filter((uni) => uni.status === "Acceptat").length],
     ["Respinse", universities.filter((uni) => uni.status === "Respins").length]
   ];
+  const visibleUniversities = useMemo(() => {
+    if (activeTab === "Toate") return universities;
+    if (activeTab === "Acceptate") return universities.filter((uni) => uni.status === "Acceptat");
+    if (activeTab === "Aplicate") return universities.filter((uni) => uni.status === "Aplicat");
+    if (activeTab === "Respinse") return universities.filter((uni) => uni.status === "Respins");
+    return universities.filter((uni) => uni.status === activeTab);
+  }, [activeTab, universities]);
 
   return (
     <div className="dashboard-layout">
@@ -55,12 +64,12 @@ export function Dashboard({ user, universities, stats, onAdd, onEdit, onManageUn
             </header>
             <nav className="app-tabs" aria-label="Filtrare aplicații">
               {tabs.map(([label, count]) => (
-                <button key={label} className={label === "Toate" ? "active" : ""} type="button">
+                <button key={label} className={label === activeTab ? "active" : ""} type="button" onClick={() => setActiveTab(label)}>
                   {label} <span>{count}</span>
                 </button>
               ))}
             </nav>
-            {universities.map((university) => (
+            {visibleUniversities.map((university) => (
               <button className="application-row" key={university.id} type="button" onClick={() => onEdit(university)}>
                 <span className={`uni-logo tone-${progressTone(university.progress)}`}>{shortName(university)}</span>
                 <span className="application-copy">
@@ -82,6 +91,12 @@ export function Dashboard({ user, universities, stats, onAdd, onEdit, onManageUn
                 </span>
               </button>
             ))}
+            {visibleUniversities.length === 0 && (
+              <div className="inline-empty compact">
+                <strong>Nu există aplicații în filtrul {activeTab}.</strong>
+                <span>Alege alt status sau adaugă o aplicație nouă.</span>
+              </div>
+            )}
           </section>
         )}
       </section>

@@ -69,6 +69,7 @@ export function Universities({ user, universities, onAdd, onEdit, onNavigate, on
       return matchesType && haystack.includes(query.toLowerCase());
     });
   }, [catalog, query, type]);
+  const visibleCatalog = filteredCatalog.slice(0, 60);
 
   async function exportCsv() {
     try {
@@ -152,7 +153,7 @@ export function Universities({ user, universities, onAdd, onEdit, onNavigate, on
 
       {view === "catalog" ? (
         <div className="catalog-grid">
-          {filteredCatalog.map((item) => {
+          {visibleCatalog.map((item) => {
             const tracked = trackerByName.get(item.name.toLowerCase());
             const offers = item.offerPrograms || [];
             return (
@@ -188,6 +189,12 @@ export function Universities({ user, universities, onAdd, onEdit, onNavigate, on
               </article>
             );
           })}
+          {filteredCatalog.length > visibleCatalog.length && (
+            <div className="catalog-grid-note">
+              <strong>{filteredCatalog.length - visibleCatalog.length} rezultate ascunse pentru performanță.</strong>
+              <span>Folosește căutarea sau filtrele ca să ajungi exact la universitatea dorită.</span>
+            </div>
+          )}
         </div>
       ) : (
         <div className="university-table-card">

@@ -168,6 +168,8 @@ const en = {
   "Întunecat": "Dark",
   "necitite": "unread",
   "La zi": "Up to date",
+  "Acum": "Now",
+  "Marchează citite": "Mark as read",
   "Nu ai notificări noi.": "No new notifications.",
   "Elevi": "Students",
   "Admini": "Admins",

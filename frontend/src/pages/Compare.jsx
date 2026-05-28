@@ -104,7 +104,10 @@ export function Compare({ universities, onToast }) {
     [available, selected]
   );
   const selectedSet = useMemo(() => new Set(selected), [selected]);
-  const visibleResults = filtered.slice(0, 36);
+  const suggested = useMemo(() => filtered
+    .filter((uni) => uni.sourceType === "tracker" || (uni.rating || 0) >= 7)
+    .slice(0, 6), [filtered]);
+  const visibleResults = filtered.slice(0, 24);
 
   function toggle(id) {
     setSelected((current) => {
@@ -164,6 +167,16 @@ export function Compare({ universities, onToast }) {
             {programTypes.map((type) => (
               <button key={type.value} type="button" className={programType === type.value ? "active" : ""} onClick={() => setProgramType(type.value)}>{type.label}</button>
             ))}
+          </div>
+          <div className="compare-suggestions" aria-label="Sugestii comparație">
+            <strong>Selecții rapide</strong>
+            <div>
+              {suggested.map((uni) => (
+                <button key={uni.id} type="button" className={selectedSet.has(uni.id) ? "active" : ""} onClick={() => toggle(uni.id)}>
+                  {shortName(uni)}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="compare-results">
             {visibleResults.map((uni) => {
