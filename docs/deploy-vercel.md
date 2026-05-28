@@ -8,7 +8,7 @@ Vercel frontend -> /api proxy -> Render API -> Supabase PostgreSQL
 
 ## Setări Vercel
 
-Recomandat: în Vercel setează **Root Directory** la `frontend`. Fișierul `frontend/vercel.json` configurează:
+Proiectul Vercel live se numește `unitrack-web`. Recomandat: în Vercel setează **Root Directory** la `frontend`. Fișierul `frontend/vercel.json` configurează:
 
 - framework: Vite;
 - build: `npm run build`;
@@ -40,7 +40,7 @@ Dacă domeniul Vercel generat este diferit, adaugă-l și pe acela în `CORS_ORI
 
 ```text
 A      @      76.76.21.21
-CNAME  www    cname.vercel-dns.com
+A      www    76.76.21.21
 ```
 
 Folosește însă valorile exacte afișate în dashboard-ul Vercel pentru proiect.

@@ -194,7 +194,7 @@ DNS-ul extern trebuie setat în Hostinger astfel:
 
 ```text
 A      @      76.76.21.21
-CNAME  www    cname.vercel-dns.com
+A      www    76.76.21.21
 ```
 
 Până se propagă DNS-ul și se emite certificatul SSL, aplicația rămâne accesibilă pe URL-ul `.vercel.app` generat la deploy.
