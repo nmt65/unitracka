@@ -49,6 +49,24 @@ function inferExpectedType(fileName, text) {
   return documentHints.find(([, terms]) => terms.some((term) => haystack.includes(term)))?.[0] || "";
 }
 
+function normalizeValue(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function sameProgram(app, form) {
+  if (!app || !form.institutionId || !form.program) return false;
+  if (app.InstitutionId !== form.institutionId) return false;
+  if (form.programId && app.AdmissionProgramId) return app.AdmissionProgramId === form.programId;
+  return normalizeValue(app.program) === normalizeValue(form.program)
+    && normalizeValue(app.faculty) === normalizeValue(form.faculty)
+    && app.programType === form.programType;
+}
+
 export function Admissions({ onToast }) {
   const [institutions, setInstitutions] = useState([]);
   const [applications, setApplications] = useState([]);
@@ -85,10 +103,7 @@ export function Admissions({ onToast }) {
   const selectedInstitution = useMemo(() => institutions.find((item) => item.id === form.institutionId) || null, [institutions, form.institutionId]);
   const programOptions = useMemo(() => getProgramsForInstitution(selectedInstitution), [selectedInstitution]);
   const allDocs = useMemo(() => applications.flatMap((app) => (app.documents || []).map((doc) => ({ ...doc, appName: app.Institution?.name }))), [applications]);
-  const duplicateApplication = useMemo(() => applications.some((app) => (
-    app.InstitutionId === form.institutionId
-    && app.program?.toLowerCase() === form.program.toLowerCase()
-  )), [applications, form.institutionId, form.program]);
+  const duplicateApplication = useMemo(() => applications.some((app) => sameProgram(app, form)), [applications, form]);
 
   useEffect(() => {
     if (!programOptions.length) return;
@@ -99,6 +114,19 @@ export function Admissions({ onToast }) {
   }, [form.institutionId, programOptions]);
 
   function updateForm(event) {
+    if (event.target.name === "institutionId") {
+      const institution = institutions.find((item) => item.id === event.target.value);
+      const firstProgram = getProgramsForInstitution(institution)[0];
+      setForm((current) => ({
+        ...current,
+        institutionId: event.target.value,
+        programId: firstProgram?.id || "",
+        program: firstProgram?.program || "",
+        faculty: firstProgram?.faculty || "",
+        programType: firstProgram?.programType || "licenta"
+      }));
+      return;
+    }
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
   }
 
@@ -259,7 +287,7 @@ export function Admissions({ onToast }) {
             <p className="field-note wide">Media BAC și scorurile de limbă se completează din profil doar după ce ai documente atestatoare verificate.</p>
           </div>
           {duplicateApplication && <p className="form-error">Există deja o aplicație pe aceeași universitate și program.</p>}
-          <div className="profile-actions"><button className="primary-button" disabled={sending || !form.institutionId || duplicateApplication}>{sending ? "Se trimite..." : "Trimite către universitate"}</button></div>
+          <div className="profile-actions"><button className="primary-button" disabled={sending || !form.institutionId || !form.program || duplicateApplication}>{sending ? "Se trimite..." : "Trimite către universitate"}</button></div>
         </form>
         <form className="profile-panel admin-form" onSubmit={checkDocument}>
           <h2><ClipboardCheck size={17} /> Verificare document</h2>

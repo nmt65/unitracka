@@ -1,4 +1,5 @@
 import { AdmissionApplication, AdmissionProgram, Document, Institution, Notification, ProgramRequirement, University, User } from "../models/index.js";
+import { Op } from "sequelize";
 import { defaultDocuments } from "../data/defaultDocuments.js";
 import { universityCatalog } from "../data/catalog.js";
 import { writeAudit } from "../services/audit.js";
@@ -196,11 +197,16 @@ export async function createApplication(req, res, next) {
     if (!selectedProgram && !matchesCurrentOffer(institution, req.body)) {
       return res.status(422).json({ message: "Alege un program din oferta educațională curentă a universității." });
     }
+    const programName = selectedProgram?.name || req.body.program;
+    const faculty = selectedProgram?.faculty || req.body.faculty || null;
+    const programType = selectedProgram?.programType || req.body.programType;
+    const duplicateChecks = [{ program: programName, faculty, programType }];
+    if (selectedProgram?.id) duplicateChecks.unshift({ AdmissionProgramId: selectedProgram.id });
     const duplicate = await AdmissionApplication.findOne({
       where: {
         StudentId: req.user.id,
         InstitutionId: institution.id,
-        program: selectedProgram?.name || req.body.program
+        [Op.or]: duplicateChecks
       }
     });
     if (duplicate) return res.status(409).json({ message: "Ai deja o aplicație pentru această universitate și acest program." });
@@ -209,9 +215,9 @@ export async function createApplication(req, res, next) {
     const application = await AdmissionApplication.create({
       ...payload,
       AdmissionProgramId: selectedProgram?.id || null,
-      program: selectedProgram?.name || payload.program,
-      faculty: selectedProgram?.faculty || payload.faculty,
-      programType: selectedProgram?.programType || payload.programType,
+      program: programName,
+      faculty,
+      programType,
       admissionScore: null,
       StudentId: req.user.id,
       InstitutionId: institution.id,

@@ -169,9 +169,9 @@ export const AdmissionApplication = sequelize.define("AdmissionApplication", {
 }, {
   indexes: [
     {
-      name: "applications_student_institution_program_unique",
+      name: "applications_student_institution_program_scope_unique",
       unique: true,
-      fields: ["StudentId", "InstitutionId", "program"]
+      fields: ["StudentId", "InstitutionId", "program", "faculty", "programType"]
     }
   ]
 });
@@ -315,5 +315,19 @@ export async function initDb() {
   const applicationColumns = await queryInterface.describeTable("AdmissionApplications").catch(() => null);
   if (applicationColumns && !applicationColumns.AdmissionProgramId) {
     await queryInterface.addColumn("AdmissionApplications", "AdmissionProgramId", { type: DataTypes.UUID, allowNull: true });
+  }
+  if (applicationColumns) {
+    const applicationIndexes = await queryInterface.showIndex("AdmissionApplications").catch(() => []);
+    const hasOldProgramIndex = applicationIndexes.some((index) => index.name === "applications_student_institution_program_unique");
+    const hasProgramScopeIndex = applicationIndexes.some((index) => index.name === "applications_student_institution_program_scope_unique");
+    if (hasOldProgramIndex) {
+      await queryInterface.removeIndex("AdmissionApplications", "applications_student_institution_program_unique").catch(() => {});
+    }
+    if (!hasProgramScopeIndex) {
+      await queryInterface.addIndex("AdmissionApplications", ["StudentId", "InstitutionId", "program", "faculty", "programType"], {
+        name: "applications_student_institution_program_scope_unique",
+        unique: true
+      }).catch(() => {});
+    }
   }
 }

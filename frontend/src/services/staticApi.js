@@ -852,7 +852,13 @@ export const staticApi = {
     if (publicInstitution && !state.institutions.some((item) => item.id === publicInstitution.id)) {
       state.institutions.push(publicInstitution);
     }
-    const duplicate = state.applications.find((item) => item.StudentId === user.id && item.InstitutionId === body.institutionId && item.program.toLowerCase() === body.program.toLowerCase());
+    const duplicate = state.applications.find((item) => (
+      item.StudentId === user.id
+      && item.InstitutionId === body.institutionId
+      && normalizeName(item.program) === normalizeName(body.program)
+      && normalizeName(item.faculty) === normalizeName(body.faculty)
+      && item.programType === body.programType
+    ));
     if (duplicate) throw new Error("Ai deja o aplicație pentru această universitate și acest program.");
     const app = { id: id("app"), StudentId: user.id, InstitutionId: body.institutionId, status: "submitted", submittedAt: new Date().toISOString(), documents: makeDocs(id("app"), 0), ...body };
     state.applications.push(app);
