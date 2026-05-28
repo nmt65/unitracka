@@ -11,6 +11,7 @@ const items = [
 export function Sidebar({ active, onChange, counts, user, language = "ro" }) {
   const initials = user?.name?.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase() || "AM";
   const roleLabel = user?.role === "admin" ? "Admin" : user?.role === "university" ? "Universitate" : "Profil";
+  const openUniversities = (status) => onChange("universities", status ? { status } : undefined);
 
   if (user?.role === "admin" || user?.role === "university") {
     return (
@@ -23,10 +24,6 @@ export function Sidebar({ active, onChange, counts, user, language = "ro" }) {
         <button className={`side-link ${active === "dashboard" ? "active" : ""}`} type="button" onClick={() => onChange("dashboard")}>
           <Building2 size={18} />
           {t(user.role === "admin" ? "Panou Admin" : "Aplicații primite", language)}
-        </button>
-        <button className={`side-link ${active === "profile" ? "active" : ""}`} type="button" onClick={() => onChange("profile")}>
-          <UserCircle2 size={18} />
-          {t("Profil", language)}
         </button>
         <button className={`profile-link ${active === "profile" ? "active" : ""}`} type="button" onClick={() => onChange("profile")}>
           <UserCircle2 size={18} />
@@ -50,17 +47,17 @@ export function Sidebar({ active, onChange, counts, user, language = "ro" }) {
         {t("Toate", language)}
         <span>{counts.total || 0}</span>
       </button>
-      <button className="side-link" type="button" onClick={() => onChange("universities")}>
+      <button className="side-link" type="button" onClick={() => openUniversities("Wishlist")}>
         <Heart size={18} />
         Wishlist
         <span>{counts.wishlist || 0}</span>
       </button>
-      <button className="side-link" type="button" onClick={() => onChange("universities")}>
+      <button className="side-link" type="button" onClick={() => openUniversities("Aplicat")}>
         <Send size={18} />
         {t("Aplicate", language)}
         <span>{counts.applied || 0}</span>
       </button>
-      <button className="side-link" type="button" onClick={() => onChange("profile")}>
+      <button className="side-link" type="button" onClick={() => openUniversities("Acceptat")}>
         <CheckCircle2 size={18} />
         {t("Acceptate", language)}
         <span>{counts.accepted || 0}</span>
@@ -84,10 +81,6 @@ export function Sidebar({ active, onChange, counts, user, language = "ro" }) {
           </button>
         );
       })}
-      <button className={`side-link mobile-only-nav ${active === "profile" ? "active" : ""}`} type="button" onClick={() => onChange("profile")}>
-        <UserCircle2 size={18} />
-        {t("Profil", language)}
-      </button>
       <button className={`profile-link ${active === "profile" ? "active" : ""}`} type="button" onClick={() => onChange("profile")}>
         <UserCircle2 size={18} />
         <span>{t("Profil", language)}</span>

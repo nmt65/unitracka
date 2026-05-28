@@ -122,7 +122,7 @@ export function Navbar({ user, active, onChange, onLogout, darkMode, onToggleThe
         <button className="top-icon" type="button" title={t("Deconectare", language)} onClick={onLogout}>
           <LogOut size={18} />
         </button>
-        <button className="top-avatar" type="button" title={user?.email} onClick={() => onChange("profile")}>{user?.name?.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase() || "AM"}</button>
+        <div className="top-avatar" title={user?.email}>{user?.name?.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase() || "AM"}</div>
       </div>
     </header>
   );
