@@ -124,6 +124,15 @@ export function Universities({ user, universities, onAdd, onEdit, onNavigate, on
     }
   }
 
+  async function exportPdf() {
+    try {
+      await api.downloadExport("pdf");
+      onToast?.("Dosar PDF exportat.");
+    } catch (error) {
+      onToast?.(error.message);
+    }
+  }
+
   function applyToCatalog(item) {
     localStorage.setItem(ADMISSIONS_SELECTION_KEY, item.name);
     onNavigate?.("admissions");
@@ -171,6 +180,7 @@ export function Universities({ user, universities, onAdd, onEdit, onNavigate, on
         </div>
         <div className="heading-actions">
           <button className="soft-button" type="button" onClick={exportCsv}><Download size={16} /> Export CSV</button>
+          <button className="soft-button" type="button" onClick={exportPdf}><Download size={16} /> Dosar PDF</button>
           {user?.role === "student" && (
             <button className="soft-button" type="button" onClick={openCompare}><Scale size={16} /> Compară selecția ({compareSelection.length}/4)</button>
           )}

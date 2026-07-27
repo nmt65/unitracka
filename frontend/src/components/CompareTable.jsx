@@ -60,6 +60,33 @@ function scoreLabel(score) {
   return "Risc mai mare";
 }
 
+function decisionSignals(uni) {
+  const days = daysUntil(uni.deadline);
+  const docs = uni.remainingRequiredDocuments;
+  return [
+    {
+      label: "Timp până la deadline",
+      value: days === null ? "necunoscut" : days < 0 ? "expirat" : `${days} zile`,
+      tone: days === null ? "muted" : days <= 7 ? "danger" : days <= 21 ? "warning" : "success"
+    },
+    {
+      label: "Pregătire documente",
+      value: docs === null || docs === undefined ? "în afara trackerului" : docs === 0 ? "complet" : `${docs} lipsă`,
+      tone: docs === 0 ? "success" : docs <= 2 ? "warning" : "danger"
+    },
+    {
+      label: "Cost aplicație",
+      value: uni.annualTuition === null || uni.annualTuition === undefined ? "nespecificat" : Number(uni.annualTuition || 0) === 0 ? "gratuit" : `${uni.annualTuition} RON`,
+      tone: Number(uni.annualTuition || 0) === 0 ? "success" : "muted"
+    },
+    {
+      label: "Ofertă educațională",
+      value: `${uni.offerPrograms?.length || 1} programe`,
+      tone: (uni.offerPrograms?.length || 1) >= 3 ? "success" : "muted"
+    }
+  ];
+}
+
 export function CompareTable({ universities = [] }) {
   if (universities.length < 2) return <p className="muted">Selectează între 2 și 4 universități.</p>;
   const winners = winnerIds(universities);
@@ -87,6 +114,25 @@ export function CompareTable({ universities = [] }) {
             </article>
           ))}
         </div>
+      </section>
+
+      <section className="compare-decision-board">
+        {ranked.map((uni) => (
+          <article key={`decision-${uni.id}`}>
+            <header>
+              <span className="uni-logo tone-primary">{shortName(uni)}</span>
+              <strong>{uni.name}</strong>
+            </header>
+            <div>
+              {decisionSignals(uni).map((signal) => (
+                <span className={`decision-signal ${signal.tone}`} key={signal.label}>
+                  <small>{signal.label}</small>
+                  <strong>{signal.value}</strong>
+                </span>
+              ))}
+            </div>
+          </article>
+        ))}
       </section>
 
       <div className="compare-table-wrap">

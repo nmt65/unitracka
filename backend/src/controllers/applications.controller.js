@@ -310,7 +310,7 @@ export async function updateApplicationStatus(req, res, next) {
       title: "Status aplicație actualizat",
       body: `${application.Institution.name} a setat statusul aplicației tale la ${req.body.status}.`
     });
-    await sendApplicationStatusEmail(application.Student, application.Institution, req.body.status);
+    await sendApplicationStatusEmail(application.Student, application.Institution, req.body.status, req.body.reviewerNotes || "");
     await writeAudit(req, {
       action: "application.status_update",
       entityType: "AdmissionApplication",

@@ -17,6 +17,14 @@ const documentStatusLabels = {
   rejected: "Respins"
 };
 
+const workflowStages = [
+  ["submitted", "Primite"],
+  ["under_review", "În review"],
+  ["waitlist", "Waitlist"],
+  ["accepted", "Acceptate"],
+  ["rejected", "Respinse"]
+];
+
 const emptyProgram = {
   faculty: "",
   name: "",
@@ -172,6 +180,23 @@ export function UniversityWorkspace({ user, onToast }) {
         <article className="stat-card"><strong>{stats.rejected}</strong><span>Respinse</span><small>arhivate</small></article>
         <article className="stat-card warning"><strong>{stats.incomplete}</strong><span>Incomplete</span><small>documente lipsă</small></article>
       </div>
+      <section className="review-pipeline" aria-label="Flux evaluare aplicații">
+        {workflowStages.map(([key, label], index) => {
+          const count = applications.filter((item) => item.status === key).length;
+          return (
+            <button
+              key={key}
+              type="button"
+              className={filter.status === key ? "active" : ""}
+              onClick={() => setFilter((current) => ({ ...current, status: current.status === key ? "all" : key }))}
+            >
+              <span>{index + 1}</span>
+              <strong>{label}</strong>
+              <small>{count} aplicații</small>
+            </button>
+          );
+        })}
+      </section>
       {institution && (
         <section className="profile-panel university-pitch-panel">
           <h2>De ce să vină studenții aici?</h2>

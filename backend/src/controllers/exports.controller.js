@@ -87,16 +87,24 @@ export async function exportPdf(req, res, next) {
     res.setHeader("Content-Disposition", "attachment; filename=unitracka-status.pdf");
     doc.pipe(res);
 
-    doc.fontSize(22).fillColor("#7668FF").text("UniTrack - status aplicații");
-    doc.moveDown(0.5).fontSize(10).fillColor("#555").text(`Generat pentru ${req.user.name} la ${new Date().toLocaleString("ro-RO")}`);
+    doc.rect(0, 0, doc.page.width, 98).fill("#0f4f59");
+    doc.fillColor("#ffffff").fontSize(22).text("UniTrack - dosar de admitere", 48, 34);
+    doc.fontSize(10).fillColor("#d8fffb").text(`Generat pentru ${req.user.name} la ${new Date().toLocaleString("ro-RO")}`, 48, 64);
+    doc.y = 126;
     doc.moveDown();
 
     universities.forEach((uni, index) => {
       if (index > 0) doc.moveDown(0.8);
-      doc.fontSize(14).fillColor("#111").text(`${uni.name} - ${uni.program}`);
-      doc.fontSize(10).fillColor("#444").text(`${uni.faculty}, ${uni.country} | ${uni.programType} | Deadline: ${uni.deadline}`);
-      doc.text(`Status: ${uni.status} | Progres documente: ${documentProgress(uni.Documents)}% | Documente obligatorii ramase: ${documentsRemaining(uni.Documents)}`);
-      if (uni.notes) doc.fillColor("#666").text(`Note: ${uni.notes.slice(0, 220)}`);
+      const progress = documentProgress(uni.Documents);
+      const remaining = documentsRemaining(uni.Documents);
+      const cardY = doc.y;
+      doc.roundedRect(48, cardY, 498, 92, 8).fillAndStroke("#f4f8f8", "#cfe0df");
+      doc.fillColor("#102024").fontSize(13).text(`${uni.name} - ${uni.program}`, 64, cardY + 14, { width: 450 });
+      doc.fontSize(9).fillColor("#506a6f").text(`${uni.faculty}, ${uni.country} | ${uni.programType} | Deadline: ${uni.deadline}`, 64, cardY + 34, { width: 450 });
+      doc.fillColor("#0f8f84").fontSize(10).text(`Status: ${uni.status} | Progres documente: ${progress}% | Documente obligatorii ramase: ${remaining}`, 64, cardY + 54, { width: 450 });
+      if (uni.notes) doc.fillColor("#506a6f").fontSize(8).text(`Note: ${uni.notes.slice(0, 180)}`, 64, cardY + 70, { width: 450 });
+      doc.y = cardY + 104;
+      if (doc.y > 720) doc.addPage();
     });
 
     doc.end();

@@ -97,12 +97,14 @@ export async function sendApplicationSubmittedEmail(user, student, institution, 
       `Facultate: ${application.faculty || "-"}`,
       `Scor admitere: ${application.admissionScore ?? "-"}`,
       "",
-      "Intră în workspace-ul UniTrack pentru sortare și evaluare."
+      `Workspace: ${env.appUrl.replace(/\/$/, "")}`,
+      "",
+      "Intră în workspace-ul UniTrack pentru sortare, verificarea documentelor și feedback către candidat."
     ].join("\n")
   });
 }
 
-export async function sendApplicationStatusEmail(student, institution, status) {
+export async function sendApplicationStatusEmail(student, institution, status, reviewerNotes = "") {
   return sendMailSafe({
     to: student.email,
     subject: `Status aplicație actualizat - ${institution.name}`,
@@ -110,8 +112,9 @@ export async function sendApplicationStatusEmail(student, institution, status) {
       `${institution.name} a actualizat statusul aplicației tale.`,
       "",
       `Status nou: ${status}`,
+      reviewerNotes ? `Feedback: ${reviewerNotes}` : "",
       "",
-      "Intră în UniTrack pentru detalii."
-    ].join("\n")
+      `Intră în UniTrack pentru detalii: ${env.appUrl.replace(/\/$/, "")}`
+    ].filter(Boolean).join("\n")
   });
 }

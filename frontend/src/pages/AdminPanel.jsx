@@ -36,6 +36,13 @@ const roleLabels = {
   university: "Universitate"
 };
 
+const adminSections = [
+  ["health", "Sănătate"],
+  ["catalog", "Catalog & ofertă"],
+  ["users", "Conturi"],
+  ["audit", "Audit"]
+];
+
 export function AdminPanel({ onToast }) {
   const [institutions, setInstitutions] = useState([]);
   const [programs, setPrograms] = useState([]);
@@ -48,6 +55,7 @@ export function AdminPanel({ onToast }) {
   const [testEmail, setTestEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [importingCatalog, setImportingCatalog] = useState(false);
+  const [activeSection, setActiveSection] = useState("health");
 
   async function load() {
     const [statusData, institutionData, programData, userData, auditData] = await Promise.all([api.adminSystemStatus(), api.adminInstitutions(), api.adminPrograms(), api.adminUsers(), api.adminAuditLogs()]);
@@ -259,7 +267,15 @@ export function AdminPanel({ onToast }) {
         <article className="stat-card"><strong>{stats.admins}</strong><span>Admini</span><small>control platformă</small></article>
       </div>
 
-      {systemStatus && (
+      <nav className="admin-section-tabs" aria-label="Secțiuni admin">
+        {adminSections.map(([key, label]) => (
+          <button key={key} className={activeSection === key ? "active" : ""} type="button" onClick={() => setActiveSection(key)}>
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      {activeSection === "health" && systemStatus && (
         <section className="system-status-grid">
           <article>
             <strong>{systemStatus.nodeEnv}</strong>
@@ -306,7 +322,7 @@ export function AdminPanel({ onToast }) {
         </section>
       )}
 
-      {systemStatus && (
+      {activeSection === "catalog" && systemStatus && (
         <section className="profile-panel catalog-import-panel">
           <h2><Database size={17} /> Import catalog universități</h2>
           <div className="ai-config-body">
@@ -321,7 +337,7 @@ export function AdminPanel({ onToast }) {
         </section>
       )}
 
-      {systemStatus && (
+      {activeSection === "health" && systemStatus && (
         <section className={`profile-panel ai-config-panel ${systemStatus.aiConfigured ? "ready" : "missing"}`}>
           <h2><Brain size={17} /> Verificare automată</h2>
           <div className="ai-config-body">
@@ -338,7 +354,7 @@ export function AdminPanel({ onToast }) {
         </section>
       )}
 
-      {systemStatus && (
+      {activeSection === "health" && systemStatus && (
         <section className={`profile-panel ai-config-panel ${systemStatus.smtpConfigured ? "ready" : "missing"}`}>
           <h2><MailCheck size={17} /> SMTP resetare parolă</h2>
           <div className="ai-config-body">
@@ -359,7 +375,8 @@ export function AdminPanel({ onToast }) {
         </section>
       )}
 
-      <div className="admin-grid">
+      {(activeSection === "catalog" || activeSection === "users") && <div className="admin-grid">
+        {activeSection === "catalog" && (
         <form className="profile-panel admin-form" onSubmit={createInstitution}>
           <h2><Plus size={17} /> Adaugă universitate</h2>
           <div className="profile-form">
@@ -373,7 +390,9 @@ export function AdminPanel({ onToast }) {
           </div>
           <div className="profile-actions"><button className="primary-button" disabled={loading}>Salvează universitate</button></div>
         </form>
+        )}
 
+        {activeSection === "catalog" && (
         <form className="profile-panel admin-form" onSubmit={createProgram}>
           <h2><BookOpen size={17} /> Adaugă program de admitere</h2>
           <div className="profile-form">
@@ -393,7 +412,9 @@ export function AdminPanel({ onToast }) {
           <p className="field-note">La creare se atașează automat setul standard de documente obligatorii; le putem rafina apoi pe fiecare program.</p>
           <div className="profile-actions"><button className="primary-button" disabled={loading || !programForm.institutionId}>Salvează program</button></div>
         </form>
+        )}
 
+        {activeSection === "users" && (
         <form className="profile-panel admin-form" onSubmit={createStaff}>
           <h2><UserPlus size={17} /> Creează cont universitate</h2>
           <div className="profile-form">
@@ -404,9 +425,10 @@ export function AdminPanel({ onToast }) {
           </div>
           <div className="profile-actions"><button className="primary-button" disabled={loading}>Creează cont</button></div>
         </form>
-      </div>
+        )}
+      </div>}
 
-      <section className="university-table-card admin-list">
+      {activeSection === "catalog" && <section className="university-table-card admin-list">
         <header className="table-card-heading">
           <div>
             <h2>Oferta educațională 2026-2027</h2>
@@ -426,9 +448,9 @@ export function AdminPanel({ onToast }) {
             </tr>
           ))}</tbody>
         </table>
-      </section>
+      </section>}
 
-      <section className="university-table-card admin-list">
+      {activeSection === "catalog" && <section className="university-table-card admin-list">
         <table className="university-table admin-table">
           <thead><tr><th>Universitate</th><th>Țară</th><th>Website</th><th>Email</th><th>Status</th></tr></thead>
           <tbody>{institutions.map((item) => (
@@ -447,9 +469,9 @@ export function AdminPanel({ onToast }) {
             </tr>
           ))}</tbody>
         </table>
-      </section>
+      </section>}
 
-      <section className="university-table-card admin-list">
+      {activeSection === "users" && <section className="university-table-card admin-list">
         <header className="table-card-heading">
           <div>
             <h2>Conturi platformă</h2>
@@ -471,9 +493,9 @@ export function AdminPanel({ onToast }) {
             );
           })}</tbody>
         </table>
-      </section>
+      </section>}
 
-      <section className="university-table-card admin-list">
+      {activeSection === "audit" && <section className="university-table-card admin-list">
         <header className="table-card-heading">
           <div>
             <h2>Audit securitate</h2>
@@ -492,7 +514,7 @@ export function AdminPanel({ onToast }) {
             </tr>
           ))}</tbody>
         </table>
-      </section>
+      </section>}
     </section>
   );
 }
