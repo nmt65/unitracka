@@ -43,7 +43,7 @@ export function createApp() {
     cors({
       origin(origin, callback) {
         if (!origin || env.corsOrigins.includes(origin)) return callback(null, true);
-        return callback(new Error("Origine CORS nepermisă."));
+        return callback(null, false);
       },
       credentials: true,
       methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
