@@ -26,6 +26,7 @@ function getTransporter() {
       host: env.smtp.host,
       port: env.smtp.port,
       secure: env.smtp.port === 465,
+      family: env.smtp.forceIpv4 ? 4 : undefined,
       auth: { user: env.smtp.user, pass: smtpPass },
       connectionTimeout: 12000,
       greetingTimeout: 12000,
@@ -42,6 +43,9 @@ function friendlyMailReason(error) {
   }
   if (/ETIMEDOUT|ECONNECTION|ECONNREFUSED|ENOTFOUND|timeout/i.test(message)) {
     return "Serverul SMTP nu a răspuns la timp. Verifică SMTP_HOST, SMTP_PORT și conexiunea Render.";
+  }
+  if (/ENETUNREACH|IPv6|2607:f8b0/i.test(message)) {
+    return "Render nu poate ieși pe IPv6 către SMTP. Activează SMTP_FORCE_IPV4=true sau folosește un provider SMTP cu IPv4.";
   }
   return message;
 }
