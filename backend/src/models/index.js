@@ -320,6 +320,12 @@ export async function initDb() {
   // Production uses migrations rather than `sync({ alter: true })`. These
   // additions keep an existing Supabase project compatible after an update.
   await ensureColumns("Users", {
+    name: { type: DataTypes.STRING(120), allowNull: true },
+    role: { type: DataTypes.ENUM("student", "university", "admin"), allowNull: true, defaultValue: "student" },
+    cnpHash: { type: DataTypes.STRING(128), allowNull: true },
+    cnpLast4: { type: DataTypes.STRING(4), allowNull: true },
+    bacAverage: { type: DataTypes.FLOAT, allowNull: true },
+    InstitutionId: { type: DataTypes.UUID, allowNull: true },
     avatarDataUrl: { type: DataTypes.TEXT, allowNull: true },
     resetTokenHash: { type: DataTypes.STRING(128), allowNull: true },
     resetTokenExpiresAt: { type: DataTypes.DATE, allowNull: true },
@@ -330,6 +336,14 @@ export async function initDb() {
     notifyBeforeDays: { type: DataTypes.INTEGER, allowNull: true },
     publicShareId: { type: DataTypes.UUID, allowNull: true }
   });
+  const userIndexes = await queryInterface.showIndex("Users").catch(() => []);
+  const hasCnpIndex = userIndexes.some((index) => index.name === "users_cnp_hash_unique");
+  if (!hasCnpIndex) {
+    await queryInterface.addIndex("Users", ["cnpHash"], {
+      name: "users_cnp_hash_unique",
+      unique: true
+    }).catch(() => {});
+  }
   await ensureColumns("Documents", {
     fileSize: { type: DataTypes.INTEGER, allowNull: true },
     fileDataUrl: { type: DataTypes.TEXT, allowNull: true },
