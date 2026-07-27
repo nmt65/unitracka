@@ -270,13 +270,13 @@ function providerFailure(provider, model) {
   };
 }
 
-async function fetchJson(url, body) {
+async function fetchJson(url, body, headers = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), env.geminiRequestTimeoutMs);
   try {
     const response = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...headers },
       body: JSON.stringify(body),
       signal: controller.signal
     });
@@ -340,7 +340,7 @@ async function geminiClassifier(payload, file) {
   const models = [...new Set([env.geminiDocumentModel, ...env.geminiFallbackModels].filter(Boolean))].slice(0, 3);
   let lastError = null;
   for (const model of models) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.geminiApiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
     const outcome = await fetchJson(url, {
       generationConfig: {
         temperature: 0.1,
@@ -350,9 +350,11 @@ async function geminiClassifier(payload, file) {
       contents: [{
         parts: [
           { text: geminiPrompt(payload, file) },
-          { inline_data: { mime_type: file.inline.mimeType, data: file.inline.data } }
+          { inlineData: { mimeType: file.inline.mimeType, data: file.inline.data } }
         ]
       }]
+    }, {
+      "x-goog-api-key": env.geminiApiKey
     });
     if (outcome.data) {
       const content = outcome.data.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("\n") || "";

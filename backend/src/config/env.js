@@ -57,7 +57,7 @@ export const env = {
   // can still be selected per deployment through GEMINI_*_MODEL.
   geminiDocumentModel: process.env.GEMINI_DOCUMENT_MODEL || "gemini-2.5-flash",
   geminiAdvisorModel: process.env.GEMINI_ADVISOR_MODEL || process.env.GEMINI_DOCUMENT_MODEL || "gemini-2.5-flash",
-  geminiFallbackModels: (process.env.GEMINI_FALLBACK_MODELS || "gemini-2.5-flash").split(",").map((model) => model.trim()).filter(Boolean),
+  geminiFallbackModels: (process.env.GEMINI_FALLBACK_MODELS || "gemini-2.5-flash,gemini-2.0-flash").split(",").map((model) => model.trim()).filter(Boolean),
   geminiRequestTimeoutMs: Math.min(45000, Math.max(5000, Number(process.env.GEMINI_REQUEST_TIMEOUT_MS || 25000))),
   aiDocumentDailyLimit: Number(process.env.AI_DOCUMENT_DAILY_LIMIT || 40),
   aiAdvisorDailyLimit: Number(process.env.AI_ADVISOR_DAILY_LIMIT || 20),
