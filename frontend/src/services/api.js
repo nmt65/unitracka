@@ -38,13 +38,22 @@ async function fetchWithRetry(url, options = {}, { retries = 1, timeoutMs = 2200
   throw lastError || new Error("Serverul nu a răspuns.");
 }
 
-async function ensureCsrf() {
-  if (csrfToken) return csrfToken;
+async function ensureCsrf({ force = false } = {}) {
+  if (!force && csrfToken) return csrfToken;
   const response = await fetchWithRetry(`${API_BASE}/auth/csrf-token`, { credentials: "include" }, { retries: 2 });
   if (!response.ok) throw new Error("Nu am putut initializa sesiunea securizata.");
   const data = await response.json();
   csrfToken = data.csrfToken;
   return csrfToken;
+}
+
+async function sendRequest(path, method, headers, body) {
+  return fetchWithRetry(`${API_BASE}${path}`, {
+    method,
+    credentials: "include",
+    headers,
+    body
+  }, { retries: ["GET", "HEAD", "OPTIONS"].includes(method) ? 2 : 0 });
 }
 
 async function request(path, options = {}) {
@@ -54,15 +63,20 @@ async function request(path, options = {}) {
 
   if (unsafe) headers["X-CSRF-Token"] = await ensureCsrf();
   if (options.body && !(options.body instanceof FormData)) headers["Content-Type"] = "application/json";
+  const requestBody = options.body && !(options.body instanceof FormData) ? JSON.stringify(options.body) : options.body;
 
   let response;
   try {
-    response = await fetchWithRetry(`${API_BASE}${path}`, {
-      method,
-      credentials: "include",
-      headers,
-      body: options.body && !(options.body instanceof FormData) ? JSON.stringify(options.body) : options.body
-    }, { retries: ["GET", "HEAD", "OPTIONS"].includes(method) ? 2 : 0 });
+    response = await sendRequest(path, method, headers, requestBody);
+    if (unsafe && response.status === 403) {
+      const clone = response.clone();
+      const contentType = clone.headers.get("content-type") || "";
+      const payload = contentType.includes("application/json") ? await clone.json().catch(() => null) : null;
+      if (payload?.message?.toLowerCase().includes("csrf")) {
+        headers["X-CSRF-Token"] = await ensureCsrf({ force: true });
+        response = await sendRequest(path, method, headers, requestBody);
+      }
+    }
   } catch {
     throw new Error("Conexiunea cu serverul a picat. Așteaptă câteva secunde și reîncearcă.");
   }
