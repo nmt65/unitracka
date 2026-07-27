@@ -5,6 +5,10 @@ import { ProgressBar } from "../components/ProgressBar.jsx";
 import { StatusPill } from "../components/StatusPill.jsx";
 import { formatDate } from "../utils/date.js";
 
+function profileInitials(name = "") {
+  return name.split(" ").map((part) => part[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "UT";
+}
+
 export function PublicShare({ shareId }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
@@ -25,7 +29,10 @@ export function PublicShare({ shareId }) {
     <main className="public-page">
       <section className="public-hero">
         <div className="brand large"><span className="brand-dot" /> UniTrack</div>
-        <GraduationCap size={56} />
+        <div className="public-avatar">
+          {data.profile.avatarDataUrl ? <img src={data.profile.avatarDataUrl} alt="" /> : <span>{profileInitials(data.profile.name)}</span>}
+        </div>
+        <GraduationCap size={34} />
         <h1>{data.profile.name}</h1>
         <p>Medie BAC: {data.profile.bacAverage ?? "-"} · {data.profile.languageResults || "Rezultate limbă necompletate"}</p>
       </section>

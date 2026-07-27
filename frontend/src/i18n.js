@@ -310,7 +310,9 @@ const en = {
   "Site oficial": "Official site",
   "Fișierul trebuie să aibă maximum 5 MB.": "File must be maximum 5 MB.",
   "Fișier citit și atașat în dosar.": "File read and attached to the file.",
-  "Fișier atașat; providerul configurat îl poate citi dacă cheia API este setată.": "File attached; the configured provider can read it if the API key is set."
+  "Fișier atașat; providerul configurat îl poate citi dacă cheia API este setată.": "File attached; the configured provider can read it if the API key is set.",
+  "A aparut o eroare pe server.": "The server encountered an error.",
+  "Conexiunea cu serverul a picat. Așteaptă câteva secunde și reîncearcă.": "The server connection was interrupted. Wait a few seconds and try again."
 };
 
 const ro = Object.fromEntries(Object.entries(en).map(([key, value]) => [value, key]));
@@ -333,12 +335,7 @@ function translateValue(value, language) {
   const trimmed = value.trim();
   const translated = dictionary[trimmed];
   if (translated) return value.replace(trimmed, translated);
-  return Object.entries(dictionary)
-    .sort((a, b) => b[0].length - a[0].length)
-    .reduce((nextValue, [source, target]) => {
-      if (source.length <= 3 || !nextValue.includes(source)) return nextValue;
-      return nextValue.split(source).join(target);
-    }, value);
+  return value;
 }
 
 function translateTree(root, language) {

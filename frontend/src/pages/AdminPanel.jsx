@@ -71,6 +71,18 @@ export function AdminPanel({ onToast }) {
     admins: users.filter((user) => user.role === "admin").length
   }), [institutions, users]);
 
+  const healthScore = useMemo(() => {
+    if (!systemStatus) return 0;
+    const checks = [
+      systemStatus.database === "postgres" && systemStatus.databaseReady,
+      systemStatus.smtpConfigured,
+      systemStatus.aiConfigured,
+      !systemStatus.seedDemo,
+      !systemStatus.bootstrapAdmin
+    ];
+    return Math.round((checks.filter(Boolean).length / checks.length) * 100);
+  }, [systemStatus]);
+
   function updateInstitution(event) {
     setInstitutionForm((current) => ({ ...current, [event.target.name]: event.target.value }));
   }
@@ -176,8 +188,10 @@ export function AdminPanel({ onToast }) {
       "OPENAI_ADVISOR_MODEL=gpt-4o-mini",
       "# sau",
       "GEMINI_API_KEY=...",
-      "GEMINI_DOCUMENT_MODEL=gemini-1.5-flash",
-      "GEMINI_ADVISOR_MODEL=gemini-1.5-flash"
+      "GEMINI_DOCUMENT_MODEL=gemini-2.5-flash",
+      "GEMINI_ADVISOR_MODEL=gemini-2.5-flash",
+      "GEMINI_FALLBACK_MODELS=gemini-2.5-flash",
+      "GEMINI_REQUEST_TIMEOUT_MS=25000"
     ].join("\n"));
     onToast("Variabilele de analiză au fost copiate.");
   }
@@ -204,22 +218,22 @@ export function AdminPanel({ onToast }) {
 
       <section className="admin-command-center">
         <div>
-          <span className="hero-kicker"><ShieldCheck size={16} /> Control center</span>
-          <h2>Platforma trebuie să arate ca un produs live, matur și ușor de controlat.</h2>
-          <p>De aici controlezi catalogul public, oferta educațională, conturile universităților, emailurile și verificarea automată a documentelor.</p>
+          <span className="hero-kicker"><ShieldCheck size={16} /> Administrare platformă</span>
+          <h2>Catalog, conturi instituționale și sănătatea serviciilor.</h2>
+          <p>Configurează oferta publică, urmărește serviciile de producție și gestionează accesul universităților dintr-un singur loc.</p>
         </div>
         <div className="admin-health-ring">
           <Gauge size={24} />
-          <strong>{systemStatus?.smtpConfigured && systemStatus?.database === "postgres" ? "92" : "74"}%</strong>
-          <span>health score</span>
+          <strong>{healthScore}%</strong>
+          <span>servicii configurate</span>
         </div>
       </section>
 
       <section className="admin-ops-grid">
-        <article className={systemStatus?.database === "postgres" ? "ok" : "warn"}>
+        <article className={systemStatus?.database === "postgres" && systemStatus?.databaseReady ? "ok" : "warn"}>
           <Database size={18} />
           <strong>PostgreSQL</strong>
-          <span>{systemStatus?.database || "se verifică"}</span>
+          <span>{systemStatus?.databaseReady ? "conectat" : systemStatus?.databaseRetryAt ? "reconectare programată" : "se verifică"}</span>
         </article>
         <article className={systemStatus?.smtpConfigured ? "ok" : "warn"}>
           <MailCheck size={18} />
@@ -229,7 +243,7 @@ export function AdminPanel({ onToast }) {
         <article className={systemStatus?.aiConfigured ? "ok" : "warn"}>
           <Brain size={18} />
           <strong>Document AI</strong>
-          <span>{systemStatus?.aiConfigured ? "provider activ" : "fallback local"}</span>
+          <span>{systemStatus?.aiConfigured ? systemStatus.geminiModel || systemStatus.openaiModel || "provider activ" : "verificare locală"}</span>
         </article>
         <article>
           <Activity size={18} />
@@ -252,8 +266,8 @@ export function AdminPanel({ onToast }) {
             <span>Mediu</span>
           </article>
           <article>
-            <strong>{systemStatus.database}</strong>
-            <span>Bază date</span>
+            <strong>{systemStatus.databaseReady ? "Conectată" : "În reconectare"}</strong>
+            <span>{systemStatus.database}</span>
           </article>
           <article className={systemStatus.smtpConfigured ? "ok" : "warn"}>
             <strong>{systemStatus.smtpConfigured ? "SMTP activ" : "SMTP lipsă"}</strong>
@@ -263,6 +277,12 @@ export function AdminPanel({ onToast }) {
             <strong>{systemStatus.aiConfigured ? "Analiză avansată" : "Analiză locală"}</strong>
             <span>{systemStatus.openaiModel || systemStatus.geminiModel || "verificare locală"}</span>
           </article>
+          {systemStatus.aiConfigured && (
+            <article>
+              <strong>{systemStatus.geminiRequestTimeoutMs ? `${Math.round(systemStatus.geminiRequestTimeoutMs / 1000)} sec` : "-"}</strong>
+              <span>timeout analiză document</span>
+            </article>
+          )}
           <article>
             <strong>{systemStatus.aiDocumentDailyLimit || 0}/zi</strong>
             <span>Limită verificări documente</span>
@@ -309,7 +329,7 @@ export function AdminPanel({ onToast }) {
               <strong>{systemStatus.aiConfigured ? "Motor de analiză activ" : "Motor de analiză local"}</strong>
               <p>
                 {systemStatus.aiConfigured
-                  ? `Documentele și asistentul folosesc ${systemStatus.openaiModel || systemStatus.geminiModel}.`
+                  ? `Documentele sunt citite din fișierul real de ${systemStatus.geminiModel || systemStatus.openaiModel}. Dacă modelul nu poate decide, dosarul rămâne în verificare manuală, nu este respins automat.`
                   : "Momentan rulează verificarea locală. Pentru PDF-uri scanate, imagini și CV-uri reale, setează cheia providerului în Render > Environment."}
               </p>
             </div>

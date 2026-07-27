@@ -947,18 +947,41 @@ export const staticApi = {
     const cvSignals = [/proiect|github|portofoliu/i, /olimpiad|concurs|premiu/i, /voluntar|leadership|echip/i, /python|javascript|react|ai|java|c\+\+/i]
       .filter((pattern) => pattern.test(cvText)).length;
     const bac = Number(user.bacAverage || 0);
-    const target = state.institutions.find((item) => item.id === body.institutionId) || applications[0]?.Institution || { name: "universitatea selectată" };
+    const trackerTarget = universities.find((item) => item.id === body.universityId);
+    const appTarget = applications.find((item) => item.id === body.applicationId);
+    const target = appTarget?.Institution || trackerTarget || state.institutions.find((item) => item.id === body.institutionId) || applications[0]?.Institution || { name: "universitatea selectată" };
+    const chance = Math.max(5, Math.min(94, Math.round(18 + bac * 5 + verifiedRatio * 22 + cvSignals * 4 + (body.strategyGoal === "safe" ? 4 : body.strategyGoal === "ambitious" ? -5 : 0))));
+    const strategy = {
+      posture: body.strategyGoal === "ambitious"
+        ? "Păstrează ținta ambițioasă, dar dublează fiecare afirmație din CV cu dovezi și documente verificate."
+        : body.strategyGoal === "safe"
+          ? "Prioritizează programele unde dosarul este complet și cerințele sunt clare."
+          : "Alege un mix sănătos: opțiune sigură, opțiuni potrivite și o țintă competitivă.",
+      preferenceSummary: `Buget: ${body.budgetPreference || "medium"} · mobilitate: ${body.mobilityPreference || "europe"} · plan: ${body.timelineWeeks || 6} săptămâni.`,
+      next7Days: [
+        "Finalizează documentele obligatorii și verifică fișierele respinse.",
+        "Adaugă în CV proiecte cu link, rol și rezultat măsurabil.",
+        "Scrie o motivație adaptată programului ales."
+      ],
+      next30Days: [
+        "Compară 4 programe după cost, deadline, limbă și cerințe.",
+        "Pregătește un portofoliu scurt cu 2-3 proiecte relevante.",
+        "Lasă cel puțin 3 zile tampon înainte de fiecare deadline."
+      ],
+      decisionRule: chance >= 70 ? "Profil bun: concentrează-te pe calitatea aplicației." : "Profil perfectibil: prioritatea rămâne verificarea dovezilor."
+    };
     return {
       advice: {
         provider: "static-advisor",
         targetName: target.name,
-        admissionChance: Math.max(5, Math.min(94, Math.round(18 + bac * 5 + verifiedRatio * 22 + cvSignals * 4))),
+        admissionChance: chance,
         cvScore: Math.max(20, Math.min(98, 38 + cvSignals * 13)),
         applicationScore: Math.max(15, Math.min(98, Math.round(28 + verifiedRatio * 58))),
         summary: `Profilul este evaluat orientativ pentru ${target.name}. Estimarea nu înlocuiește decizia oficială a universității.`,
         strengths: ["Dosarul este urmărit centralizat.", "Documentele verificate cresc credibilitatea aplicației.", "CV-ul devine mai bun când include proiecte concrete."],
         risks: ["Estimarea depinde de documentele încărcate.", "Lipsa dovezilor academice reduce scorul."],
-        nextSteps: ["Verifică Diploma BAC/Foaia matricolă.", "Adaugă linkuri concrete în CV.", "Personalizează scrisoarea de motivație pentru program."]
+        nextSteps: ["Verifică Diploma BAC/Foaia matricolă.", "Adaugă linkuri concrete în CV.", "Personalizează scrisoarea de motivație pentru program."],
+        strategy
       }
     };
   },

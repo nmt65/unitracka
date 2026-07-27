@@ -41,8 +41,12 @@ export const env = {
   openaiDocumentModel: process.env.OPENAI_DOCUMENT_MODEL || "gpt-4o-mini",
   openaiAdvisorModel: process.env.OPENAI_ADVISOR_MODEL || process.env.OPENAI_DOCUMENT_MODEL || "gpt-4o-mini",
   geminiApiKey: process.env.GEMINI_API_KEY || "",
-  geminiDocumentModel: process.env.GEMINI_DOCUMENT_MODEL || "gemini-1.5-flash",
-  geminiAdvisorModel: process.env.GEMINI_ADVISOR_MODEL || process.env.GEMINI_DOCUMENT_MODEL || "gemini-1.5-flash",
+  // Gemini 2.5 Flash is a stable multimodal production baseline. A newer model
+  // can still be selected per deployment through GEMINI_*_MODEL.
+  geminiDocumentModel: process.env.GEMINI_DOCUMENT_MODEL || "gemini-2.5-flash",
+  geminiAdvisorModel: process.env.GEMINI_ADVISOR_MODEL || process.env.GEMINI_DOCUMENT_MODEL || "gemini-2.5-flash",
+  geminiFallbackModels: (process.env.GEMINI_FALLBACK_MODELS || "gemini-2.5-flash").split(",").map((model) => model.trim()).filter(Boolean),
+  geminiRequestTimeoutMs: Math.min(45000, Math.max(5000, Number(process.env.GEMINI_REQUEST_TIMEOUT_MS || 25000))),
   aiDocumentDailyLimit: Number(process.env.AI_DOCUMENT_DAILY_LIMIT || 40),
   aiAdvisorDailyLimit: Number(process.env.AI_ADVISOR_DAILY_LIMIT || 20),
   smtp: {

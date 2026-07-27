@@ -12,6 +12,7 @@ function publicUser(user) {
     id: user.id,
     email: user.email,
     name: user.name,
+    avatarDataUrl: user.avatarDataUrl,
     role: user.role,
     cnpLast4: user.cnpLast4,
     institutionId: user.InstitutionId,
@@ -80,7 +81,11 @@ export async function login(req, res, next) {
 
     const token = signUserToken(user);
     setAuthCookie(res, token);
-    await user.update({ lastLoginAt: new Date() });
+    // Login must remain available even if an older production schema is still
+    // catching up with the optional activity-tracking column.
+    await user.update({ lastLoginAt: new Date() }).catch((error) => {
+      console.warn(`Nu am putut salva ultima autentificare pentru ${user.id}: ${error.message}`);
+    });
     await writeAudit(req, { action: "auth.login", entityType: "User", entityId: user.id, metadata: { actorId: user.id, email: user.email, role: user.role } });
     return res.json({ user: publicUser(user) });
   } catch (error) {

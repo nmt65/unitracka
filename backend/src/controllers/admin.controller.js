@@ -6,6 +6,7 @@ import { isSmtpConfigured, sendMailSafe } from "../services/mail.js";
 import { universityCatalog } from "../data/catalog.js";
 import { importCatalogToInstitutions } from "../services/catalogImport.js";
 import { defaultDocuments } from "../data/defaultDocuments.js";
+import { startupState } from "../startupState.js";
 
 export async function createInstitution(req, res, next) {
   try {
@@ -221,6 +222,9 @@ export function systemStatus(_req, res) {
     status: {
       nodeEnv: env.nodeEnv,
       database: env.dbDialect,
+      databaseReady: startupState.databaseReady,
+      databaseRetryAt: startupState.retryAt,
+      databaseLastReadyAt: startupState.lastReadyAt,
       seedDemo: env.seedDemo,
       seedCatalog: env.seedCatalog,
       bootstrapAdmin: env.bootstrapAdmin,
@@ -233,6 +237,8 @@ export function systemStatus(_req, res) {
       openaiAdvisorModel: env.openaiApiKey ? env.openaiAdvisorModel : null,
       geminiModel: env.geminiApiKey ? env.geminiDocumentModel : null,
       geminiAdvisorModel: env.geminiApiKey ? env.geminiAdvisorModel : null,
+      geminiFallbackModels: env.geminiApiKey ? env.geminiFallbackModels : [],
+      geminiRequestTimeoutMs: env.geminiApiKey ? env.geminiRequestTimeoutMs : null,
       aiDocumentDailyLimit: env.aiDocumentDailyLimit,
       aiAdvisorDailyLimit: env.aiAdvisorDailyLimit,
       corsOrigins: env.corsOrigins,

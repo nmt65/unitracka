@@ -6,6 +6,7 @@ const maxTwoDecimals = (value) => {
   return Math.abs(scaled - Math.round(scaled)) < 1e-8;
 };
 const noLongDecimalScores = (value = "") => !/\d+[.,]\d{3,}/.test(String(value));
+const validAvatar = (value = "") => !value || (String(value).startsWith("data:image/") && String(value).length <= 450000);
 
 export const profileSchema = z.object({
   name: z.string().min(2).max(120),
@@ -13,7 +14,8 @@ export const profileSchema = z.object({
   languageResults: z.string().max(1200).refine(noLongDecimalScores, "Rezultatele examenelor pot avea maximum două zecimale.").optional().default(""),
   interests: z.array(z.string().min(2).max(80)).max(20).optional().default([]),
   emailNotifications: z.boolean().optional().default(true),
-  notifyBeforeDays: z.coerce.number().int().min(1).max(60).optional().default(14)
+  notifyBeforeDays: z.coerce.number().int().min(1).max(60).optional().default(14),
+  avatarDataUrl: z.string().max(450000).refine(validAvatar, "Poza trebuie să fie o imagine validă optimizată.").optional().default("")
 });
 
 export const changePasswordSchema = z.object({

@@ -48,6 +48,16 @@ function estimatedTokensForPayload(payload) {
   return Math.max(1, Math.ceil(raw.length / 4));
 }
 
+function modelForUsage(feature, result) {
+  if (result?.provider === "gemini") {
+    return feature === "advisor" ? env.geminiAdvisorModel : env.geminiDocumentModel;
+  }
+  if (result?.provider === "openai") {
+    return feature === "advisor" ? env.openaiAdvisorModel : env.openaiDocumentModel;
+  }
+  return null;
+}
+
 async function enforceAiQuota(req, feature) {
   const limit = feature === "document" ? env.aiDocumentDailyLimit : env.aiAdvisorDailyLimit;
   if (req.user.role === "admin") return { limit, used: 0 };
@@ -74,11 +84,7 @@ async function recordAiUsage(req, { feature, result, document = null, applicatio
     AdmissionApplicationId: application?.id || document?.AdmissionApplicationId || null,
     feature,
     provider: result?.provider || null,
-    model: result?.model || (
-      result?.provider === "gemini" ? env.geminiDocumentModel :
-        result?.provider === "openai" ? env.openaiDocumentModel :
-          null
-    ),
+    model: result?.model || modelForUsage(feature, result),
     status,
     requestHash: hashText(JSON.stringify({
       feature,
@@ -109,6 +115,11 @@ export async function checkDocument(req, res, next) {
 
     const result = await classifyDocument(req.body);
     const document = await findOwnedDocument(req);
+    const verificationStatus = result.accepted
+      ? "verified"
+      : result.reviewRequired
+        ? "pending"
+        : "rejected";
     if (document) {
       await document.update({
         fileName: req.body.fileName,
@@ -117,7 +128,7 @@ export async function checkDocument(req, res, next) {
         fileDataUrl: req.body.fileDataUrl || null,
         fileSha256: hashText(`${req.body.fileName}:${req.body.text || ""}:${req.body.fileDataUrl || ""}`),
         extractedText: req.body.text || "",
-        verificationStatus: result.accepted ? "verified" : "rejected",
+        verificationStatus,
         isCompleted: result.accepted,
         completedAt: result.accepted ? new Date().toISOString().slice(0, 10) : null,
         aiProvider: result.provider,
@@ -129,10 +140,23 @@ export async function checkDocument(req, res, next) {
         action: "document.ai_check",
         entityType: "Document",
         entityId: document.id,
-        metadata: { accepted: result.accepted, provider: result.provider, label: result.label, confidence: result.confidence }
+        metadata: {
+          accepted: result.accepted,
+          reviewRequired: Boolean(result.reviewRequired),
+          verificationStatus,
+          provider: result.provider,
+          model: result.model || null,
+          label: result.label,
+          confidence: result.confidence
+        }
       });
     }
-    await recordAiUsage(req, { feature: "document", result, document });
+    await recordAiUsage(req, {
+      feature: "document",
+      result,
+      document,
+      status: result.reviewRequired && result.confidence === 0 ? "failed" : "success"
+    });
     return res.json({ result, document: serializeDocument(document) });
   } catch (error) {
     next(error);
@@ -173,6 +197,10 @@ export async function studentAdvice(req, res, next) {
       target,
       cvText: req.body.cvText,
       personalGoal: req.body.personalGoal,
+      strategyGoal: req.body.strategyGoal,
+      budgetPreference: req.body.budgetPreference,
+      mobilityPreference: req.body.mobilityPreference,
+      timelineWeeks: req.body.timelineWeeks,
       universities,
       applications,
       documents

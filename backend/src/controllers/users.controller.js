@@ -12,6 +12,7 @@ function publicProfile(user) {
     id: user.id,
     email: user.email,
     name: user.name,
+    avatarDataUrl: user.avatarDataUrl,
     role: user.role,
     cnpLast4: user.cnpLast4,
     institutionId: user.InstitutionId,
@@ -73,6 +74,9 @@ export function getProfile(req, res) {
 
 export async function updateProfile(req, res, next) {
   try {
+    if (req.body.avatarDataUrl && (!String(req.body.avatarDataUrl).startsWith("data:image/") || String(req.body.avatarDataUrl).length > 450000)) {
+      return res.status(422).json({ message: "Poza de profil trebuie să fie o imagine validă optimizată." });
+    }
     if (req.body.bacAverage !== undefined && req.body.bacAverage !== null) {
       req.body.bacAverage = Math.round(Number(req.body.bacAverage) * 100) / 100;
     }
@@ -163,6 +167,7 @@ export async function publicShare(req, res, next) {
     return res.json({
       profile: {
         name: user.name,
+        avatarDataUrl: user.avatarDataUrl,
         bacAverage: user.bacAverage,
         languageResults: user.languageResults,
         interests: user.interests

@@ -23,8 +23,8 @@ Backend-ul creează tabelele prin Sequelize la pornire. Pentru RLS se rulează s
 
 ```env
 GEMINI_API_KEY=valoarea-ta
-GEMINI_DOCUMENT_MODEL=gemini-1.5-flash
-GEMINI_ADVISOR_MODEL=gemini-1.5-flash
+GEMINI_DOCUMENT_MODEL=gemini-3.5-flash
+GEMINI_ADVISOR_MODEL=gemini-3.5-flash
 APP_URL=https://unitrack.sbs
 CORS_ORIGIN=https://unitrack.sbs,https://www.unitrack.sbs
 SEED_DEMO=false

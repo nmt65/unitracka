@@ -16,5 +16,9 @@ export const studentAdviceSchema = z.object({
   universityId: z.string().uuid().optional(),
   applicationId: z.string().uuid().optional(),
   cvText: z.string().max(12000).optional().default(""),
-  personalGoal: z.string().max(1200).optional().default("")
+  personalGoal: z.string().max(1200).optional().default(""),
+  strategyGoal: z.enum(["safe", "balanced", "ambitious"]).optional().default("balanced"),
+  budgetPreference: z.enum(["low", "medium", "flexible"]).optional().default("medium"),
+  mobilityPreference: z.enum(["local", "romania", "europe", "global"]).optional().default("europe"),
+  timelineWeeks: z.coerce.number().int().min(1).max(24).optional().default(6)
 });

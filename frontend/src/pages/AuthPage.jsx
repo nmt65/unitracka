@@ -56,7 +56,7 @@ export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMod
           ? { state: "ok", message: `${t("CNP valid, cont disponibil.", language)} ${t("Ultimele cifre", language)}: ${result.last4}` }
           : { state: "error", message: t("Există deja un cont pentru acest CNP.", language) });
       } catch (err) {
-        setCnpStatus({ state: "error", message: err.message });
+        setCnpStatus({ state: "error", message: t(err.message, language) });
       }
     }, 350);
     return () => window.clearTimeout(timer);
@@ -114,7 +114,7 @@ export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMod
         setNotice(t("Parola a fost resetată. Te poți autentifica.", language));
       }
     } catch (err) {
-      setError(err.message);
+      setError(t(err.message, language));
     } finally {
       setLoading(false);
     }
@@ -205,8 +205,8 @@ export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMod
               )}
             </label>
           )}
-          {error && <p className="form-error">{error}</p>}
-          {notice && <p className="success-note">{notice}</p>}
+          {error && <p className="form-error">{t(error, language)}</p>}
+          {notice && <p className="success-note">{t(notice, language)}</p>}
           <button className="primary-button full" type="submit" disabled={loading}>
             {loading ? t("Se verifică...", language) : t(mode === "login" ? "Intră în cont" : mode === "register" ? "Creează cont" : mode === "forgot" ? "Trimite resetare" : "Resetează parola", language)}
           </button>

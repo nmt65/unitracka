@@ -13,11 +13,12 @@ const pageTitles = {
   profile: "Profil"
 };
 
-export function Navbar({ user, active, onChange, onLogout, darkMode, onToggleTheme, language = "ro", onToggleLanguage, notifications = [], onMarkNotificationRead }) {
+export function Navbar({ user, active, onSearchUniversities, onLogout, darkMode, onToggleTheme, language = "ro", onToggleLanguage, notifications = [], onMarkNotificationRead }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const notificationRef = useRef(null);
   const unreadCount = useMemo(() => notifications.filter((item) => !item.readAt).length, [notifications]);
   const latestNotifications = notifications.slice(0, 6);
+  const initials = user?.name?.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase() || "AM";
   const pageTitle = user?.role === "admin" && active === "dashboard"
     ? "Panou Admin"
     : user?.role === "university" && active === "dashboard"
@@ -50,9 +51,8 @@ export function Navbar({ user, active, onChange, onLogout, darkMode, onToggleThe
       </div>
       <div className="topbar-actions">
         {user?.role === "student" && (
-          <button className="top-icon top-icon-labeled" type="button" title={t("Caută universități", language)} onClick={() => onChange("universities")}>
+          <button className="top-icon" type="button" title={t("Caută universități", language)} aria-label={t("Caută universități", language)} onClick={onSearchUniversities}>
             <Search size={18} />
-            <span>{t("Caută", language)}</span>
           </button>
         )}
         <div className="notification-wrap" ref={notificationRef}>
@@ -122,7 +122,9 @@ export function Navbar({ user, active, onChange, onLogout, darkMode, onToggleThe
         <button className="top-icon" type="button" title={t("Deconectare", language)} onClick={onLogout}>
           <LogOut size={18} />
         </button>
-        <div className="top-avatar" title={user?.email}>{user?.name?.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase() || "AM"}</div>
+        <div className="top-avatar" title={user?.email}>
+          {user?.avatarDataUrl ? <img src={user.avatarDataUrl} alt="" /> : initials}
+        </div>
       </div>
     </header>
   );

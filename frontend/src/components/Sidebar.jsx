@@ -8,9 +8,18 @@ const items = [
   { key: "calendar", label: "Calendar", icon: CalendarDays }
 ];
 
+function ProfileGlyph({ user }) {
+  if (user?.avatarDataUrl) {
+    return (
+      <i className="sidebar-photo" aria-hidden="true">
+        <img src={user.avatarDataUrl} alt="" />
+      </i>
+    );
+  }
+  return <UserCircle2 size={18} />;
+}
+
 export function Sidebar({ active, onChange, counts, user, language = "ro" }) {
-  const initials = user?.name?.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase() || "AM";
-  const roleLabel = user?.role === "admin" ? "Admin" : user?.role === "university" ? "Universitate" : "Profil";
   const openUniversities = (status) => onChange("universities", status ? { status } : undefined);
 
   if (user?.role === "admin" || user?.role === "university") {
@@ -25,11 +34,9 @@ export function Sidebar({ active, onChange, counts, user, language = "ro" }) {
           <Building2 size={18} />
           {t(user.role === "admin" ? "Panou Admin" : "Aplicații primite", language)}
         </button>
-        <button className={`profile-link ${active === "profile" ? "active" : ""}`} type="button" onClick={() => onChange("profile")}>
-          <UserCircle2 size={18} />
-          <span>{t(roleLabel, language)}</span>
-          <strong>{initials}</strong>
-          <small>{user?.name}<br />{user?.email}</small>
+        <button className={`side-link ${active === "profile" ? "active" : ""}`} type="button" onClick={() => onChange("profile")}>
+          <ProfileGlyph user={user} />
+          {t(user.role === "admin" ? "Admin" : "Profil", language)}
         </button>
       </aside>
     );
@@ -81,11 +88,9 @@ export function Sidebar({ active, onChange, counts, user, language = "ro" }) {
           </button>
         );
       })}
-      <button className={`profile-link ${active === "profile" ? "active" : ""}`} type="button" onClick={() => onChange("profile")}>
-        <UserCircle2 size={18} />
-        <span>{t("Profil", language)}</span>
-        <strong>{initials}</strong>
-        <small>{user?.name}<br />{user?.email}</small>
+      <button className={`side-link ${active === "profile" ? "active" : ""}`} type="button" onClick={() => onChange("profile")}>
+        <ProfileGlyph user={user} />
+        {t("Profil", language)}
       </button>
     </aside>
   );

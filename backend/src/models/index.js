@@ -24,7 +24,13 @@ export const sequelize =
     : new Sequelize(env.databaseUrl, {
         dialect: env.dbDialect,
         logging: false,
-        dialectOptions: env.nodeEnv === "production" ? { ssl: { require: true, rejectUnauthorized: false } } : {}
+        pool: {
+          acquire: 10000
+        },
+        dialectOptions: env.nodeEnv === "production" ? {
+          ssl: { require: true, rejectUnauthorized: false },
+          connectTimeout: 10000
+        } : {}
       });
 
 export const User = sequelize.define(
@@ -34,6 +40,7 @@ export const User = sequelize.define(
     email: { type: DataTypes.STRING(180), unique: true, allowNull: false, validate: { isEmail: true } },
     passwordHash: { type: DataTypes.STRING, allowNull: false },
     name: { type: DataTypes.STRING(120), defaultValue: "Student UniTrack" },
+    avatarDataUrl: { type: DataTypes.TEXT, allowNull: true },
     role: { type: DataTypes.ENUM("student", "university", "admin"), defaultValue: "student", allowNull: false },
     cnpHash: { type: DataTypes.STRING(128), allowNull: true },
     cnpLast4: { type: DataTypes.STRING(4), allowNull: true },
@@ -296,22 +303,46 @@ export async function initDb() {
   const syncOptions = env.dbDialect === "sqlite" ? {} : { alter: env.nodeEnv !== "production" };
   await sequelize.sync(syncOptions);
   const queryInterface = sequelize.getQueryInterface();
-  const documentColumns = await queryInterface.describeTable("Documents").catch(() => null);
-  if (documentColumns && !documentColumns.fileSize) {
-    await queryInterface.addColumn("Documents", "fileSize", { type: DataTypes.INTEGER, allowNull: true });
+  async function ensureColumns(tableName, definitions) {
+    const columns = await queryInterface.describeTable(tableName).catch(() => null);
+    if (!columns) return null;
+    for (const [columnName, definition] of Object.entries(definitions)) {
+      if (columns[columnName]) continue;
+      await queryInterface.addColumn(tableName, columnName, definition).catch(async (error) => {
+        // A parallel Render startup can add the same column. Re-read before failing.
+        const refreshed = await queryInterface.describeTable(tableName).catch(() => null);
+        if (!refreshed?.[columnName]) throw error;
+      });
+    }
+    return queryInterface.describeTable(tableName).catch(() => columns);
   }
-  if (documentColumns && !documentColumns.fileDataUrl) {
-    await queryInterface.addColumn("Documents", "fileDataUrl", { type: DataTypes.TEXT, allowNull: true });
-  }
-  if (documentColumns && !documentColumns.storageProvider) {
-    await queryInterface.addColumn("Documents", "storageProvider", { type: DataTypes.STRING(40), allowNull: true });
-  }
-  if (documentColumns && !documentColumns.storageBucket) {
-    await queryInterface.addColumn("Documents", "storageBucket", { type: DataTypes.STRING(120), allowNull: true });
-  }
-  if (documentColumns && !documentColumns.storagePath) {
-    await queryInterface.addColumn("Documents", "storagePath", { type: DataTypes.STRING(600), allowNull: true });
-  }
+
+  // Production uses migrations rather than `sync({ alter: true })`. These
+  // additions keep an existing Supabase project compatible after an update.
+  await ensureColumns("Users", {
+    avatarDataUrl: { type: DataTypes.TEXT, allowNull: true },
+    resetTokenHash: { type: DataTypes.STRING(128), allowNull: true },
+    resetTokenExpiresAt: { type: DataTypes.DATE, allowNull: true },
+    passwordChangedAt: { type: DataTypes.DATE, allowNull: true },
+    lastLoginAt: { type: DataTypes.DATE, allowNull: true },
+    languageResults: { type: DataTypes.TEXT, allowNull: true },
+    emailNotifications: { type: DataTypes.BOOLEAN, allowNull: true },
+    notifyBeforeDays: { type: DataTypes.INTEGER, allowNull: true },
+    publicShareId: { type: DataTypes.UUID, allowNull: true }
+  });
+  await ensureColumns("Documents", {
+    fileSize: { type: DataTypes.INTEGER, allowNull: true },
+    fileDataUrl: { type: DataTypes.TEXT, allowNull: true },
+    storageProvider: { type: DataTypes.STRING(40), allowNull: true },
+    storageBucket: { type: DataTypes.STRING(120), allowNull: true },
+    storagePath: { type: DataTypes.STRING(600), allowNull: true },
+    fileSha256: { type: DataTypes.STRING(64), allowNull: true },
+    extractedText: { type: DataTypes.TEXT, allowNull: true },
+    aiProvider: { type: DataTypes.STRING(40), allowNull: true },
+    aiLabel: { type: DataTypes.STRING(120), allowNull: true },
+    aiConfidence: { type: DataTypes.FLOAT, allowNull: true },
+    aiExplanation: { type: DataTypes.TEXT, allowNull: true }
+  });
   const applicationColumns = await queryInterface.describeTable("AdmissionApplications").catch(() => null);
   if (applicationColumns && !applicationColumns.AdmissionProgramId) {
     await queryInterface.addColumn("AdmissionApplications", "AdmissionProgramId", { type: DataTypes.UUID, allowNull: true });

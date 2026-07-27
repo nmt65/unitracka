@@ -14,6 +14,7 @@ import { PublicShare } from "./pages/PublicShare.jsx";
 import { StudentAdvisor } from "./pages/StudentAdvisor.jsx";
 import { Universities } from "./pages/Universities.jsx";
 import { UniversityWorkspace } from "./pages/UniversityWorkspace.jsx";
+import { CommandPalette } from "./components/CommandPalette.jsx";
 import { Navbar } from "./components/Navbar.jsx";
 import { Sidebar } from "./components/Sidebar.jsx";
 import { UniversityModal } from "./components/UniversityModal.jsx";
@@ -37,6 +38,9 @@ export function App() {
   const [language, setLanguage] = useState(() => localStorage.getItem("unitrack-language") || "ro");
   const [notifications, setNotifications] = useState([]);
   const [serverNotice, setServerNotice] = useState("");
+  const [universitySearchFocus, setUniversitySearchFocus] = useState(0);
+  const [universityNavigationIntent, setUniversityNavigationIntent] = useState(null);
+  const [commandOpen, setCommandOpen] = useState(false);
 
   useEffect(() => {
     document.body.classList.toggle("dark", darkMode);
@@ -89,6 +93,18 @@ export function App() {
     const timer = window.setTimeout(() => setToast(""), 2800);
     return () => window.clearTimeout(timer);
   }, [toast]);
+
+  useEffect(() => {
+    if (!user) return undefined;
+    function openCommand(event) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setCommandOpen(true);
+      }
+    }
+    document.addEventListener("keydown", openCommand);
+    return () => document.removeEventListener("keydown", openCommand);
+  }, [user]);
 
   useEffect(() => {
     if (!user) {
@@ -182,6 +198,32 @@ export function App() {
     }
   }
 
+  function jumpToUniversitySearch() {
+    setActive("universities");
+    setUniversityNavigationIntent({ view: "catalog", nonce: Date.now() });
+    setUniversitySearchFocus(Date.now());
+  }
+
+  function handleTopSearch() {
+    if (active === "universities") {
+      jumpToUniversitySearch();
+      return;
+    }
+    setCommandOpen(true);
+  }
+
+  function navigate(page, options = {}) {
+    if (page === "universities") {
+      setUniversityNavigationIntent({ ...options, nonce: Date.now() });
+    }
+    setActive(page);
+  }
+
+  function commandNavigate(page, options = {}) {
+    navigate(page, options);
+    setCommandOpen(false);
+  }
+
   if (publicMatch) {
     return <PublicShare shareId={publicMatch[1]} />;
   }
@@ -207,8 +249,8 @@ export function App() {
     onAdd: openAdd,
     onEdit: openEdit,
     onDelete: deleteUniversity,
-    onManageUniversities: () => setActive("universities"),
-    onNavigate: setActive,
+    onManageUniversities: () => navigate("universities"),
+    onNavigate: navigate,
     onRefresh: refresh,
     onToast: setToast
   };
@@ -219,7 +261,9 @@ export function App() {
       <Navbar
         user={user}
         active={active}
-        onChange={setActive}
+        onChange={navigate}
+        onSearchUniversities={handleTopSearch}
+        onOpenCommand={() => setCommandOpen(true)}
         onLogout={logout}
         darkMode={darkMode}
         onToggleTheme={() => setDarkMode((value) => !value)}
@@ -229,7 +273,7 @@ export function App() {
         onMarkNotificationRead={markNotificationRead}
       />
       <div className="app-body">
-        <Sidebar active={active} onChange={setActive} counts={counts} user={user} language={language} />
+        <Sidebar active={active} onChange={navigate} counts={counts} user={user} language={language} />
         <main className="content">
           {loading && <div className="loading-bar" />}
           {active === "dashboard" && user.role === "admin" && <AdminPanel onToast={setToast} />}
@@ -237,7 +281,7 @@ export function App() {
           {active === "dashboard" && user.role === "student" && <Dashboard {...pageProps} />}
           {active === "admissions" && user.role === "student" && <Admissions onToast={setToast} />}
           {active === "advisor" && user.role === "student" && <StudentAdvisor universities={universities} onToast={setToast} />}
-          {active === "universities" && user.role === "student" && <Universities {...pageProps} />}
+          {active === "universities" && user.role === "student" && <Universities {...pageProps} searchFocusSignal={universitySearchFocus} navigationIntent={universityNavigationIntent} />}
           {active === "documents" && (
             <Documents
               universities={universities}
@@ -251,6 +295,15 @@ export function App() {
           {active === "profile" && <Profile user={user} universities={universities} stats={stats} onUser={setUser} onLogout={logout} onToast={setToast} />}
         </main>
       </div>
+      <CommandPalette
+        open={commandOpen}
+        user={user}
+        universities={universities}
+        onClose={() => setCommandOpen(false)}
+        onNavigate={commandNavigate}
+        onAdd={openAdd}
+        onToast={setToast}
+      />
       <UniversityModal open={modalOpen} initial={editing} onClose={() => setModalOpen(false)} onSave={saveUniversity} />
       {toast && <div className="toast">{toast}</div>}
     </div>

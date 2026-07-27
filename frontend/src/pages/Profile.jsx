@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, BellRing, CheckCircle2, Copy, FileCheck2, KeyRound, Link2, LogOut, Mail, Save, ShieldCheck, Sparkles, Target, Trash2 } from "lucide-react";
+import { AlertTriangle, BellRing, CheckCircle2, Copy, FileCheck2, ImagePlus, KeyRound, Link2, LogOut, Mail, Save, ShieldCheck, Sparkles, Target, Trash2, X } from "lucide-react";
 import { api } from "../services/api.js";
 import { StatCards } from "../components/StatCards.jsx";
 
@@ -20,6 +20,55 @@ function hasVerifiedEvidence(universities, pattern) {
 
 function hasLongDecimalScore(value) {
   return /\d+[.,]\d{3,}/.test(String(value || ""));
+}
+
+function initialsFor(name = "") {
+  return name.split(" ").map((part) => part[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "AM";
+}
+
+function resizeAvatar(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      const size = 320;
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const context = canvas.getContext("2d");
+      const scale = Math.max(size / image.width, size / image.height);
+      const width = image.width * scale;
+      const height = image.height * scale;
+      context.drawImage(image, (size - width) / 2, (size - height) / 2, width, height);
+      resolve(canvas.toDataURL("image/jpeg", 0.82));
+    };
+    image.onerror = reject;
+    image.src = dataUrl;
+  });
+}
+
+function ProfilePhotoEditor({ value, name, onFile, onClear }) {
+  return (
+    <div className="profile-photo-editor">
+      <div className="profile-photo-preview">
+        {value ? <img src={value} alt="" /> : <span>{initialsFor(name)}</span>}
+      </div>
+      <div className="profile-photo-copy">
+        <strong>Poză de profil</strong>
+        <small>Folosește JPG, PNG sau WebP. Imaginea este optimizată automat pentru viteză.</small>
+        <div className="profile-photo-actions">
+          <label className="soft-button file-button">
+            <ImagePlus size={16} /> Alege poză
+            <input type="file" accept="image/png,image/jpeg,image/webp" onChange={onFile} />
+          </label>
+          {value && (
+            <button className="soft-button" type="button" onClick={onClear}>
+              <X size={16} /> Elimină
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function Profile({ user, universities = [], stats, onUser, onLogout, onToast }) {
@@ -49,7 +98,8 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
     languageResults: user.languageResults || "",
     interests: (user.interests || []).join(", "),
     emailNotifications: user.emailNotifications,
-    notifyBeforeDays: user.notifyBeforeDays || 14
+    notifyBeforeDays: user.notifyBeforeDays || 14,
+    avatarDataUrl: user.avatarDataUrl || ""
   });
   const [saving, setSaving] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "" });
@@ -83,6 +133,35 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
 
   function updateDeleteField(event) {
     setDeleteForm((current) => ({ ...current, [event.target.name]: event.target.value }));
+  }
+
+  function updateAvatar(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      onToast("Alege o imagine JPG, PNG sau WebP.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      onToast("Poza trebuie să fie sub 5 MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const avatarDataUrl = await resizeAvatar(String(reader.result || ""));
+        setForm((current) => ({ ...current, avatarDataUrl }));
+      } catch {
+        onToast("Nu am putut optimiza imaginea.");
+      }
+    };
+    reader.onerror = () => onToast("Nu am putut citi imaginea.");
+    reader.readAsDataURL(file);
+  }
+
+  function clearAvatar() {
+    setForm((current) => ({ ...current, avatarDataUrl: "" }));
   }
 
   async function submit(event) {
@@ -146,7 +225,8 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
       const data = await api.updateProfile({
         name: form.name,
         emailNotifications: form.emailNotifications,
-        notifyBeforeDays: Number(form.notifyBeforeDays)
+        notifyBeforeDays: Number(form.notifyBeforeDays),
+        avatarDataUrl: form.avatarDataUrl
       });
       onUser(data.user);
       onToast("Cont salvat.");
@@ -195,6 +275,7 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
         <form className="profile-stack" onSubmit={submitAccount}>
           <section className="profile-panel">
             <h2>Informații cont</h2>
+            <ProfilePhotoEditor value={form.avatarDataUrl} name={form.name || user.name} onFile={updateAvatar} onClear={clearAvatar} />
             <div className="profile-form">
               <label>
                 Nume afișat
@@ -332,6 +413,7 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
       <form className="profile-stack" onSubmit={submit}>
         <section className="profile-panel">
           <h2>Informații personale</h2>
+          <ProfilePhotoEditor value={form.avatarDataUrl} name={form.name || user.name} onFile={updateAvatar} onClear={clearAvatar} />
           <div className="profile-form">
             <label>
               Nume complet

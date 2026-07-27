@@ -64,13 +64,23 @@ export function createApp() {
         return res.status(503).json({
           ok: false,
           database: env.dbDialect,
-          startup: startupState.error ? "error" : "initializing",
-          error: startupState.error || undefined
+          startup: startupState.retryAt ? "retrying" : "initializing",
+          retryAt: startupState.retryAt || undefined
         });
       }
-      return res.json({ ok: true, database: env.dbDialect, timestamp: new Date().toISOString() });
-    } catch {
-      return res.status(503).json({ ok: false, database: env.dbDialect });
+      return res.json({
+        ok: true,
+        database: env.dbDialect,
+        timestamp: new Date().toISOString(),
+        lastReadyAt: startupState.lastReadyAt || undefined
+      });
+    } catch (error) {
+      return res.status(503).json({
+        ok: false,
+        database: env.dbDialect,
+        startup: startupState.retryAt ? "retrying" : "unreachable",
+        retryAt: startupState.retryAt || undefined
+      });
     }
   });
   app.use("/api/auth", authRouter);

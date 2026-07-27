@@ -42,6 +42,14 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+      - key: GEMINI_DOCUMENT_MODEL
+        value: gemini-2.5-flash
+      - key: GEMINI_ADVISOR_MODEL
+        value: gemini-2.5-flash
+      - key: GEMINI_FALLBACK_MODELS
+        value: gemini-2.5-flash
+      - key: GEMINI_REQUEST_TIMEOUT_MS
+        value: "25000"
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT

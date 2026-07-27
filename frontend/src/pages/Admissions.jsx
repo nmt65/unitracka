@@ -32,21 +32,24 @@ const documentStatusLabels = {
   rejected: "Respins"
 };
 
-const documentHints = [
-  ["Diplomă BAC", ["bac", "bacalaureat", "diploma", "diplomă"]],
-  ["Foaie matricolă", ["foaie", "matricola", "matricolă", "transcript"]],
-  ["CV Europass", ["cv", "europass"]],
-  ["Scrisoare motivație", ["motivatie", "motivație", "motivation"]],
-  ["Scrisori de recomandare", ["recomandare", "recommendation"]],
-  ["Certificat limbă", ["ielts", "toefl", "cambridge", "limba", "language"]],
-  ["Cazier judiciar", ["cazier", "criminal"]],
-  ["Adeverință medicală", ["medical", "adeverinta", "adeverință"]],
-  ["Portofoliu", ["portofoliu", "portfolio", "github", "proiect"]]
-];
+const mimeByExtension = {
+  pdf: "application/pdf",
+  doc: "application/msword",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  txt: "text/plain",
+  csv: "text/csv",
+  json: "application/json",
+  xml: "application/xml"
+};
 
-function inferExpectedType(fileName, text) {
-  const haystack = `${fileName} ${text || ""}`.toLowerCase();
-  return documentHints.find(([, terms]) => terms.some((term) => haystack.includes(term)))?.[0] || "";
+function safeMimeType(file) {
+  if (file.type) return file.type;
+  const extension = file.name.split(".").pop()?.toLowerCase();
+  return mimeByExtension[extension] || "application/octet-stream";
 }
 
 function normalizeValue(value) {
@@ -172,19 +175,18 @@ export function Admissions({ onToast }) {
         reader.readAsDataURL(file);
       })
     ]);
-    const detectedType = inferExpectedType(file.name, text);
     setAiResult(null);
     setAiForm((current) => ({
       ...current,
       fileName: file.name,
-      mimeType: file.type || "application/octet-stream",
+      mimeType: safeMimeType(file),
       fileSize: file.size,
       fileDataUrl,
       text
     }));
     onToast(canReadText
-      ? `Fișier citit și atașat în dosar${detectedType ? `; pare ${detectedType}.` : "."}`
-      : "Fișier atașat. Pentru verificare avansată trebuie configurată cheia providerului pe server; altfel adaugă text OCR extras real.");
+      ? "Fișier citit și atașat. Conținutul real va fi analizat la verificare."
+      : "Fișier atașat. Analiza va folosi documentul real, nu numele fișierului sau text introdus manual.");
   }
 
   async function submitApplication(event) {
@@ -223,7 +225,11 @@ export function Admissions({ onToast }) {
     try {
       const data = await api.checkDocumentAi(aiForm);
       setAiResult(data.result);
-      onToast(data.result.accepted ? "Document verificat și marcat în sistem." : "Document respins la verificarea automată.");
+      onToast(data.result.accepted
+        ? "Tipul documentului a fost confirmat automat."
+        : data.result.reviewRequired
+          ? "Documentul a fost păstrat pentru verificarea universității."
+          : "Documentul nu corespunde tipului selectat. Verifică fișierul și reîncarcă-l.");
       await load();
     } catch (error) {
       onToast(error.message);
@@ -295,13 +301,22 @@ export function Admissions({ onToast }) {
             <label>Document<select name="documentId" value={aiForm.documentId} onChange={updateAi} disabled={allDocs.length === 0}>{allDocs.map((doc) => <option key={doc.id} value={doc.id}>{doc.name} · {doc.appName}</option>)}</select></label>
             <label>Tip așteptat<input name="expectedType" value={aiForm.expectedType} readOnly /></label>
             <label className="wide">Atașează fișier
-              <span className="file-control"><Upload size={17} /><input type="file" onChange={handleDocumentFile} accept=".txt,.csv,.json,.xml,.pdf,.doc,.docx,image/*,application/pdf" /></span>
-              <small className="field-note">Atașează documentul real. PDF-urile, imaginile și documentele Word se aprobă automat doar cu verificarea avansată configurată pe server; altfel rămân pentru verificarea universității.</small>
+              <span className="file-control"><Upload size={17} /><input type="file" onChange={handleDocumentFile} accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.txt,.csv,.json,.xml,application/pdf,image/jpeg,image/png,image/webp" /></span>
+              <small className="field-note">Acceptăm PDF, DOC/DOCX, JPG, PNG, WebP și documente text de maximum 5 MB. Tipul, extensia și conținutul sunt comparate înainte de analiză.</small>
             </label>
-            <label className="wide">Nume fișier<input name="fileName" value={aiForm.fileName} onChange={updateAi} /></label>
-            <label className="wide">Text extras / OCR<textarea name="text" value={aiForm.text} onChange={updateAi} /></label>
+            <label className="wide">Nume fișier<input name="fileName" value={aiForm.fileName} readOnly placeholder="Se completează din fișierul ales" /></label>
+            <label className="wide">Conținut citit din fișier<textarea name="text" value={aiForm.text} readOnly placeholder="Pentru PDF, imagini și documente Word, modelul AI citește fișierul direct." /></label>
           </div>
-          {aiResult && <p className={aiResult.accepted ? "success-note" : "form-error"}>Verificare automată: {aiResult.label} · {Math.round(aiResult.confidence * 100)}% · {aiResult.explanation}</p>}
+          {aiResult && (
+            <section className={`document-ai-result ${aiResult.accepted ? "verified" : aiResult.reviewRequired ? "pending" : "rejected"}`} aria-live="polite">
+              <header>
+                <strong>{aiResult.accepted ? "Tip confirmat automat" : aiResult.reviewRequired ? "Verificare manuală necesară" : "Document necorespunzător"}</strong>
+                <span>{aiResult.provider === "gemini" ? "Gemini multimodal" : aiResult.provider === "file-security" ? "Control fișier" : "Verificare UniTrack"}</span>
+              </header>
+              <p>{aiResult.label} · {Math.round(aiResult.confidence * 100)}% · {aiResult.explanation}</p>
+              {aiResult.evidence?.length > 0 && <ul>{aiResult.evidence.map((item) => <li key={item}>{item}</li>)}</ul>}
+            </section>
+          )}
           <div className="profile-actions"><button className="primary-button" disabled={checking || allDocs.length === 0 || !aiForm.fileDataUrl}>{checking ? "Se verifică..." : "Verifică și adaugă"}</button></div>
         </form>
       </div>

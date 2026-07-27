@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { BookOpen, Download, ExternalLink, Plus, Scale, Search, Send } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { BookOpen, Download, ExternalLink, Plus, Scale, Search, Send, X } from "lucide-react";
 import { api } from "../services/api.js";
 import { ProgressBar } from "../components/ProgressBar.jsx";
 import { StatusPill } from "../components/StatusPill.jsx";
@@ -29,28 +29,66 @@ function progressTone(value) {
 const COMPARE_SELECTION_KEY = "unitrack_compare_selection_v1";
 const ADMISSIONS_SELECTION_KEY = "unitrack_admissions_selection_v1";
 
-export function Universities({ user, universities, onAdd, onEdit, onNavigate, onToast }) {
+export function Universities({ user, universities, onAdd, onEdit, onNavigate, onToast, searchFocusSignal = 0, navigationIntent = null }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("Toate");
   const [type, setType] = useState("toate");
   const [view, setView] = useState("catalog");
   const [catalog, setCatalog] = useState([]);
+  const [pinnedCatalogItem, setPinnedCatalogItem] = useState(null);
   const [compareSelection, setCompareSelection] = useState([]);
+  const filterBarRef = useRef(null);
+  const searchInputRef = useRef(null);
   const addLabel = user?.role === "admin" ? "Adaugă universitate" : "Trimite aplicație";
 
   useEffect(() => {
     let active = true;
     api.catalog(query)
       .then((data) => {
-        if (active) setCatalog(data.universities || []);
+        if (!active) return;
+        const rows = data.universities || [];
+        if (pinnedCatalogItem && !rows.some((item) => item.name === pinnedCatalogItem.name)) {
+          setCatalog([pinnedCatalogItem, ...rows]);
+          return;
+        }
+        setCatalog(rows);
       })
       .catch((error) => onToast?.(error.message));
     return () => {
       active = false;
     };
-  }, [query, onToast]);
+  }, [pinnedCatalogItem, query, onToast]);
+
+  useEffect(() => {
+    if (!searchFocusSignal) return;
+    setView("catalog");
+    window.requestAnimationFrame(() => {
+      filterBarRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      searchInputRef.current?.focus({ preventScroll: true });
+    });
+  }, [searchFocusSignal]);
+
+  useEffect(() => {
+    if (!navigationIntent?.nonce) return;
+    if (navigationIntent.catalogItem) setPinnedCatalogItem(navigationIntent.catalogItem);
+    if (navigationIntent.query !== undefined) setQuery(navigationIntent.query || "");
+    if (navigationIntent.status) {
+      setView("tracker");
+      setStatus(navigationIntent.status);
+    } else if (navigationIntent.view === "tracker") {
+      setStatus("Toate");
+    }
+    if (navigationIntent.view) setView(navigationIntent.view);
+    window.requestAnimationFrame(() => {
+      filterBarRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [navigationIntent]);
 
   const trackerByName = useMemo(() => new Map(universities.map((uni) => [uni.name.toLowerCase(), uni])), [universities]);
+  const effectiveCatalog = useMemo(() => {
+    if (!pinnedCatalogItem || catalog.some((item) => item.name === pinnedCatalogItem.name)) return catalog;
+    return [pinnedCatalogItem, ...catalog];
+  }, [catalog, pinnedCatalogItem]);
 
   const filteredTracker = useMemo(() => {
     return universities.filter((uni) => {
@@ -62,14 +100,20 @@ export function Universities({ user, universities, onAdd, onEdit, onNavigate, on
   }, [universities, query, status, type]);
 
   const filteredCatalog = useMemo(() => {
-    return catalog.filter((item) => {
+    return effectiveCatalog.filter((item) => {
       const offer = item.offerPrograms || [];
       const matchesType = type === "toate" || offer.some((program) => program.programType === type);
       const haystack = [item.name, item.country, item.city, item.offerSummary, ...(item.strengths || []), ...offer.map((program) => `${program.program} ${program.faculty}`)].join(" ").toLowerCase();
       return matchesType && haystack.includes(query.toLowerCase());
     });
-  }, [catalog, query, type]);
+  }, [effectiveCatalog, query, type]);
   const visibleCatalog = filteredCatalog.slice(0, 60);
+  const compareSelectedItems = useMemo(() => {
+    const allItems = [...effectiveCatalog, ...universities];
+    return compareSelection
+      .map((name) => allItems.find((item) => item.name === name))
+      .filter(Boolean);
+  }, [compareSelection, effectiveCatalog, universities]);
 
   async function exportCsv() {
     try {
@@ -101,6 +145,14 @@ export function Universities({ user, universities, onAdd, onEdit, onNavigate, on
     });
   }
 
+  function removeFromCompare(name) {
+    setCompareSelection((current) => current.filter((item) => item !== name));
+  }
+
+  function clearCompareSelection() {
+    setCompareSelection([]);
+  }
+
   function openCompare() {
     if (compareSelection.length < 2) {
       onToast?.("Selectează cel puțin 2 universități pentru comparație.");
@@ -115,7 +167,7 @@ export function Universities({ user, universities, onAdd, onEdit, onNavigate, on
       <div className="page-heading">
         <div>
           <h1>Universități</h1>
-          <p>{catalog.length || universities.length} universități disponibile — alege din catalogul curent, compară oferta 2026-2027 și trimite aplicații</p>
+          <p>{effectiveCatalog.length || universities.length} universități disponibile — alege din catalogul curent, compară oferta 2026-2027 și trimite aplicații</p>
         </div>
         <div className="heading-actions">
           <button className="soft-button" type="button" onClick={exportCsv}><Download size={16} /> Export CSV</button>
@@ -126,10 +178,10 @@ export function Universities({ user, universities, onAdd, onEdit, onNavigate, on
         </div>
       </div>
 
-      <div className="filter-bar">
+      <div className="filter-bar" ref={filterBarRef}>
         <label className="search-field">
           <Search size={17} />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Caută universitate, program, domeniu..." />
+          <input ref={searchInputRef} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Caută universitate, program, domeniu..." />
         </label>
         <div className="filter-tabs">
           <button className={view === "catalog" ? "active" : ""} type="button" onClick={() => setView("catalog")}>Catalog public</button>
@@ -150,6 +202,28 @@ export function Universities({ user, universities, onAdd, onEdit, onNavigate, on
         </div>
         <span className="result-count">{view === "catalog" ? filteredCatalog.length : filteredTracker.length} rezultate</span>
       </div>
+
+      {user?.role === "student" && compareSelectedItems.length > 0 && (
+        <section className="selection-dock" aria-label="Selecție comparație">
+          <div>
+            <strong>{compareSelectedItems.length}/4 universități selectate</strong>
+            <span>Alege minimum 2, apoi deschide comparația.</span>
+          </div>
+          <div className="selection-chip-row">
+            {compareSelectedItems.map((item) => (
+              <button key={item.name} type="button" onClick={() => removeFromCompare(item.name)} title="Elimină din comparație">
+                <span className="uni-logo mini tone-primary">{shortName(item)}</span>
+                {item.name}
+                <X size={14} />
+              </button>
+            ))}
+          </div>
+          <div className="selection-dock-actions">
+            <button className="soft-button compact" type="button" onClick={clearCompareSelection}>Reset</button>
+            <button className="primary-button compact" type="button" onClick={openCompare}><Scale size={15} /> Compară</button>
+          </div>
+        </section>
+      )}
 
       {view === "catalog" ? (
         <div className="catalog-grid">
@@ -179,7 +253,7 @@ export function Universities({ user, universities, onAdd, onEdit, onNavigate, on
                 <footer>
                   {item.website && <a className="tiny-link" href={item.website} target="_blank" rel="noreferrer"><ExternalLink size={14} /> Site oficial</a>}
                   {tracked && <span className="catalog-state">În tracker</span>}
-                  <button className="soft-button" type="button" onClick={() => toggleCompare(item)}>
+                  <button className={`soft-button ${compareSelection.includes(item.name) ? "selected-action" : ""}`} type="button" onClick={() => toggleCompare(item)}>
                     <Scale size={15} /> {compareSelection.includes(item.name) ? "Selectată" : "Compară"}
                   </button>
                   <button className="primary-button compact" type="button" onClick={() => applyToCatalog(item)}>
