@@ -173,7 +173,7 @@ export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMod
           )}
           <label>
             Email
-            <span className="input-icon"><Mail size={17} /><input name="email" type="email" value={form.email} onChange={updateField} required /></span>
+            <span className="input-icon"><Mail size={17} /><input name="email" type="email" autoComplete="email" value={form.email} onChange={updateField} required /></span>
           </label>
           {mode === "reset" && (
             <label>
@@ -186,7 +186,15 @@ export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMod
               {t("Parola", language)}
               <span className="input-icon with-action">
                 <Lock size={17} />
-                <input name="password" type={showPassword ? "text" : "password"} minLength={mode === "login" ? 1 : 8} value={form.password} onChange={updateField} required />
+                <input
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete={mode === "login" ? "current-password" : "new-password"}
+                  minLength={mode === "login" ? 1 : 8}
+                  value={form.password}
+                  onChange={updateField}
+                  required
+                />
                 <button
                   className="password-toggle"
                   type="button"

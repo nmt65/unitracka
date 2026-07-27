@@ -75,18 +75,21 @@ export async function login(req, res, next) {
   try {
     const user = await User.scope("withPassword").findOne({ where: { email: req.body.email }, include: [Institution] });
     if (!user) return res.status(401).json({ message: "Email sau parola incorecta." });
+    if (!user.passwordHash || typeof user.passwordHash !== "string") {
+      return res.status(401).json({ message: "Contul nu are o parola valida. Foloseste resetarea parolei." });
+    }
 
-    const passwordOk = await bcrypt.compare(req.body.password, user.passwordHash);
+    const passwordOk = await bcrypt.compare(req.body.password, user.passwordHash).catch(() => false);
     if (!passwordOk) return res.status(401).json({ message: "Email sau parola incorecta." });
 
     const token = signUserToken(user);
     setAuthCookie(res, token);
     // Login must remain available even if an older production schema is still
     // catching up with the optional activity-tracking column.
-    await user.update({ lastLoginAt: new Date() }).catch((error) => {
+    void user.update({ lastLoginAt: new Date() }).catch((error) => {
       console.warn(`Nu am putut salva ultima autentificare pentru ${user.id}: ${error.message}`);
     });
-    await writeAudit(req, { action: "auth.login", entityType: "User", entityId: user.id, metadata: { actorId: user.id, email: user.email, role: user.role } });
+    void writeAudit(req, { action: "auth.login", entityType: "User", entityId: user.id, metadata: { actorId: user.id, email: user.email, role: user.role } });
     return res.json({ user: publicUser(user) });
   } catch (error) {
     next(error);
