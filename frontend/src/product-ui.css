@@ -1,6 +1,30 @@
 /* Final product polish. This layer is intentionally limited to shared shell and
    page primitives so feature-specific styles remain owned by styles.css. */
 
+.auth-visual {
+  border-color: #262a33;
+  background: #0d0f14;
+  color: #f7f7f4;
+}
+
+.auth-visual p {
+  color: #a6aab4;
+}
+
+.auth-proof-list span {
+  color: #d7d8dc;
+}
+
+.auth-proof-list span svg,
+.auth-proof-list span:nth-child(2) svg,
+.auth-proof-list span:nth-child(3) svg {
+  color: #8b7cf6;
+}
+
+.auth-visual .brand {
+  color: #f7f7f4;
+}
+
 .sidebar-brand {
   min-height: 48px;
   margin-bottom: 20px;
