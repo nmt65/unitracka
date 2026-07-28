@@ -58,7 +58,13 @@ export async function register(req, res, next) {
     if (role !== "student") {
       return res.status(403).json({ message: "Conturile de universitate se creează doar de către admin." });
     }
-    const payload = { email: req.body.email, name: req.body.name || "Student UniTrack", role };
+    const payload = {
+      email: req.body.email,
+      name: req.body.name || "Student UniTrack",
+      role,
+      privacyConsentAt: new Date(),
+      privacyPolicyVersion: "2026-07"
+    };
 
     if (role === "student") {
       const cnp = validateCnp(req.body.cnp);

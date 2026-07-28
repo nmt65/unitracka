@@ -1,31 +1,44 @@
-# Surse externe și componente declarate
+# Biblioteci și servicii externe
 
-Acest fișier este pregătit pentru dosarul de prezentare InfoEducație. Completează-l dacă mai adaugi imagini, modele de analiză, texte sau servicii externe.
+Acest document declară principalele componente care nu sunt scrise de autorii proiectului. Logica aplicației, schema, componentele React și stilurile UniTrack sunt dezvoltate în repository-ul proiectului.
 
-## Cod propriu
+## Biblioteci frontend
 
-- Structura aplicației UniTrack, fluxurile student/universitate/admin, API-ul Express, modelele de date, validările, document workflow-ul, paginile React și stilizarea CSS sunt implementate în acest proiect.
-- Designul este implementat manual în CSS/React, fără template/CMS importat.
+- React și React DOM - randarea interfeței pe componente;
+- Vite și pluginul React - server de dezvoltare și build;
+- Lucide React - iconițe SVG;
+- SimpleWebAuthn Browser - integrarea WebAuthn/passkeys.
 
-## Biblioteci și framework-uri
+## Biblioteci backend
 
-- Frontend: React, Vite, lucide-react.
-- Backend: Node.js, Express, Sequelize, Zod, Helmet, CORS, express-rate-limit, jsonwebtoken, bcryptjs, xss.
-- Database: SQLite pentru development local; PostgreSQL recomandat în producție.
+- Express - server HTTP și rutare API;
+- Sequelize - ORM și modele relaționale;
+- Zod - validarea contractelor API;
+- bcryptjs - hash-uirea parolelor;
+- jsonwebtoken - emiterea și verificarea JWT;
+- Helmet - headere HTTP de securitate;
+- cors - politica Cross-Origin Resource Sharing;
+- express-rate-limit - limitarea cererilor;
+- cookie-parser - citirea cookie-urilor;
+- xss - sanitizarea textului;
+- SimpleWebAuthn Server - verificarea passkeys;
+- nodemailer - fallback SMTP;
+- PDFKit - export PDF;
+- pg și sqlite3 - driverele bazelor de date.
 
-## Verificare asistată documente
+## Servicii
 
-- Verificarea documentelor poate folosi OpenAI sau Gemini doar dacă sunt configurate cheile API în backend.
-- Fără chei externe, aplicația folosește clasificatorul local strict din `backend/src/services/documentAi.js`.
-- Dacă se folosește un model extern în prezentare/producție, notează aici providerul, modelul și scopul: clasificare documente de admitere, nu decizie finală de admitere.
+- Netlify - hosting frontend și proxy `/api`;
+- Render - hosting pentru API-ul Node.js;
+- Supabase - PostgreSQL administrat;
+- Resend - livrarea emailurilor prin API HTTP;
+- Google Gemini API - preclasificare multimodală opțională a documentelor;
+- OpenAI API - furnizor alternativ opțional pentru analiză și asistent;
+- GitHub - versionare și publicarea codului.
 
-## Iconițe și asset-uri
+## Precizări
 
-- Iconițele UI sunt din `lucide-react`.
-- Logo-ul local `frontend/public/unitracka-icon.svg` este asset de proiect.
-- Capturile QA din `docs/` sunt generate local din aplicația UniTrack.
-
-## Date demo
-
-- Conturile demo și universitățile demo sunt seed local pentru prezentare/development.
-- În producție se setează `SEED_DEMO=false` și se creează date reale prin Panou Admin.
+- Nicio cheie API nu este inclusă în codul public.
+- Modelele externe asistă clasificarea; nu certifică autenticitatea juridică a documentelor.
+- Iconițele provin din Lucide; identitatea vizuală, layout-urile și stilurile sunt proprii proiectului.
+- Licențele exacte ale pachetelor se găsesc în metadatele npm și în fișierele `package-lock.json`.

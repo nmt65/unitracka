@@ -43,7 +43,7 @@ UniTrack gestionează procesul de admitere dintre elevi și universități: cont
 
 ## Securitate
 
-- Cookie JWT `httpOnly`, `sameSite=lax`.
+- Cookie JWT `httpOnly`; în producție este `secure` și folosește politica `sameSite` configurată pentru proxy-ul frontend/API.
 - Token CSRF double-submit pentru metode unsafe.
 - Rate limiting global, separat pentru auth și verificări documente.
 - Validare Zod și sanitizare XSS pe body/query/params.
@@ -51,6 +51,7 @@ UniTrack gestionează procesul de admitere dintre elevi și universități: cont
 - CNP-ul nu se păstrează în clar.
 - SMTP este folosit pentru resetare parolă, notificare aplicație nouă și status aplicație când este configurat.
 - Pentru PostgreSQL există RLS SQL pregătit.
+- Autorizarea principală este aplicată în API; RLS strict per utilizator necesită rol PostgreSQL non-owner și context `app.*` setat în fiecare tranzacție.
 
 ## Demonstrație locală
 

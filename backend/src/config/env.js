@@ -70,6 +70,33 @@ export const env = {
   geminiRequestTimeoutMs: Math.min(45000, Math.max(5000, Number(process.env.GEMINI_REQUEST_TIMEOUT_MS || 25000))),
   aiDocumentDailyLimit: Number(process.env.AI_DOCUMENT_DAILY_LIMIT || 40),
   aiAdvisorDailyLimit: Number(process.env.AI_ADVISOR_DAILY_LIMIT || 20),
+  storage: {
+    supabaseUrl: String(process.env.SUPABASE_URL || "").replace(/\/+$/, ""),
+    supabaseServiceKey: process.env.SUPABASE_SERVICE_ROLE_KEY || "",
+    bucket: process.env.DOCUMENT_STORAGE_BUCKET || "admission-documents",
+    timeoutMs: Number(process.env.DOCUMENT_STORAGE_TIMEOUT_MS || 15000),
+    get enabled() {
+      return Boolean(this.supabaseUrl && this.supabaseServiceKey && this.bucket);
+    }
+  },
+  fileScan: {
+    url: process.env.FILE_SCAN_URL || "",
+    token: process.env.FILE_SCAN_TOKEN || "",
+    required: process.env.FILE_SCAN_REQUIRED === "true",
+    timeoutMs: Number(process.env.FILE_SCAN_TIMEOUT_MS || 15000)
+  },
+  integrations: {
+    registry: {
+      baseUrl: String(process.env.OFFICIAL_REGISTRY_API_URL || "").replace(/\/+$/, ""),
+      token: process.env.OFFICIAL_REGISTRY_API_TOKEN || "",
+      timeoutMs: Number(process.env.OFFICIAL_REGISTRY_TIMEOUT_MS || 15000)
+    },
+    signature: {
+      baseUrl: String(process.env.QUALIFIED_SIGNATURE_API_URL || "").replace(/\/+$/, ""),
+      token: process.env.QUALIFIED_SIGNATURE_API_TOKEN || "",
+      timeoutMs: Number(process.env.QUALIFIED_SIGNATURE_TIMEOUT_MS || 15000)
+    }
+  },
   mail: {
     provider: process.env.MAIL_PROVIDER || "auto",
     from: process.env.EMAIL_FROM || process.env.SMTP_FROM || "UniTrack <no-reply@unitrack.sbs>",

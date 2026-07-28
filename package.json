@@ -11,9 +11,14 @@
     "build": "npm run build --prefix frontend",
     "build:pages": "npm run build:pages --prefix frontend",
     "check": "npm run check --prefix backend && npm run build --prefix frontend",
-    "smoke": "npm run smoke --prefix backend"
+    "smoke": "npm run smoke --prefix backend",
+    "jury:demo": "npm run jury:demo --prefix backend",
+    "test:e2e": "playwright test",
+    "gdpr:retention": "npm run gdpr:retention --prefix backend",
+    "db:rls:audit": "npm run db:rls:audit --prefix backend"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.0",
     "concurrently": "^9.1.2"
   }
 }

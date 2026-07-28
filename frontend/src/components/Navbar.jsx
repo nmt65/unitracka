@@ -13,7 +13,7 @@ const pageTitles = {
   profile: "Profil"
 };
 
-export function Navbar({ user, active, onSearchUniversities, onLogout, darkMode, onToggleTheme, language = "ro", onToggleLanguage, notifications = [], onMarkNotificationRead }) {
+export function Navbar({ user, active, onChange, onSearchUniversities, onLogout, darkMode, onToggleTheme, language = "ro", onToggleLanguage, notifications = [], onMarkNotificationRead }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const notificationRef = useRef(null);
   const unreadCount = useMemo(() => notifications.filter((item) => !item.readAt).length, [notifications]);
@@ -51,8 +51,10 @@ export function Navbar({ user, active, onSearchUniversities, onLogout, darkMode,
       </div>
       <div className="topbar-actions">
         {user?.role === "student" && (
-          <button className="top-icon" type="button" title={t("Caută universități", language)} aria-label={t("Caută universități", language)} onClick={onSearchUniversities}>
+          <button className="top-search-button" type="button" title={t("Caută universități", language)} aria-label={t("Caută universități", language)} onClick={onSearchUniversities}>
             <Search size={18} />
+            <span>{t("Caută", language)}</span>
+            <kbd>Ctrl K</kbd>
           </button>
         )}
         <div className="notification-wrap" ref={notificationRef}>
@@ -60,6 +62,7 @@ export function Navbar({ user, active, onSearchUniversities, onLogout, darkMode,
             className={`top-icon ${unreadCount ? "has-dot" : ""}`}
             type="button"
             title={t("Notificări", language)}
+            aria-label={t("Notificări", language)}
             aria-expanded={notificationsOpen}
             onClick={() => setNotificationsOpen((value) => !value)}
           >
@@ -112,19 +115,32 @@ export function Navbar({ user, active, onSearchUniversities, onLogout, darkMode,
             </section>
           )}
         </div>
-        <button className="top-icon" type="button" title={t(darkMode ? "Tema luminoasă" : "Tema întunecată", language)} onClick={onToggleTheme}>
+        <button
+          className="top-icon"
+          type="button"
+          title={t(darkMode ? "Tema luminoasă" : "Tema întunecată", language)}
+          aria-label={t(darkMode ? "Tema luminoasă" : "Tema întunecată", language)}
+          onClick={onToggleTheme}
+        >
           {darkMode ? <Sun size={18} /> : <Moon size={18} />}
         </button>
-        <button className="top-icon language-button" type="button" title="RO / EN" onClick={onToggleLanguage}>
+        <button className="top-icon language-button" type="button" title="RO / EN" aria-label={t("Schimbă limba", language)} onClick={onToggleLanguage}>
           <Languages size={17} />
           <span>{language === "ro" ? "EN" : "RO"}</span>
         </button>
-        <button className="top-icon" type="button" title={t("Deconectare", language)} onClick={onLogout}>
+        <button className="top-icon" type="button" title={t("Deconectare", language)} aria-label={t("Deconectare", language)} onClick={onLogout}>
           <LogOut size={18} />
         </button>
-        <div className="top-avatar" title={user?.email}>
+        <button
+          className={`top-avatar ${active === "profile" ? "active" : ""}`}
+          type="button"
+          title={`${t("Profil", language)} · ${user?.email || ""}`}
+          aria-label={t("Deschide profilul", language)}
+          aria-current={active === "profile" ? "page" : undefined}
+          onClick={() => onChange?.("profile")}
+        >
           {user?.avatarDataUrl ? <img src={user.avatarDataUrl} alt="" /> : initials}
-        </div>
+        </button>
       </div>
     </header>
   );

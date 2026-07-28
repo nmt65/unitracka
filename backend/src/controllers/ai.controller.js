@@ -5,6 +5,8 @@ import { adviseStudent } from "../services/studentAdvisor.js";
 import { writeAudit } from "../services/audit.js";
 import { hashText } from "../utils/crypto.js";
 import { env } from "../config/env.js";
+import { decodeDataUrl, storeDocumentFile } from "../services/fileStorage.js";
+import { scanDocumentFile } from "../services/fileScanner.js";
 
 function serializeDocument(document) {
   if (!document) return document;
@@ -113,6 +115,19 @@ export async function checkDocument(req, res, next) {
       return res.status(422).json({ message: "Atașează fișierul real înainte de verificare. Textul sau numele fișierului nu sunt suficiente pentru dosar." });
     }
 
+    const decodedFile = decodeDataUrl(req.body.fileDataUrl);
+    const scan = await scanDocumentFile({
+      buffer: decodedFile.buffer,
+      fileName: req.body.fileName,
+      mimeType: req.body.mimeType || decodedFile.mimeType
+    });
+    if (scan.clean === false) {
+      return res.status(422).json({ message: "Fișierul a fost respins de verificarea antivirus." });
+    }
+    if (env.fileScan.required && scan.clean !== true) {
+      return res.status(503).json({ message: "Verificarea antivirus este temporar indisponibilă. Fișierul nu a fost salvat." });
+    }
+
     const result = await classifyDocument(req.body);
     const document = await findOwnedDocument(req);
     const verificationStatus = result.accepted
@@ -121,11 +136,17 @@ export async function checkDocument(req, res, next) {
         ? "pending"
         : "rejected";
     if (document) {
+      const storedFile = await storeDocumentFile({
+        documentId: document.id,
+        fileName: req.body.fileName,
+        fileDataUrl: req.body.fileDataUrl,
+        mimeType: req.body.mimeType || decodedFile.mimeType
+      });
       await document.update({
         fileName: req.body.fileName,
         mimeType: req.body.mimeType || null,
         fileSize: req.body.fileSize || null,
-        fileDataUrl: req.body.fileDataUrl || null,
+        ...storedFile,
         fileSha256: hashText(`${req.body.fileName}:${req.body.text || ""}:${req.body.fileDataUrl || ""}`),
         extractedText: req.body.text || "",
         verificationStatus,
@@ -134,7 +155,10 @@ export async function checkDocument(req, res, next) {
         aiProvider: result.provider,
         aiLabel: result.label,
         aiConfidence: result.confidence,
-        aiExplanation: result.explanation
+        aiExplanation: result.explanation,
+        scanStatus: scan.status,
+        scanProvider: scan.provider,
+        scannedAt: scan.provider ? new Date() : null
       });
       await writeAudit(req, {
         action: "document.ai_check",

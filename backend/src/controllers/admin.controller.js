@@ -5,6 +5,7 @@ import { writeAudit } from "../services/audit.js";
 import { isSmtpConfigured, sendMailSafe } from "../services/mail.js";
 import { universityCatalog } from "../data/catalog.js";
 import { importCatalogToInstitutions } from "../services/catalogImport.js";
+import { integrationStatus } from "../services/officialIntegrations.js";
 import { defaultDocuments } from "../data/defaultDocuments.js";
 import { startupState } from "../startupState.js";
 
@@ -241,6 +242,10 @@ export function systemStatus(_req, res) {
       geminiRequestTimeoutMs: env.geminiApiKey ? env.geminiRequestTimeoutMs : null,
       aiDocumentDailyLimit: env.aiDocumentDailyLimit,
       aiAdvisorDailyLimit: env.aiAdvisorDailyLimit,
+      documentStorage: env.storage.enabled ? "supabase-private" : "database",
+      antivirusConfigured: Boolean(env.fileScan.url),
+      antivirusRequired: env.fileScan.required,
+      integrations: integrationStatus(),
       corsOrigins: env.corsOrigins,
       trustProxy: env.trustProxy,
       catalogCount: universityCatalog.length

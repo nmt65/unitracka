@@ -57,6 +57,7 @@ const en = {
   "Parola curentă": "Current password",
   "Parola nouă": "New password",
   "Schimbă parola": "Change password",
+  "Accept politica de confidențialitate și prelucrarea datelor necesare dosarului.": "I accept the privacy policy and the processing of data required for my application.",
   "Deconectare": "Sign out",
   "Zonă periculoasă": "Danger zone",
   "Șterge contul definitiv": "Delete account permanently",

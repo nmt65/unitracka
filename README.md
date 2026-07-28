@@ -171,15 +171,19 @@ plătită.
 ```bash
 npm run check
 npm run smoke
+npm run --silent jury:demo
+npm run test:e2e
+npm run gdpr:retention
 ```
 
-`npm run check` verifică sintaxa backend-ului și construiește frontend-ul. `npm run smoke` testează API-ul pornit: health, DB readiness, CSRF, autentificare și lista de universități.
+`npm run check` verifică sintaxa backend-ului și construiește frontend-ul. `npm run smoke` testează API-ul pornit, `jury:demo` rulează verificări read-only cu raport JSON, `test:e2e` verifică fluxul real pe desktop și mobil, iar `gdpr:retention` produce implicit doar raportul de retenție.
 
 Pentru PostgreSQL în producție:
 
 ```bash
 npm run db:sync --prefix backend
 npm run db:rls --prefix backend
+npm run db:rls:audit
 npm run production:check --prefix backend
 ```
 
@@ -238,6 +242,13 @@ Netlify frontend -> Backend Express -> PostgreSQL
 ```
 
 ## Documentație
+
+- [Dosar de prezentare pentru juriu](docs/prezentare-juriu.md)
+- [Discurs pentru juriu, ușor de învățat](docs/discurs-juriu-de-invatat.md)
+- [Hardening pentru producție: storage, antivirus, RLS și GDPR](docs/hardening-productie.md)
+- [Politica tehnică de retenție GDPR](docs/politica-retentie-gdpr.md)
+- [Rulare și testare pentru juriu](docs/rulare-demo-juriu.md)
+- [Biblioteci și servicii externe](docs/surse-externe.md)
 
 Documentația proiectului este în folderul `docs/`:
 

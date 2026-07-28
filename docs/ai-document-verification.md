@@ -14,9 +14,9 @@ In development functioneaza si fara chei externe, printr-un clasificator local d
 OPENAI_API_KEY=
 OPENAI_DOCUMENT_MODEL=gpt-4o-mini
 GEMINI_API_KEY=
-GEMINI_DOCUMENT_MODEL=gemini-3.5-flash
+GEMINI_DOCUMENT_MODEL=gemini-2.5-flash
 OPENAI_ADVISOR_MODEL=gpt-4o-mini
-GEMINI_ADVISOR_MODEL=gemini-3.5-flash
+GEMINI_ADVISOR_MODEL=gemini-2.5-flash
 ```
 
 Ordinea este:

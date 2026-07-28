@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Brain, Building2, CalendarDays, CheckCircle2, FileText, GraduationCap, Grid2X2, Heart, Menu, Send, Scale, ShieldCheck, UserCircle2, X } from "lucide-react";
+import { Brain, Building2, CalendarDays, CheckCircle2, ChevronRight, FileText, GraduationCap, Grid2X2, Heart, Menu, Send, Scale, ShieldCheck, UserCircle2, X } from "lucide-react";
 import { t } from "../i18n.js";
 
 const items = [
@@ -18,6 +18,42 @@ function ProfileGlyph({ user }) {
     );
   }
   return <UserCircle2 size={18} />;
+}
+
+function SidebarBrand() {
+  return (
+    <div className="sidebar-brand">
+      <span className="sidebar-brand-mark"><ShieldCheck size={24} /></span>
+      <span className="sidebar-brand-copy">
+        <strong>UniTrack</strong>
+        <small>Admissions OS</small>
+      </span>
+    </div>
+  );
+}
+
+function SidebarAccount({ active, onChange, user, language }) {
+  const roleLabel = user?.role === "admin"
+    ? t("Administrator", language)
+    : user?.role === "university"
+      ? t("Universitate", language)
+      : t("Student", language);
+
+  return (
+    <button
+      className={`sidebar-account ${active === "profile" ? "active" : ""}`}
+      type="button"
+      onClick={() => onChange("profile")}
+      aria-current={active === "profile" ? "page" : undefined}
+    >
+      <span className="sidebar-account-avatar"><ProfileGlyph user={user} /></span>
+      <span className="sidebar-account-copy">
+        <strong>{user?.name || t("Profil", language)}</strong>
+        <small>{roleLabel}</small>
+      </span>
+      <ChevronRight size={16} />
+    </button>
+  );
 }
 
 function MobileStudentNav({ active, onChange, counts, user, language }) {
@@ -77,19 +113,13 @@ export function Sidebar({ active, onChange, counts, user, language = "ro" }) {
     return (
       <>
         <aside className="sidebar">
-          <div className="sidebar-brand">
-            <ShieldCheck size={30} />
-            <strong>UniTrack</strong>
-          </div>
+          <SidebarBrand />
           <p className="sidebar-title">{t(user.role === "admin" ? "Administrare" : "Workspace admitere", language)}</p>
           <button className={`side-link ${active === "dashboard" ? "active" : ""}`} type="button" onClick={() => onChange("dashboard")}>
             <Building2 size={18} />
             {t(user.role === "admin" ? "Panou Admin" : "Aplicații primite", language)}
           </button>
-          <button className={`side-link ${active === "profile" ? "active" : ""}`} type="button" onClick={() => onChange("profile")}>
-            <ProfileGlyph user={user} />
-            {t(user.role === "admin" ? "Admin" : "Profil", language)}
-          </button>
+          <SidebarAccount active={active} onChange={onChange} user={user} language={language} />
         </aside>
         <nav className="mobile-nav mobile-nav-compact" aria-label={t("Navigare principală", language)}>
           <button className={active === "dashboard" ? "active" : ""} type="button" onClick={() => onChange("dashboard")}><Building2 size={19} /><span>{t(user.role === "admin" ? "Panou Admin" : "Aplicații", language)}</span></button>
@@ -102,10 +132,7 @@ export function Sidebar({ active, onChange, counts, user, language = "ro" }) {
   return (
     <>
       <aside className="sidebar">
-        <div className="sidebar-brand">
-          <ShieldCheck size={30} />
-          <strong>UniTrack</strong>
-        </div>
+        <SidebarBrand />
         <p className="sidebar-title">{t("Aplicațiile mele", language)}</p>
         <button className={`side-link ${active === "dashboard" ? "active" : ""}`} type="button" onClick={() => onChange("dashboard")}>
           <Grid2X2 size={18} />
@@ -146,10 +173,7 @@ export function Sidebar({ active, onChange, counts, user, language = "ro" }) {
             </button>
           );
         })}
-        <button className={`side-link ${active === "profile" ? "active" : ""}`} type="button" onClick={() => onChange("profile")}>
-          <ProfileGlyph user={user} />
-          {t("Profil", language)}
-        </button>
+        <SidebarAccount active={active} onChange={onChange} user={user} language={language} />
       </aside>
       <MobileStudentNav
         active={active}

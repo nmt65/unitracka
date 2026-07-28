@@ -6,7 +6,10 @@ export const registerSchema = z.object({
   name: z.string().min(2).max(120).optional(),
   role: z.enum(["student", "university"]).default("student"),
   cnp: z.string().optional(),
-  institutionId: z.string().uuid().optional()
+  institutionId: z.string().uuid().optional(),
+  acceptedPrivacyPolicy: z.literal(true, {
+    errorMap: () => ({ message: "Trebuie să accepți politica de confidențialitate." })
+  })
 });
 
 export const loginSchema = z.object({

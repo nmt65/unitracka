@@ -31,7 +31,8 @@ export function AuthPage({ onLogin, onRegister, onAuthenticated, checkingSession
     name: "",
     cnp: "",
     resetToken: "",
-    verificationCode: ""
+    verificationCode: "",
+    acceptedPrivacyPolicy: false
   });
   const [loading, setLoading] = useState(false);
   const [passkeyLoading, setPasskeyLoading] = useState(false);
@@ -114,7 +115,8 @@ export function AuthPage({ onLogin, onRegister, onAuthenticated, checkingSession
           password: form.password,
           name: form.name,
           role: "student",
-          cnp: form.cnp
+          cnp: form.cnp,
+          acceptedPrivacyPolicy: form.acceptedPrivacyPolicy
         });
         if (data?.verificationRequired) openVerification(data);
       }
@@ -316,6 +318,21 @@ export function AuthPage({ onLogin, onRegister, onAuthenticated, checkingSession
                   <small>{passwordLabel}</small>
                 </span>
               )}
+            </label>
+          )}
+          {mode === "register" && (
+            <label className="auth-consent">
+              <input
+                name="acceptedPrivacyPolicy"
+                type="checkbox"
+                checked={form.acceptedPrivacyPolicy}
+                onChange={(event) => setForm((current) => ({
+                  ...current,
+                  acceptedPrivacyPolicy: event.target.checked
+                }))}
+                required
+              />
+              <span>{t("Accept politica de confidențialitate și prelucrarea datelor necesare dosarului.", language)}</span>
             </label>
           )}
           {error && <p className="form-error">{t(error, language)}</p>}

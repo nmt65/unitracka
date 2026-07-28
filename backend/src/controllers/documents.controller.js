@@ -1,5 +1,6 @@
 import { AdmissionApplication, Document, University } from "../models/index.js";
 import { defaultDocuments } from "../data/defaultDocuments.js";
+import { deleteStoredDocumentFile, loadDocumentFile } from "../services/fileStorage.js";
 
 const studentDocumentTemplates = new Map(defaultDocuments.map((doc) => [normalizeName(doc.name), doc]));
 
@@ -157,16 +158,14 @@ export async function downloadDocumentFile(req, res, next) {
     if (!canAccessDocument(req.user, document)) {
       return res.status(404).json({ message: "Documentul nu a fost gasit." });
     }
-    if (!document.fileDataUrl) {
+    if (!document.fileDataUrl && !document.storagePath) {
       return res.status(404).json({ message: "Documentul nu are fișier atașat." });
     }
-    const match = String(document.fileDataUrl).match(/^data:([^;,]+);base64,(.+)$/);
-    if (!match) return res.status(422).json({ message: "Fișierul atașat nu poate fi citit." });
-
-    const buffer = Buffer.from(match[2], "base64");
-    res.setHeader("Content-Type", document.mimeType || match[1] || "application/octet-stream");
+    const file = await loadDocumentFile(document);
+    res.setHeader("Content-Type", document.mimeType || file.mimeType || "application/octet-stream");
     res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(document.fileName || `${document.name}.bin`)}"`);
-    return res.send(buffer);
+    res.setHeader("Cache-Control", "private, no-store");
+    return res.send(file.buffer);
   } catch (error) {
     next(error);
   }
@@ -189,6 +188,7 @@ export async function deleteDocument(req, res, next) {
         return res.status(403).json({ message: "Un document verificat rămâne în dosar pentru audit și nu poate fi șters de elev." });
       }
     }
+    await deleteStoredDocumentFile(document);
     await document.destroy();
     return res.status(204).send();
   } catch (error) {

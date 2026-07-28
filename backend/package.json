@@ -7,13 +7,16 @@
   "scripts": {
     "dev": "node --watch-path=src src/server.js",
     "start": "node src/server.js",
-    "check": "node --check src/server.js && node --check src/app.js && node --check src/models/index.js && node --check src/controllers/auth.controller.js && node --check src/controllers/passkeys.controller.js && node --check src/services/mail.js && node --check src/services/documentAi.js && node --check src/services/studentAdvisor.js && node --check src/scripts/smoke.js && node --check src/scripts/syncDb.js && node --check src/scripts/applyRls.js && node --check src/scripts/productionCheck.js",
+    "check": "node --check src/server.js && node --check src/app.js && node --check src/models/index.js && node --check src/controllers/auth.controller.js && node --check src/controllers/ai.controller.js && node --check src/controllers/documents.controller.js && node --check src/controllers/passkeys.controller.js && node --check src/services/mail.js && node --check src/services/documentAi.js && node --check src/services/fileStorage.js && node --check src/services/fileScanner.js && node --check src/services/officialIntegrations.js && node --check src/services/studentAdvisor.js && node --check src/scripts/smoke.js && node --check src/scripts/juryDemo.js && node --check src/scripts/gdprRetention.js && node --check src/scripts/rlsAudit.js && node --check src/scripts/syncDb.js && node --check src/scripts/applyRls.js && node --check src/scripts/productionCheck.js",
     "seed": "node src/scripts/seed.js",
     "db:sync": "node src/scripts/syncDb.js",
     "db:rls": "node src/scripts/applyRls.js",
     "production:check": "node src/scripts/productionCheck.js",
     "smoke": "node src/scripts/smoke.js",
-    "reminders": "node src/scripts/sendReminders.js"
+    "jury:demo": "node src/scripts/juryDemo.js",
+    "reminders": "node src/scripts/sendReminders.js",
+    "gdpr:retention": "node src/scripts/gdprRetention.js",
+    "db:rls:audit": "node src/scripts/rlsAudit.js"
   },
   "dependencies": {
     "@simplewebauthn/server": "^13.3.2",

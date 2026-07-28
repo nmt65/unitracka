@@ -73,7 +73,9 @@ export const User = sequelize.define(
     resetTokenHash: { type: DataTypes.STRING(128), allowNull: true },
     resetTokenExpiresAt: { type: DataTypes.DATE, allowNull: true },
     passwordChangedAt: { type: DataTypes.DATE, allowNull: true },
-    lastLoginAt: { type: DataTypes.DATE, allowNull: true }
+    lastLoginAt: { type: DataTypes.DATE, allowNull: true },
+    privacyConsentAt: { type: DataTypes.DATE, allowNull: true },
+    privacyPolicyVersion: { type: DataTypes.STRING(20), allowNull: true }
   },
   {
     defaultScope: { attributes: { exclude: ["passwordHash"] } },
@@ -248,7 +250,10 @@ export const Document = sequelize.define("Document", {
   aiProvider: { type: DataTypes.STRING(40), allowNull: true },
   aiLabel: { type: DataTypes.STRING(120), allowNull: true },
   aiConfidence: { type: DataTypes.FLOAT, allowNull: true },
-  aiExplanation: { type: DataTypes.TEXT, allowNull: true }
+  aiExplanation: { type: DataTypes.TEXT, allowNull: true },
+  scanStatus: { type: DataTypes.STRING(24), allowNull: true },
+  scanProvider: { type: DataTypes.STRING(60), allowNull: true },
+  scannedAt: { type: DataTypes.DATE, allowNull: true }
 });
 
 export const AiUsage = sequelize.define("AiUsage", {
@@ -392,7 +397,9 @@ export async function initDb() {
     emailVerificationAttempts: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0 },
     passkeyChallenge: { type: DataTypes.TEXT, allowNull: true },
     passkeyChallengeType: { type: DataTypes.STRING(24), allowNull: true },
-    passkeyChallengeExpiresAt: { type: DataTypes.DATE, allowNull: true }
+    passkeyChallengeExpiresAt: { type: DataTypes.DATE, allowNull: true },
+    privacyConsentAt: { type: DataTypes.DATE, allowNull: true },
+    privacyPolicyVersion: { type: DataTypes.STRING(20), allowNull: true }
   });
   if (usersBeforeAuthUpgrade && !hadEmailVerification) {
     await sequelize.query(
@@ -418,7 +425,10 @@ export async function initDb() {
     aiProvider: { type: DataTypes.STRING(40), allowNull: true },
     aiLabel: { type: DataTypes.STRING(120), allowNull: true },
     aiConfidence: { type: DataTypes.FLOAT, allowNull: true },
-    aiExplanation: { type: DataTypes.TEXT, allowNull: true }
+    aiExplanation: { type: DataTypes.TEXT, allowNull: true },
+    scanStatus: { type: DataTypes.STRING(24), allowNull: true },
+    scanProvider: { type: DataTypes.STRING(60), allowNull: true },
+    scannedAt: { type: DataTypes.DATE, allowNull: true }
   });
   const applicationColumns = await queryInterface.describeTable("AdmissionApplications").catch(() => null);
   if (applicationColumns && !applicationColumns.AdmissionProgramId) {
