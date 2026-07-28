@@ -489,6 +489,33 @@ export const staticApi = {
     localStorage.setItem(SESSION_KEY, user.id);
     return { user: publicUser(user, state) };
   },
+  async verifyEmail() {
+    const state = readState();
+    const user = currentUser(state);
+    if (!user) throw new Error("Verificarea emailului este disponibilă în modul local cu server.");
+    return { user: publicUser(user, state) };
+  },
+  async resendEmailVerification() {
+    return { message: "Emailul este considerat verificat în modul static.", mailSent: false };
+  },
+  async passkeyAuthenticationOptions() {
+    throw new Error("Passkey-urile necesită modul local cu server sau aplicația live.");
+  },
+  async passkeyAuthenticationVerification() {
+    throw new Error("Passkey-urile necesită modul local cu server sau aplicația live.");
+  },
+  async passkeys() {
+    return { supported: false, passkeys: [] };
+  },
+  async passkeyRegistrationOptions() {
+    throw new Error("Passkey-urile necesită modul local cu server sau aplicația live.");
+  },
+  async passkeyRegistrationVerification() {
+    throw new Error("Passkey-urile necesită modul local cu server sau aplicația live.");
+  },
+  async deletePasskey() {
+    return null;
+  },
   async checkCnp(body) {
     const state = readState();
     const cnp = validateStaticCnp(body.cnp);

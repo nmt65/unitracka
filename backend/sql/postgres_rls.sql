@@ -45,6 +45,33 @@ ALTER TABLE "Documents" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "Notifications" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "AuditLogs" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "AiUsages" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Passkeys" ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS passkeys_owner_read ON "Passkeys";
+DROP POLICY IF EXISTS passkeys_owner_insert ON "Passkeys";
+DROP POLICY IF EXISTS passkeys_owner_update ON "Passkeys";
+DROP POLICY IF EXISTS passkeys_owner_delete ON "Passkeys";
+
+CREATE POLICY passkeys_owner_read
+  ON "Passkeys"
+  FOR SELECT
+  USING (app.current_user_role() = 'admin' OR "UserId" = app.current_user_id());
+
+CREATE POLICY passkeys_owner_insert
+  ON "Passkeys"
+  FOR INSERT
+  WITH CHECK (app.current_user_role() = 'admin' OR "UserId" = app.current_user_id());
+
+CREATE POLICY passkeys_owner_update
+  ON "Passkeys"
+  FOR UPDATE
+  USING (app.current_user_role() = 'admin' OR "UserId" = app.current_user_id())
+  WITH CHECK (app.current_user_role() = 'admin' OR "UserId" = app.current_user_id());
+
+CREATE POLICY passkeys_owner_delete
+  ON "Passkeys"
+  FOR DELETE
+  USING (app.current_user_role() = 'admin' OR "UserId" = app.current_user_id());
 
 -- Nu folosim FORCE ROW LEVEL SECURITY implicit, ca backend-ul server-side
 -- conectat cu rolul de owner/service sa poata aplica autorizarea din API.

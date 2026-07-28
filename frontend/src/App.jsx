@@ -34,7 +34,7 @@ export function App() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [toast, setToast] = useState("");
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem("unitrack-theme") === "dark");
   const [language, setLanguage] = useState(() => localStorage.getItem("unitrack-language") || "ro");
   const [notifications, setNotifications] = useState([]);
   const [serverNotice, setServerNotice] = useState("");
@@ -44,6 +44,7 @@ export function App() {
 
   useEffect(() => {
     document.body.classList.toggle("dark", darkMode);
+    localStorage.setItem("unitrack-theme", darkMode ? "dark" : "light");
   }, [darkMode]);
 
   useEffect(() => {
@@ -233,6 +234,7 @@ export function App() {
       <AuthPage
         onLogin={login}
         onRegister={register}
+        onAuthenticated={setUser}
         checkingSession={checking}
         darkMode={darkMode}
         onToggleTheme={() => setDarkMode((value) => !value)}

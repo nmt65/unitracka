@@ -63,6 +63,13 @@ export const User = sequelize.define(
     emailNotifications: { type: DataTypes.BOOLEAN, defaultValue: true },
     notifyBeforeDays: { type: DataTypes.INTEGER, defaultValue: 14 },
     publicShareId: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4 },
+    emailVerifiedAt: { type: DataTypes.DATE, allowNull: true },
+    emailVerificationCodeHash: { type: DataTypes.STRING(128), allowNull: true },
+    emailVerificationExpiresAt: { type: DataTypes.DATE, allowNull: true },
+    emailVerificationAttempts: { type: DataTypes.INTEGER, defaultValue: 0 },
+    passkeyChallenge: { type: DataTypes.TEXT, allowNull: true },
+    passkeyChallengeType: { type: DataTypes.STRING(24), allowNull: true },
+    passkeyChallengeExpiresAt: { type: DataTypes.DATE, allowNull: true },
     resetTokenHash: { type: DataTypes.STRING(128), allowNull: true },
     resetTokenExpiresAt: { type: DataTypes.DATE, allowNull: true },
     passwordChangedAt: { type: DataTypes.DATE, allowNull: true },
@@ -72,6 +79,41 @@ export const User = sequelize.define(
     defaultScope: { attributes: { exclude: ["passwordHash"] } },
     scopes: { withPassword: { attributes: {} } },
     indexes: [{ name: "users_cnp_hash_unique", unique: true, fields: ["cnpHash"] }]
+  }
+);
+
+export const Passkey = sequelize.define(
+  "Passkey",
+  {
+    id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+    credentialId: { type: DataTypes.TEXT, allowNull: false, unique: true },
+    publicKey: { type: DataTypes.TEXT, allowNull: false },
+    webauthnUserId: { type: DataTypes.TEXT, allowNull: false },
+    counter: { type: DataTypes.BIGINT, allowNull: false, defaultValue: 0 },
+    deviceType: { type: DataTypes.STRING(32), allowNull: true },
+    backedUp: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    transports: {
+      type: DataTypes.TEXT,
+      defaultValue: "[]",
+      get() {
+        try {
+          return JSON.parse(this.getDataValue("transports") || "[]");
+        } catch {
+          return [];
+        }
+      },
+      set(value) {
+        this.setDataValue("transports", JSON.stringify(Array.isArray(value) ? value : []));
+      }
+    },
+    name: { type: DataTypes.STRING(100), allowNull: false, defaultValue: "Passkey personal" },
+    lastUsedAt: { type: DataTypes.DATE, allowNull: true }
+  },
+  {
+    indexes: [
+      { name: "passkeys_credential_id_unique", unique: true, fields: ["credentialId"] },
+      { name: "passkeys_user_id_idx", fields: ["UserId"] }
+    ]
   }
 );
 
@@ -293,6 +335,8 @@ User.hasMany(AuditLog, { foreignKey: { name: "ActorId", allowNull: true }, onDel
 AuditLog.belongsTo(User, { as: "Actor", foreignKey: { name: "ActorId", allowNull: true } });
 User.hasMany(AiUsage, { foreignKey: { allowNull: true }, onDelete: "SET NULL" });
 AiUsage.belongsTo(User);
+User.hasMany(Passkey, { foreignKey: { allowNull: false }, onDelete: "CASCADE" });
+Passkey.belongsTo(User);
 AdmissionApplication.hasMany(AiUsage, { foreignKey: { allowNull: true }, onDelete: "SET NULL" });
 AiUsage.belongsTo(AdmissionApplication);
 Document.hasMany(AiUsage, { foreignKey: { allowNull: true }, onDelete: "SET NULL" });
@@ -303,6 +347,11 @@ export async function initDb() {
   const syncOptions = env.dbDialect === "sqlite" ? {} : { alter: env.nodeEnv !== "production" };
   await sequelize.sync(syncOptions);
   const queryInterface = sequelize.getQueryInterface();
+  if (env.dbDialect === "postgres") {
+    // Passkeys are handled only by the authenticated API. Keep the Supabase
+    // REST surface deny-by-default even before the full migration is applied.
+    await sequelize.query('ALTER TABLE "Passkeys" ENABLE ROW LEVEL SECURITY');
+  }
   async function ensureColumns(tableName, definitions) {
     const columns = await queryInterface.describeTable(tableName).catch(() => null);
     if (!columns) return null;
@@ -319,6 +368,8 @@ export async function initDb() {
 
   // Production uses migrations rather than `sync({ alter: true })`. These
   // additions keep an existing Supabase project compatible after an update.
+  const usersBeforeAuthUpgrade = await queryInterface.describeTable("Users").catch(() => null);
+  const hadEmailVerification = Boolean(usersBeforeAuthUpgrade?.emailVerifiedAt);
   await ensureColumns("Users", {
     name: { type: DataTypes.STRING(120), allowNull: true },
     role: { type: DataTypes.ENUM("student", "university", "admin"), allowNull: true, defaultValue: "student" },
@@ -334,8 +385,20 @@ export async function initDb() {
     languageResults: { type: DataTypes.TEXT, allowNull: true },
     emailNotifications: { type: DataTypes.BOOLEAN, allowNull: true },
     notifyBeforeDays: { type: DataTypes.INTEGER, allowNull: true },
-    publicShareId: { type: DataTypes.UUID, allowNull: true }
+    publicShareId: { type: DataTypes.UUID, allowNull: true },
+    emailVerifiedAt: { type: DataTypes.DATE, allowNull: true },
+    emailVerificationCodeHash: { type: DataTypes.STRING(128), allowNull: true },
+    emailVerificationExpiresAt: { type: DataTypes.DATE, allowNull: true },
+    emailVerificationAttempts: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0 },
+    passkeyChallenge: { type: DataTypes.TEXT, allowNull: true },
+    passkeyChallengeType: { type: DataTypes.STRING(24), allowNull: true },
+    passkeyChallengeExpiresAt: { type: DataTypes.DATE, allowNull: true }
   });
+  if (usersBeforeAuthUpgrade && !hadEmailVerification) {
+    await sequelize.query(
+      `UPDATE "Users" SET "emailVerifiedAt" = COALESCE("createdAt", CURRENT_TIMESTAMP) WHERE "emailVerifiedAt" IS NULL`
+    ).catch(() => {});
+  }
   const userIndexes = await queryInterface.showIndex("Users").catch(() => []);
   const hasCnpIndex = userIndexes.some((index) => index.name === "users_cnp_hash_unique");
   if (!hasCnpIndex) {

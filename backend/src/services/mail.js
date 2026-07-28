@@ -18,6 +18,15 @@ function mailFrom() {
   return env.smtp.from;
 }
 
+function escapeHtml(value) {
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
 function getTransporter() {
   if (!transporter) {
     const isGmail = isGmailSmtp();
@@ -65,6 +74,7 @@ export async function sendMailSafe(message) {
 export async function sendPasswordResetEmail(user, token) {
   const resetUrl = `${env.appUrl.replace(/\/$/, "")}/?reset_token=${encodeURIComponent(token)}`;
   const safeName = user.name || "utilizator UniTrack";
+  const safeHtmlName = escapeHtml(safeName);
   return sendMailSafe({
     to: user.email,
     subject: "Resetare parolă UniTrack",
@@ -80,12 +90,40 @@ export async function sendPasswordResetEmail(user, token) {
     html: [
       "<div style=\"font-family:Arial,sans-serif;line-height:1.55;color:#111827;max-width:560px\">",
       `<h2 style=\"margin:0 0 12px\">Resetare parolă UniTrack</h2>`,
-      `<p>Salut, ${safeName},</p>`,
+      `<p>Salut, ${safeHtmlName},</p>`,
       "<p>Ai cerut resetarea parolei pentru contul tău. Apasă butonul de mai jos și setează o parolă nouă.</p>",
       `<p><a href=\"${resetUrl}\" style=\"display:inline-block;background:#6354d9;color:#fff;text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:700\">Resetează parola</a></p>`,
       `<p style=\"font-size:13px;color:#4b5563\">Linkul expiră în ${env.resetTokenMinutes} minute. Dacă butonul nu merge, deschide manual: <br><span style=\"word-break:break-all\">${resetUrl}</span></p>`,
       "<p style=\"font-size:13px;color:#4b5563\">Dacă nu ai cerut resetarea, poți ignora acest mesaj.</p>",
       "</div>"
+    ].join("")
+  });
+}
+
+export async function sendEmailVerificationCode(user, code) {
+  const safeName = user.name || "utilizator UniTrack";
+  const safeHtmlName = escapeHtml(safeName);
+  return sendMailSafe({
+    to: user.email,
+    subject: `${code} este codul tău UniTrack`,
+    text: [
+      `Salut, ${safeName},`,
+      "",
+      `Codul tău de verificare este: ${code}`,
+      "",
+      `Codul expiră în ${env.emailVerificationMinutes} minute.`,
+      "Dacă nu ai creat sau accesat acest cont, ignoră mesajul."
+    ].join("\n"),
+    html: [
+      "<div style=\"font-family:Arial,sans-serif;line-height:1.55;color:#102024;max-width:560px;margin:auto\">",
+      "<div style=\"border:1px solid #cfe0df;border-radius:12px;padding:28px;background:#ffffff\">",
+      "<p style=\"margin:0 0 8px;color:#0f8f84;font-weight:800\">UNITRACK SECURITY</p>",
+      "<h2 style=\"margin:0 0 14px\">Verifică adresa de email</h2>",
+      `<p>Salut, ${safeHtmlName}. Introdu codul de mai jos în UniTrack:</p>`,
+      `<div style=\"margin:22px 0;padding:16px;border-radius:10px;background:#eaf8f6;color:#08786f;font-size:30px;font-weight:900;letter-spacing:8px;text-align:center\">${code}</div>`,
+      `<p style=\"font-size:13px;color:#506a6f\">Codul expiră în ${env.emailVerificationMinutes} minute și poate fi folosit o singură dată.</p>`,
+      "<p style=\"font-size:13px;color:#506a6f\">Dacă nu ai creat sau accesat acest cont, poți ignora mesajul.</p>",
+      "</div></div>"
     ].join("")
   });
 }

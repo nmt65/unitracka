@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Eye, EyeOff, GraduationCap, Languages, Lock, Mail, Moon, RotateCcw, ShieldCheck, Sun, UserPlus } from "lucide-react";
+import { browserSupportsWebAuthn, startAuthentication } from "@simplewebauthn/browser";
+import { CheckCircle2, Eye, EyeOff, Fingerprint, GraduationCap, Languages, Lock, Mail, Moon, RotateCcw, ShieldCheck, Sun, UserPlus } from "lucide-react";
 import { api } from "../services/api.js";
 import { t } from "../i18n.js";
 
@@ -21,7 +22,7 @@ function passwordScore(password) {
   ].filter(Boolean).length;
 }
 
-export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMode = true, onToggleTheme, language = "ro", onToggleLanguage }) {
+export function AuthPage({ onLogin, onRegister, onAuthenticated, checkingSession = false, darkMode = false, onToggleTheme, language = "ro", onToggleLanguage }) {
   const [mode, setMode] = useState("login");
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({
@@ -29,9 +30,11 @@ export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMod
     password: "",
     name: "",
     cnp: "",
-    resetToken: ""
+    resetToken: "",
+    verificationCode: ""
   });
   const [loading, setLoading] = useState(false);
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [cnpStatus, setCnpStatus] = useState(null);
@@ -65,6 +68,7 @@ export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMod
   const strength = useMemo(() => passwordScore(form.password), [form.password]);
   const strengthLabel = useMemo(() => t(["Slabă", "Slabă", "Medie", "Bună", "Puternică", "Foarte puternică"][strength], language), [language, strength]);
   const passwordLabel = `${t("Parolă", language)} ${strengthLabel.toLowerCase()}`;
+  const passkeySupported = typeof window !== "undefined" && browserSupportsWebAuthn();
 
   function updateField(event) {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
@@ -77,21 +81,42 @@ export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMod
     setForm((current) => ({ ...current, email: account.email, password: account.password }));
   }
 
+  function openVerification(data) {
+    setMode("verify");
+    setForm((current) => ({
+      ...current,
+      email: data.email || current.email,
+      password: "",
+      verificationCode: data.verificationCode || ""
+    }));
+    if (data.verificationCode) {
+      setNotice(`Cod local: ${data.verificationCode}`);
+    } else if (data.mailSent) {
+      setNotice("Ți-am trimis un cod de 6 cifre pe email.");
+    } else {
+      setError(data.mailReason || "Codul a fost generat, dar emailul nu a putut fi trimis.");
+    }
+  }
+
   async function submit(event) {
     event.preventDefault();
     setLoading(true);
     setError("");
     setNotice("");
     try {
-      if (mode === "login") await onLogin({ email: form.email, password: form.password });
+      if (mode === "login") {
+        const data = await onLogin({ email: form.email, password: form.password });
+        if (data?.verificationRequired) openVerification(data);
+      }
       if (mode === "register") {
-        await onRegister({
+        const data = await onRegister({
           email: form.email,
           password: form.password,
           name: form.name,
           role: "student",
           cnp: form.cnp
         });
+        if (data?.verificationRequired) openVerification(data);
       }
       if (mode === "forgot") {
         const data = await api.forgotPassword({ email: form.email });
@@ -113,12 +138,67 @@ export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMod
         window.history.replaceState({}, "", window.location.pathname);
         setNotice(t("Parola a fost resetată. Te poți autentifica.", language));
       }
+      if (mode === "verify") {
+        const data = await api.verifyEmail({ email: form.email, code: form.verificationCode });
+        onAuthenticated(data.user);
+      }
     } catch (err) {
       setError(t(err.message, language));
     } finally {
       setLoading(false);
     }
   }
+
+  async function resendVerification() {
+    setLoading(true);
+    setError("");
+    setNotice("");
+    try {
+      const data = await api.resendEmailVerification({ email: form.email });
+      if (data.verificationCode) {
+        setForm((current) => ({ ...current, verificationCode: data.verificationCode }));
+        setNotice(`Cod local: ${data.verificationCode}`);
+      } else if (data.mailSent === false && data.mailReason) {
+        setError(data.mailReason);
+      } else {
+        setNotice(data.message);
+      }
+    } catch (err) {
+      setError(t(err.message, language));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loginWithPasskey() {
+    if (!form.email) {
+      setError("Introdu mai întâi adresa de email.");
+      return;
+    }
+    setPasskeyLoading(true);
+    setError("");
+    setNotice("");
+    try {
+      const optionsJSON = await api.passkeyAuthenticationOptions({ email: form.email });
+      const response = await startAuthentication({ optionsJSON });
+      const data = await api.passkeyAuthenticationVerification({ email: form.email, response });
+      onAuthenticated(data.user);
+    } catch (err) {
+      if (err?.name !== "NotAllowedError") setError(t(err.message, language));
+    } finally {
+      setPasskeyLoading(false);
+    }
+  }
+
+  const authTitle = mode === "login"
+    ? "Intră în cont"
+    : mode === "register"
+      ? "Creează cont"
+      : mode === "forgot"
+        ? "Recuperare parolă"
+        : mode === "verify"
+          ? "Verifică emailul"
+          : "Resetare parolă";
 
   return (
     <main className="auth-page">
@@ -150,13 +230,16 @@ export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMod
         <form className="auth-card" onSubmit={submit}>
           <div>
             <p className="eyebrow">{t("Acces securizat", language)}</p>
-            <h2>{t(mode === "login" ? "Intră în cont" : mode === "register" ? "Creează cont" : mode === "forgot" ? "Recuperare parolă" : "Resetare parolă", language)}</h2>
+            <h2>{t(authTitle, language)}</h2>
             {checkingSession && <p className="auth-meta">{t("Inițializăm conexiunea securizată în fundal.", language)}</p>}
+            {mode === "verify" && <p className="auth-meta">Am trimis codul către <strong>{form.email}</strong>. Verificarea este necesară o singură dată.</p>}
           </div>
-          <div className="segmented">
-            <button type="button" className={mode === "login" ? "active" : ""} onClick={() => setMode("login")}>Login</button>
-            <button type="button" className={mode === "register" ? "active" : ""} onClick={() => setMode("register")}>{t("Cont nou", language)}</button>
-          </div>
+          {(mode === "login" || mode === "register") && (
+            <div className="segmented">
+              <button type="button" className={mode === "login" ? "active" : ""} onClick={() => setMode("login")}>Login</button>
+              <button type="button" className={mode === "register" ? "active" : ""} onClick={() => setMode("register")}>{t("Cont nou", language)}</button>
+            </div>
+          )}
           {mode === "register" && (
             <>
               <p className="field-note ok">{t("Conturile de universitate sunt create de admin după aprobarea instituției.", language)}</p>
@@ -171,17 +254,39 @@ export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMod
               </label>
             </>
           )}
-          <label>
-            Email
-            <span className="input-icon"><Mail size={17} /><input name="email" type="email" autoComplete="email" value={form.email} onChange={updateField} required /></span>
-          </label>
+          {["login", "register", "forgot"].includes(mode) && (
+            <label>
+              Email
+              <span className="input-icon"><Mail size={17} /><input name="email" type="email" autoComplete={mode === "login" ? "username webauthn" : "email"} value={form.email} onChange={updateField} required /></span>
+            </label>
+          )}
+          {mode === "verify" && (
+            <label>
+              Cod de verificare
+              <span className="input-icon verification-code-input">
+                <ShieldCheck size={17} />
+                <input
+                  name="verificationCode"
+                  value={form.verificationCode}
+                  onChange={updateField}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  pattern="[0-9]{6}"
+                  maxLength="6"
+                  placeholder="000000"
+                  autoFocus
+                  required
+                />
+              </span>
+            </label>
+          )}
           {mode === "reset" && (
             <label>
               {t("Cod resetare", language)}
               <span className="input-icon"><RotateCcw size={17} /><input name="resetToken" value={form.resetToken} onChange={updateField} required /></span>
             </label>
           )}
-          {mode !== "forgot" && (
+          {mode !== "forgot" && mode !== "verify" && (
             <label>
               {t("Parola", language)}
               <span className="input-icon with-action">
@@ -216,10 +321,28 @@ export function AuthPage({ onLogin, onRegister, checkingSession = false, darkMod
           {error && <p className="form-error">{t(error, language)}</p>}
           {notice && <p className="success-note">{t(notice, language)}</p>}
           <button className="primary-button full" type="submit" disabled={loading}>
-            {loading ? t("Se verifică...", language) : t(mode === "login" ? "Intră în cont" : mode === "register" ? "Creează cont" : mode === "forgot" ? "Trimite resetare" : "Resetează parola", language)}
+            {loading
+              ? t("Se verifică...", language)
+              : t(mode === "login"
+                ? "Intră în cont"
+                : mode === "register"
+                  ? "Creează cont"
+                  : mode === "forgot"
+                    ? "Trimite resetare"
+                    : mode === "verify"
+                      ? "Confirmă codul"
+                      : "Resetează parola", language)}
           </button>
+          {mode === "login" && passkeySupported && (
+            <button className="passkey-button full" type="button" onClick={loginWithPasskey} disabled={passkeyLoading}>
+              <Fingerprint size={19} />
+              {passkeyLoading ? "Se deschide passkey..." : "Intră cu passkey"}
+            </button>
+          )}
           <div className="auth-links">
-            <button type="button" onClick={() => setMode("forgot")}>{t("Parolă pierdută", language)}</button>
+            {mode === "login" && <button type="button" onClick={() => setMode("forgot")}>{t("Parolă pierdută", language)}</button>}
+            {mode === "verify" && <button type="button" onClick={resendVerification} disabled={loading}>Retrimite codul</button>}
+            {!["login", "register"].includes(mode) && <button type="button" onClick={() => setMode("login")}>Înapoi la login</button>}
           </div>
           {showDemoAccounts && (
             <>

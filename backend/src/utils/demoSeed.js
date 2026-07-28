@@ -199,7 +199,8 @@ export async function seedDemoData() {
       languageResults: "IELTS 7.5",
       interests: ["Informatică", "Inteligență Artificială", "Machine Learning"],
       emailNotifications: true,
-      notifyBeforeDays: 14
+      notifyBeforeDays: 14,
+      emailVerifiedAt: new Date()
     }
   });
 
@@ -210,7 +211,8 @@ export async function seedDemoData() {
     cnpLast4: user.cnpLast4 || "1141",
     bacAverage: 9.75,
     languageResults: "IELTS 7.5",
-    interests: ["Informatică", "Inteligență Artificială", "Machine Learning"]
+    interests: ["Informatică", "Inteligență Artificială", "Machine Learning"],
+    emailVerifiedAt: user.emailVerifiedAt || new Date()
   });
 
   for (const item of institutions) {
@@ -234,10 +236,16 @@ export async function seedDemoData() {
       name: "Admitere Universitatea din București",
       role: "university",
       InstitutionId: ubInstitution?.id,
-      passwordHash: await bcrypt.hash(env.demoPassword, 12)
+      passwordHash: await bcrypt.hash(env.demoPassword, 12),
+      emailVerifiedAt: new Date()
     }
   });
-  await universityUser.update({ role: "university", InstitutionId: ubInstitution?.id, name: "Admitere Universitatea din București" });
+  await universityUser.update({
+    role: "university",
+    InstitutionId: ubInstitution?.id,
+    name: "Admitere Universitatea din București",
+    emailVerifiedAt: universityUser.emailVerifiedAt || new Date()
+  });
 
   let createdUniversities = 0;
   for (const item of universities) {

@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "node --watch-path=src src/server.js",
     "start": "node src/server.js",
-    "check": "node --check src/server.js && node --check src/app.js && node --check src/models/index.js && node --check src/services/documentAi.js && node --check src/services/studentAdvisor.js && node --check src/scripts/smoke.js && node --check src/scripts/syncDb.js && node --check src/scripts/applyRls.js && node --check src/scripts/productionCheck.js",
+    "check": "node --check src/server.js && node --check src/app.js && node --check src/models/index.js && node --check src/controllers/auth.controller.js && node --check src/controllers/passkeys.controller.js && node --check src/services/mail.js && node --check src/services/documentAi.js && node --check src/services/studentAdvisor.js && node --check src/scripts/smoke.js && node --check src/scripts/syncDb.js && node --check src/scripts/applyRls.js && node --check src/scripts/productionCheck.js",
     "seed": "node src/scripts/seed.js",
     "db:sync": "node src/scripts/syncDb.js",
     "db:rls": "node src/scripts/applyRls.js",
@@ -16,6 +16,7 @@
     "reminders": "node src/scripts/sendReminders.js"
   },
   "dependencies": {
+    "@simplewebauthn/server": "^13.3.2",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -25,7 +26,7 @@
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.12.0",
-    "nodemailer": "^8.0.7",
+    "nodemailer": "^9.0.3",
     "pdfkit": "^0.16.0",
     "pg": "^8.13.1",
     "sequelize": "^6.37.5",

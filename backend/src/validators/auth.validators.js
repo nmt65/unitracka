@@ -26,3 +26,24 @@ export const resetPasswordSchema = z.object({
 export const cnpCheckSchema = z.object({
   cnp: z.string().min(13).max(32)
 });
+
+export const verifyEmailSchema = z.object({
+  email: z.string().email().max(180).transform((value) => value.toLowerCase()),
+  code: z.string().regex(/^\d{6}$/, "Codul trebuie să conțină 6 cifre.")
+});
+
+export const resendEmailVerificationSchema = z.object({
+  email: z.string().email().max(180).transform((value) => value.toLowerCase())
+});
+
+export const passkeyEmailSchema = resendEmailVerificationSchema;
+
+export const passkeyRegistrationSchema = z.object({
+  name: z.string().min(2).max(100).optional(),
+  response: z.record(z.any())
+});
+
+export const passkeyAuthenticationSchema = z.object({
+  email: z.string().email().max(180).transform((value) => value.toLowerCase()),
+  response: z.record(z.any())
+});

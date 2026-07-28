@@ -3,11 +3,29 @@ import { Institution, User } from "../models/index.js";
 import { authCookieName, setAuthCookie, signUserToken } from "../middleware/auth.js";
 import { env } from "../config/env.js";
 import { hashCnp, validateCnp } from "../utils/cnp.js";
-import { randomToken, sha256 } from "../utils/crypto.js";
+import { randomNumericCode, randomToken, sha256 } from "../utils/crypto.js";
 import { writeAudit } from "../services/audit.js";
-import { isSmtpConfigured, sendPasswordResetEmail } from "../services/mail.js";
+import { isSmtpConfigured, sendEmailVerificationCode, sendPasswordResetEmail } from "../services/mail.js";
 
-function publicUser(user) {
+function verificationCodeHash(email, code) {
+  return sha256(`${String(email).toLowerCase()}:${code}:${env.jwtSecret}`);
+}
+
+async function issueEmailVerification(user) {
+  const code = randomNumericCode(6);
+  await user.update({
+    emailVerificationCodeHash: verificationCodeHash(user.email, code),
+    emailVerificationExpiresAt: new Date(Date.now() + env.emailVerificationMinutes * 60 * 1000),
+    emailVerificationAttempts: 0
+  });
+  const delivery = await sendEmailVerificationCode(user, code);
+  return {
+    delivery,
+    developmentCode: env.nodeEnv === "production" ? undefined : code
+  };
+}
+
+export function publicUser(user) {
   return {
     id: user.id,
     email: user.email,
@@ -27,7 +45,8 @@ function publicUser(user) {
     interests: user.interests,
     emailNotifications: user.emailNotifications,
     notifyBeforeDays: user.notifyBeforeDays,
-    publicShareId: user.publicShareId
+    publicShareId: user.publicShareId,
+    emailVerified: user.role === "admin" || Boolean(user.emailVerifiedAt)
   };
 }
 
@@ -62,10 +81,15 @@ export async function register(req, res, next) {
     const passwordHash = await bcrypt.hash(req.body.password, 12);
     const user = await User.create({ ...payload, passwordHash });
     const created = await User.findByPk(user.id, { include: [Institution] });
-    const token = signUserToken(created);
-    setAuthCookie(res, token);
+    const verification = await issueEmailVerification(created);
     await writeAudit(req, { action: "auth.register", entityType: "User", entityId: created.id, metadata: { actorId: created.id, email: created.email, role: created.role } });
-    return res.status(201).json({ user: publicUser(created) });
+    return res.status(201).json({
+      verificationRequired: true,
+      email: created.email,
+      mailSent: verification.delivery.sent,
+      mailReason: verification.delivery.sent ? undefined : verification.delivery.reason,
+      verificationCode: verification.developmentCode
+    });
   } catch (error) {
     next(error);
   }
@@ -81,6 +105,23 @@ export async function login(req, res, next) {
 
     const passwordOk = await bcrypt.compare(req.body.password, user.passwordHash).catch(() => false);
     if (!passwordOk) return res.status(401).json({ message: "Email sau parola incorecta." });
+
+    if (user.role !== "admin" && !user.emailVerifiedAt) {
+      const verification = await issueEmailVerification(user);
+      await writeAudit(req, {
+        action: "auth.email_verification_requested",
+        entityType: "User",
+        entityId: user.id,
+        metadata: { email: user.email, mailSent: verification.delivery.sent }
+      });
+      return res.status(202).json({
+        verificationRequired: true,
+        email: user.email,
+        mailSent: verification.delivery.sent,
+        mailReason: verification.delivery.sent ? undefined : verification.delivery.reason,
+        verificationCode: verification.developmentCode
+      });
+    }
 
     const token = signUserToken(user);
     setAuthCookie(res, token);
@@ -171,6 +212,77 @@ export async function checkCnp(req, res, next) {
     if (!result.valid) return res.status(422).json({ valid: false, message: result.reason });
     const exists = await User.unscoped().findOne({ where: { cnpHash: hashCnp(result.normalized) } });
     return res.json({ valid: true, available: !exists, last4: result.last4 });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function verifyEmail(req, res, next) {
+  try {
+    const user = await User.unscoped().findOne({ where: { email: req.body.email } });
+    if (!user || user.role === "admin") {
+      return res.status(422).json({ message: "Codul este invalid sau a expirat." });
+    }
+    if (user.emailVerifiedAt) {
+      const withInstitution = await User.findByPk(user.id, { include: [Institution] });
+      const token = signUserToken(withInstitution);
+      setAuthCookie(res, token);
+      return res.json({ user: publicUser(withInstitution), alreadyVerified: true });
+    }
+    if (!user.emailVerificationExpiresAt || new Date(user.emailVerificationExpiresAt) < new Date()) {
+      return res.status(422).json({ message: "Codul a expirat. Solicită un cod nou." });
+    }
+    if (Number(user.emailVerificationAttempts || 0) >= 5) {
+      return res.status(429).json({ message: "Prea multe coduri greșite. Solicită un cod nou." });
+    }
+    const valid = user.emailVerificationCodeHash === verificationCodeHash(user.email, req.body.code);
+    if (!valid) {
+      await user.increment("emailVerificationAttempts");
+      return res.status(422).json({ message: "Codul introdus nu este corect." });
+    }
+
+    await user.update({
+      emailVerifiedAt: new Date(),
+      emailVerificationCodeHash: null,
+      emailVerificationExpiresAt: null,
+      emailVerificationAttempts: 0
+    });
+    const verified = await User.findByPk(user.id, { include: [Institution] });
+    const token = signUserToken(verified);
+    setAuthCookie(res, token);
+    await writeAudit(req, {
+      action: "auth.email_verified",
+      entityType: "User",
+      entityId: user.id,
+      metadata: { actorId: user.id, email: user.email }
+    });
+    return res.json({ user: publicUser(verified) });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function resendEmailVerification(req, res, next) {
+  try {
+    const user = await User.unscoped().findOne({ where: { email: req.body.email } });
+    if (!user || user.role === "admin" || user.emailVerifiedAt) {
+      return res.json({ message: "Dacă adresa necesită verificare, am pregătit un cod nou." });
+    }
+    const verification = await issueEmailVerification(user);
+    await writeAudit(req, {
+      action: "auth.email_verification_resent",
+      entityType: "User",
+      entityId: user.id,
+      metadata: { email: user.email, mailSent: verification.delivery.sent }
+    });
+    return res.json({
+      message: verification.delivery.sent
+        ? "Am trimis un cod nou."
+        : "Codul a fost generat, dar emailul nu a putut fi trimis.",
+      mailSent: verification.delivery.sent,
+      mailReason: verification.delivery.sent ? undefined : verification.delivery.reason,
+      verificationCode: verification.developmentCode
+    });
   } catch (error) {
     next(error);
   }

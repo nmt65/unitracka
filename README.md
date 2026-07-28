@@ -16,10 +16,11 @@ Aplicația urmărește trei direcții principale:
 
 ## Funcționalități principale
 
-- Autentificare cu email și parolă.
+- Autentificare cu email și parolă, verificare prin cod unic și passkey WebAuthn.
 - Roluri separate pentru student, universitate și administrator.
 - Cont unic per elev prin validarea CNP-ului, fără stocarea CNP-ului în clar.
-- Resetare parolă cu token temporar.
+- Resetare parolă cu token temporar și verificare email cu cod de 6 cifre.
+- Login fără parolă prin Windows Hello, Face ID sau cheie FIDO2.
 - Deconectare, schimbare parolă și ștergere cont.
 - Dashboard cu progresul aplicațiilor, deadline-uri și statistici.
 - Administrare universități, programe, taxe, ratinguri și deadline-uri.
@@ -50,13 +51,14 @@ Backend-ul expune un API REST, iar frontend-ul consumă API-ul printr-un strat s
 
 ### Tehnologii
 
-- React, Vite, React Router
+- React și Vite
 - Node.js, Express
 - Sequelize ORM
 - SQLite pentru dezvoltare locală
 - PostgreSQL pentru producție
 - Zod pentru validare
 - JWT în cookie `httpOnly`
+- WebAuthn prin SimpleWebAuthn
 - Helmet, CORS, rate limiting și sanitizare XSS
 - OpenAI/Gemini pentru verificarea asistată a documentelor
 
@@ -88,12 +90,18 @@ npm run install:all
 npm run dev
 ```
 
+Comanda pornește simultan backend-ul Express și frontend-ul Vite. Nu este
+necesar PostgreSQL pentru demonstrația locală: aplicația creează automat baza
+SQLite din `backend/data/`. Dacă SMTP nu este configurat, codul de verificare
+email este afișat numai în development. Passkey-urile funcționează pe
+`http://localhost:5173`, pe care browserul îl tratează ca mediu securizat.
+
 URL-uri locale:
 
-- Frontend: `http://127.0.0.1:5173`
-- API: `http://127.0.0.1:4000/api`
-- Health check: `http://127.0.0.1:4000/api/health`
-- Readiness DB check: `http://127.0.0.1:4000/api/ready`
+- Frontend: `http://localhost:5173`
+- API: `http://localhost:4000/api`
+- Health check: `http://localhost:4000/api/health`
+- Readiness DB check: `http://localhost:4000/api/ready`
 
 Conturi de test pentru development:
 
@@ -124,8 +132,10 @@ PORT=4000
 DB_DIALECT=sqlite
 JWT_SECRET=schimba-acest-secret
 CNP_PEPPER=schimba-acest-pepper
-CORS_ORIGIN=http://127.0.0.1:5173
-APP_URL=http://127.0.0.1:5173
+CORS_ORIGIN=http://localhost:5173
+APP_URL=http://localhost:5173
+PASSKEY_RP_ID=localhost
+PASSKEY_ORIGIN=http://localhost:5173
 ```
 
 Exemplu minim pentru PostgreSQL:
@@ -145,6 +155,7 @@ SMTP_PORT=587
 SMTP_USER=
 SMTP_PASS=
 SMTP_FROM=UniTrack <no-reply@example.ro>
+SMTP_FORCE_IPV4=true
 ```
 
 Fără chei externe, verificarea documentelor folosește reguli locale stricte. Fără SMTP, resetarea prin email nu poate fi trimisă în producție.

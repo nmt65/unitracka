@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, BellRing, CheckCircle2, Copy, FileCheck2, ImagePlus, KeyRound, Link2, LogOut, Mail, Save, ShieldCheck, Sparkles, Target, Trash2, X } from "lucide-react";
+import { browserSupportsWebAuthn, startRegistration } from "@simplewebauthn/browser";
+import { AlertTriangle, BellRing, CheckCircle2, Copy, FileCheck2, Fingerprint, ImagePlus, KeyRound, Link2, LogOut, Mail, Plus, Save, ShieldCheck, Sparkles, Target, Trash2, X } from "lucide-react";
 import { api } from "../services/api.js";
 import { StatCards } from "../components/StatCards.jsx";
 
@@ -68,6 +69,110 @@ function ProfilePhotoEditor({ value, name, onFile, onClear }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function PasskeyPanel({ onToast }) {
+  const [passkeys, setPasskeys] = useState([]);
+  const [supported, setSupported] = useState(() => browserSupportsWebAuthn());
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+
+  async function loadPasskeys() {
+    try {
+      const data = await api.passkeys();
+      setSupported(Boolean(data.supported) && browserSupportsWebAuthn());
+      setPasskeys(data.passkeys || []);
+    } catch (error) {
+      setSupported(false);
+      onToast(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadPasskeys();
+  }, []);
+
+  async function createPasskey() {
+    setCreating(true);
+    try {
+      const optionsJSON = await api.passkeyRegistrationOptions();
+      const response = await startRegistration({ optionsJSON });
+      const deviceName = /Windows/i.test(navigator.userAgent)
+        ? "Windows Hello"
+        : /iPhone|iPad|Mac/i.test(navigator.userAgent)
+          ? "Apple passkey"
+          : "Passkey personal";
+      await api.passkeyRegistrationVerification({ response, name: deviceName });
+      await loadPasskeys();
+      onToast("Passkey adăugat. Te poți autentifica fără parolă.");
+    } catch (error) {
+      if (error?.name !== "NotAllowedError") onToast(error.message);
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function removePasskey(passkey) {
+    if (!window.confirm(`Elimini passkey-ul „${passkey.name}”?`)) return;
+    try {
+      await api.deletePasskey(passkey.id);
+      setPasskeys((current) => current.filter((item) => item.id !== passkey.id));
+      onToast("Passkey eliminat.");
+    } catch (error) {
+      onToast(error.message);
+    }
+  }
+
+  return (
+    <section className="profile-panel passkey-panel">
+      <div className="panel-heading-row">
+        <div>
+          <h2><Fingerprint size={18} /> Passkey-uri</h2>
+          <p className="muted">Intră cu Windows Hello, Face ID sau cheia de securitate. UniTrack păstrează doar cheia publică.</p>
+        </div>
+        {supported && (
+          <button className="primary-button compact" type="button" onClick={createPasskey} disabled={creating}>
+            <Plus size={16} /> {creating ? "Se configurează..." : "Adaugă passkey"}
+          </button>
+        )}
+      </div>
+      {loading && <p className="muted">Verificăm dispozitivul...</p>}
+      {!loading && !supported && (
+        <div className="security-note">
+          <ShieldCheck size={18} />
+          <span>Passkey-urile sunt disponibile pe HTTPS sau pe <strong>localhost</strong>, într-un browser compatibil.</span>
+        </div>
+      )}
+      {!loading && supported && passkeys.length === 0 && (
+        <div className="security-note">
+          <Fingerprint size={18} />
+          <span>Nu ai încă un passkey. Adaugă-l acum și păstrează parola ca metodă de recuperare.</span>
+        </div>
+      )}
+      {passkeys.length > 0 && (
+        <div className="passkey-list">
+          {passkeys.map((passkey) => (
+            <article key={passkey.id}>
+              <span className="passkey-icon"><Fingerprint size={19} /></span>
+              <span>
+                <strong>{passkey.name}</strong>
+                <small>
+                  {passkey.backedUp ? "Sincronizat" : "Acest dispozitiv"}
+                  {" · "}
+                  adăugat {new Date(passkey.createdAt).toLocaleDateString("ro-RO")}
+                </small>
+              </span>
+              <button className="icon-button" type="button" onClick={() => removePasskey(passkey)} title="Elimină passkey" aria-label="Elimină passkey">
+                <Trash2 size={16} />
+              </button>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -323,6 +428,8 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
           </form>
         </section>
 
+        <PasskeyPanel onToast={onToast} />
+
         <section className="profile-panel danger-panel">
           <h2><AlertTriangle size={17} /> Zonă periculoasă</h2>
           <p className="muted">Ștergerea contului elimină accesul și datele asociate. Ultimul cont admin nu poate fi șters.</p>
@@ -495,6 +602,8 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
           </div>
         </form>
       </section>
+
+      <PasskeyPanel onToast={onToast} />
 
       <section className="profile-panel danger-panel">
         <h2><AlertTriangle size={17} /> Zonă periculoasă</h2>

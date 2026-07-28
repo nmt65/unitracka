@@ -5,6 +5,8 @@ dotenv.config();
 const requiredInProduction = ["JWT_SECRET", "CNP_PEPPER"];
 const defaultCorsOrigin = "http://localhost:5173,http://127.0.0.1:5173";
 const appUrl = process.env.APP_URL || "http://localhost:5173";
+const appOrigin = new URL(appUrl).origin;
+const appHostname = new URL(appUrl).hostname;
 
 function uniqueOrigins(values) {
   return [...new Set(values.map((origin) => origin.trim()).filter(Boolean))];
@@ -38,6 +40,13 @@ export const env = {
   cookieSecure: process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === "true" : process.env.NODE_ENV === "production",
   cnpPepper: process.env.CNP_PEPPER || "dev-cnp-pepper-change-me",
   resetTokenMinutes: Number(process.env.RESET_TOKEN_MINUTES || 30),
+  emailVerificationMinutes: Number(process.env.EMAIL_VERIFICATION_MINUTES || 10),
+  passkey: {
+    rpName: process.env.PASSKEY_RP_NAME || "UniTrack",
+    rpId: process.env.PASSKEY_RP_ID || appHostname,
+    origin: process.env.PASSKEY_ORIGIN || appOrigin,
+    challengeMinutes: Number(process.env.PASSKEY_CHALLENGE_MINUTES || 5)
+  },
   dbDialect: process.env.DB_DIALECT || "sqlite",
   databaseUrl: process.env.DATABASE_URL || "./data/unitracka.sqlite",
   seedDemo: process.env.SEED_DEMO !== "false",

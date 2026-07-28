@@ -24,15 +24,17 @@ export function useAuth() {
   async function login(body) {
     authVersion.current += 1;
     const data = await api.login(body);
-    setUser(data.user);
+    if (data.user) setUser(data.user);
     setChecking(false);
+    return data;
   }
 
   async function register(body) {
     authVersion.current += 1;
     const data = await api.register(body);
-    setUser(data.user);
+    if (data.user) setUser(data.user);
     setChecking(false);
+    return data;
   }
 
   async function logout(options = {}) {
