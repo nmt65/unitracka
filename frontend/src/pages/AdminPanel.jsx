@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Activity, BookOpen, Brain, Copy, Database, Gauge, MailCheck, Plus, ShieldCheck, UserPlus } from "lucide-react";
+import { BookOpen, Brain, Copy, Database, Gauge, MailCheck, Plus, UserPlus } from "lucide-react";
 import { api } from "../services/api.js";
 
 const emptyInstitution = {
@@ -220,45 +220,14 @@ export function AdminPanel({ onToast }) {
       <div className="page-heading">
         <div>
           <h1>Panou Admin</h1>
-          <p>Doar adminul adaugă universități și conturi instituționale.</p>
+          <p>Catalog, conturi instituționale și configurarea platformei.</p>
+        </div>
+        <div className="admin-health-summary">
+          <Gauge size={18} />
+          <strong>{healthScore}%</strong>
+          <span>servicii active</span>
         </div>
       </div>
-
-      <section className="admin-command-center">
-        <div>
-          <span className="hero-kicker"><ShieldCheck size={16} /> Administrare platformă</span>
-          <h2>Catalog, conturi instituționale și sănătatea serviciilor.</h2>
-          <p>Configurează oferta publică, urmărește serviciile de producție și gestionează accesul universităților dintr-un singur loc.</p>
-        </div>
-        <div className="admin-health-ring">
-          <Gauge size={24} />
-          <strong>{healthScore}%</strong>
-          <span>servicii configurate</span>
-        </div>
-      </section>
-
-      <section className="admin-ops-grid">
-        <article className={systemStatus?.database === "postgres" && systemStatus?.databaseReady ? "ok" : "warn"}>
-          <Database size={18} />
-          <strong>PostgreSQL</strong>
-          <span>{systemStatus?.databaseReady ? "conectat" : systemStatus?.databaseRetryAt ? "reconectare programată" : "se verifică"}</span>
-        </article>
-        <article className={systemStatus?.smtpConfigured ? "ok" : "warn"}>
-          <MailCheck size={18} />
-          <strong>Email resetare</strong>
-          <span>{systemStatus?.smtpConfigured ? "SMTP activ" : "neconfigurat"}</span>
-        </article>
-        <article className={systemStatus?.aiConfigured ? "ok" : "warn"}>
-          <Brain size={18} />
-          <strong>Document AI</strong>
-          <span>{systemStatus?.aiConfigured ? systemStatus.geminiModel || systemStatus.openaiModel || "provider activ" : "verificare locală"}</span>
-        </article>
-        <article>
-          <Activity size={18} />
-          <strong>{auditLogs.length}</strong>
-          <span>evenimente audit</span>
-        </article>
-      </section>
 
       <div className="stats-grid compact-stats">
         <article className="stat-card"><strong>{stats.institutions}</strong><span>Universități</span><small>în platformă</small></article>

@@ -26,7 +26,6 @@ function SidebarBrand() {
       <span className="sidebar-brand-mark"><ShieldCheck size={24} /></span>
       <span className="sidebar-brand-copy">
         <strong>UniTrack</strong>
-        <small>Admissions OS</small>
       </span>
     </div>
   );

@@ -49,6 +49,7 @@ export function UniversityWorkspace({ user, onToast }) {
   const [filter, setFilter] = useState({ status: "all", sort: "newest", documents: "all", search: "" });
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [reviewNotes, setReviewNotes] = useState({});
+  const [activeSection, setActiveSection] = useState("applications");
 
   async function load() {
     const [data, institutionData] = await Promise.all([
@@ -170,34 +171,45 @@ export function UniversityWorkspace({ user, onToast }) {
       <div className="page-heading">
         <div>
           <h1>Workspace admitere</h1>
-          <p>{user.institution?.name || "Universitate"} primește și sortează aplicațiile elevilor.</p>
+          <p>{user.institution?.name || "Universitate"} · evaluarea aplicațiilor și oferta educațională.</p>
         </div>
       </div>
-      <div className="stats-grid compact-stats">
-        <article className="stat-card"><strong>{stats.total}</strong><span>Aplicații</span><small>total</small></article>
-        <article className="stat-card warning"><strong>{stats.review}</strong><span>De evaluat</span><small>noi / în lucru</small></article>
-        <article className="stat-card success"><strong>{stats.accepted}</strong><span>Acceptate</span><small>notificate</small></article>
-        <article className="stat-card"><strong>{stats.rejected}</strong><span>Respinse</span><small>arhivate</small></article>
-        <article className="stat-card warning"><strong>{stats.incomplete}</strong><span>Incomplete</span><small>documente lipsă</small></article>
-      </div>
-      <section className="review-pipeline" aria-label="Flux evaluare aplicații">
-        {workflowStages.map(([key, label], index) => {
-          const count = applications.filter((item) => item.status === key).length;
-          return (
-            <button
-              key={key}
-              type="button"
-              className={filter.status === key ? "active" : ""}
-              onClick={() => setFilter((current) => ({ ...current, status: current.status === key ? "all" : key }))}
-            >
-              <span>{index + 1}</span>
-              <strong>{label}</strong>
-              <small>{count} aplicații</small>
-            </button>
-          );
-        })}
-      </section>
-      {institution && (
+
+      <nav className="workspace-tabs" aria-label="Secțiuni workspace">
+        <button className={activeSection === "applications" ? "active" : ""} type="button" onClick={() => setActiveSection("applications")}>Aplicații</button>
+        <button className={activeSection === "offer" ? "active" : ""} type="button" onClick={() => setActiveSection("offer")}>Ofertă educațională</button>
+        <button className={activeSection === "profile" ? "active" : ""} type="button" onClick={() => setActiveSection("profile")}>Profil universitate</button>
+      </nav>
+
+      {activeSection === "applications" && (
+        <>
+          <div className="stats-grid compact-stats workspace-stats">
+            <article className="stat-card"><strong>{stats.total}</strong><span>Aplicații</span><small>total</small></article>
+            <article className="stat-card warning"><strong>{stats.review}</strong><span>De evaluat</span><small>noi / în lucru</small></article>
+            <article className="stat-card success"><strong>{stats.accepted}</strong><span>Acceptate</span><small>notificate</small></article>
+            <article className="stat-card warning"><strong>{stats.incomplete}</strong><span>Incomplete</span><small>documente lipsă</small></article>
+          </div>
+          <section className="review-pipeline" aria-label="Flux evaluare aplicații">
+            {workflowStages.map(([key, label], index) => {
+              const count = applications.filter((item) => item.status === key).length;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  className={filter.status === key ? "active" : ""}
+                  onClick={() => setFilter((current) => ({ ...current, status: current.status === key ? "all" : key }))}
+                >
+                  <span>{index + 1}</span>
+                  <strong>{label}</strong>
+                  <small>{count} aplicații</small>
+                </button>
+              );
+            })}
+          </section>
+        </>
+      )}
+
+      {activeSection === "profile" && institution && (
         <section className="profile-panel university-pitch-panel">
           <h2>De ce să vină studenții aici?</h2>
           <form className="profile-form" onSubmit={saveInstitution}>
@@ -226,7 +238,7 @@ export function UniversityWorkspace({ user, onToast }) {
           </form>
         </section>
       )}
-      {institution && (
+      {activeSection === "offer" && institution && (
         <section className="profile-panel university-offer-panel">
           <h2><BookOpen size={17} /> Oferta educațională</h2>
           <form className="profile-form" onSubmit={createProgram}>
@@ -282,7 +294,7 @@ export function UniversityWorkspace({ user, onToast }) {
           </div>
         </section>
       )}
-      <div className="filter-bar">
+      {activeSection === "applications" && <div className="filter-bar">
         <label className="search-control">
           <Search size={17} />
           <input
@@ -313,8 +325,8 @@ export function UniversityWorkspace({ user, onToast }) {
           <option value="rejected">Documente respinse</option>
         </select>
         <button className="soft-button" type="button" onClick={exportWorkspaceCsv}><Download size={16} /> Export listă</button>
-      </div>
-      <section className="applications-card workspace-list">
+      </div>}
+      {activeSection === "applications" && <section className="applications-card workspace-list">
         {applications.length === 0 && (
           <div className="inline-empty">
             <strong>Nu există aplicații pentru filtrul curent.</strong>
@@ -378,7 +390,7 @@ export function UniversityWorkspace({ user, onToast }) {
             </div>
           </article>
         ))}
-      </section>
+      </section>}
       {selectedDocument && (
         <div className="modal-backdrop" role="presentation">
           <section className="modal-card document-viewer" role="dialog" aria-modal="true" aria-label="Document aplicant">

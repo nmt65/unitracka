@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BookOpen, Download, ExternalLink, Plus, Scale, Search, Send, X } from "lucide-react";
+import { BookOpen, Download, ExternalLink, MoreHorizontal, Plus, Scale, Search, Send, X } from "lucide-react";
 import { api } from "../services/api.js";
 import { ProgressBar } from "../components/ProgressBar.jsx";
 import { StatusPill } from "../components/StatusPill.jsx";
@@ -107,7 +107,7 @@ export function Universities({ user, universities, onAdd, onEdit, onNavigate, on
       return matchesType && haystack.includes(query.toLowerCase());
     });
   }, [effectiveCatalog, query, type]);
-  const visibleCatalog = filteredCatalog.slice(0, 60);
+  const visibleCatalog = filteredCatalog.slice(0, 40);
   const compareSelectedItems = useMemo(() => {
     const allItems = [...effectiveCatalog, ...universities];
     return compareSelection
@@ -176,14 +176,19 @@ export function Universities({ user, universities, onAdd, onEdit, onNavigate, on
       <div className="page-heading">
         <div>
           <h1>Universități</h1>
-          <p>{effectiveCatalog.length || universities.length} universități disponibile — alege din catalogul curent, compară oferta 2026-2027 și trimite aplicații</p>
+          <p>Catalog 2026-2027, comparații și aplicațiile tale.</p>
         </div>
         <div className="heading-actions">
-          <button className="soft-button" type="button" onClick={exportCsv}><Download size={16} /> Export CSV</button>
-          <button className="soft-button" type="button" onClick={exportPdf}><Download size={16} /> Dosar PDF</button>
           {user?.role === "student" && (
             <button className="soft-button" type="button" onClick={openCompare}><Scale size={16} /> Compară selecția ({compareSelection.length}/4)</button>
           )}
+          <details className="action-menu">
+            <summary aria-label="Mai multe acțiuni"><MoreHorizontal size={18} /></summary>
+            <div>
+              <button type="button" onClick={exportCsv}><Download size={15} /> Export CSV</button>
+              <button type="button" onClick={exportPdf}><Download size={15} /> Dosar PDF</button>
+            </div>
+          </details>
           <button className="primary-button" type="button" onClick={onAdd}><Plus size={17} /> {addLabel}</button>
         </div>
       </div>
@@ -249,16 +254,13 @@ export function Universities({ user, universities, onAdd, onEdit, onNavigate, on
                     <small>{countryCode(item)} {item.country}{item.city ? ` · ${item.city}` : ""}</small>
                   </span>
                 </header>
-                <p><strong>Ofertă {item.academicYear || "2026-2027"}:</strong> {item.offerSummary || "Programe disponibile prin site-ul oficial."}</p>
+                <p>{item.offerSummary || `Oferta ${item.academicYear || "2026-2027"} este disponibilă pe site-ul oficial.`}</p>
                 <div className="offer-list">
-                  {offers.slice(0, 3).map((program) => (
+                  {offers.slice(0, 2).map((program) => (
                     <span key={`${item.name}-${program.program}`}>
                       <BookOpen size={13} /> {program.program} · {programTypes.find((entry) => entry.value === program.programType)?.label || program.programType}
                     </span>
                   ))}
-                </div>
-                <div className="catalog-tags">
-                  {(item.strengths || []).slice(0, 4).map((strength) => <span key={strength}>{strength}</span>)}
                 </div>
                 <footer>
                   {item.website && <a className="tiny-link" href={item.website} target="_blank" rel="noreferrer"><ExternalLink size={14} /> Site oficial</a>}
@@ -275,8 +277,7 @@ export function Universities({ user, universities, onAdd, onEdit, onNavigate, on
           })}
           {filteredCatalog.length > visibleCatalog.length && (
             <div className="catalog-grid-note">
-              <strong>{filteredCatalog.length - visibleCatalog.length} rezultate ascunse pentru performanță.</strong>
-              <span>Folosește căutarea sau filtrele ca să ajungi exact la universitatea dorită.</span>
+              <strong>Rafinează căutarea pentru celelalte {filteredCatalog.length - visibleCatalog.length} rezultate.</strong>
             </div>
           )}
         </div>

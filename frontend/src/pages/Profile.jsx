@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { browserSupportsWebAuthn, startRegistration } from "@simplewebauthn/browser";
-import { AlertTriangle, BellRing, CheckCircle2, Copy, FileCheck2, Fingerprint, ImagePlus, KeyRound, Link2, LogOut, Mail, Plus, Save, ShieldCheck, Sparkles, Target, Trash2, X } from "lucide-react";
+import { AlertTriangle, BellRing, CheckCircle2, Copy, FileCheck2, Fingerprint, ImagePlus, KeyRound, Link2, LogOut, Mail, Plus, Save, Target, Trash2, X } from "lucide-react";
 import { api } from "../services/api.js";
-import { StatCards } from "../components/StatCards.jsx";
 
 function shortName(university) {
   return university.shortName || university.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 4).toUpperCase();
@@ -209,6 +208,7 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
   const [saving, setSaving] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "" });
   const [deleteForm, setDeleteForm] = useState({ password: "", confirmation: "" });
+  const [profileSection, setProfileSection] = useState("overview");
 
   useEffect(() => {
     if (user.role !== "student") return;
@@ -353,20 +353,12 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
           </div>
         </div>
 
-        <section className="profile-hero account-hero">
-          <div>
-            <span className="hero-kicker"><ShieldCheck size={16} /> Cont securizat</span>
-            <h2>{user.name}</h2>
-            <p>{isUniversity ? "Workspace-ul tău gestionează aplicații, documente și feedback pentru candidați." : "Ai control asupra catalogului, conturilor instituționale și sănătății sistemului."}</p>
-          </div>
-          <div className="profile-hero-grid">
-            <span><strong>{user.emailNotifications ? "Activ" : "Oprit"}</strong><small>Email notificări</small></span>
-            <span><strong>{user.notifyBeforeDays || 14} zile</strong><small>Reminder deadline</small></span>
-            <span><strong>{user.role}</strong><small>Rol platformă</small></span>
-          </div>
-        </section>
+        <nav className="profile-tabs" aria-label="Secțiuni profil">
+          <button className={profileSection === "overview" ? "active" : ""} type="button" onClick={() => setProfileSection("overview")}>Cont</button>
+          <button className={profileSection === "security" ? "active" : ""} type="button" onClick={() => setProfileSection("security")}>Securitate</button>
+        </nav>
 
-        {isUniversity && user.institution && (
+        {profileSection === "overview" && isUniversity && user.institution && (
           <section className="profile-panel account-context-panel">
             <h2>Workspace asociat</h2>
             <div className="institution-preview">
@@ -377,7 +369,7 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
           </section>
         )}
 
-        <form className="profile-stack" onSubmit={submitAccount}>
+        {profileSection === "overview" && <form className="profile-stack" onSubmit={submitAccount}>
           <section className="profile-panel">
             <h2>Informații cont</h2>
             <ProfilePhotoEditor value={form.avatarDataUrl} name={form.name || user.name} onFile={updateAvatar} onClear={clearAvatar} />
@@ -408,9 +400,9 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
           <div className="profile-actions">
             <button className="primary-button" type="submit" disabled={saving}><Save size={18} /> {saving ? "Se salvează..." : "Salvează cont"}</button>
           </div>
-        </form>
+        </form>}
 
-        <section className="profile-panel security-panel">
+        {profileSection === "security" && <section className="profile-panel security-panel">
           <h2><KeyRound size={17} /> Securitate cont</h2>
           <form className="profile-form" onSubmit={changePassword}>
             <label>
@@ -426,11 +418,11 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
               <button className="soft-button" type="button" onClick={onLogout}><LogOut size={17} /> Deconectare</button>
             </div>
           </form>
-        </section>
+        </section>}
 
-        <PasskeyPanel onToast={onToast} />
+        {profileSection === "security" && <PasskeyPanel onToast={onToast} />}
 
-        <section className="profile-panel danger-panel">
+        {profileSection === "security" && <section className="profile-panel danger-panel">
           <h2><AlertTriangle size={17} /> Zonă periculoasă</h2>
           <p className="muted">Ștergerea contului elimină accesul și datele asociate. Ultimul cont admin nu poate fi șters.</p>
           <form className="profile-form" onSubmit={deleteAccount}>
@@ -446,7 +438,7 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
               <button className="danger-button" type="submit"><Trash2 size={17} /> Șterge contul definitiv</button>
             </div>
           </form>
-        </section>
+        </section>}
       </section>
     );
   }
@@ -456,15 +448,21 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
       <div className="page-heading">
         <div>
           <h1>Profilul meu</h1>
-          <p>Completează profilul pentru a urmări progresul aplicațiilor tale</p>
+          <p>Date personale, rezultate verificate și securitatea contului.</p>
         </div>
       </div>
 
+      <nav className="profile-tabs" aria-label="Secțiuni profil">
+        <button className={profileSection === "overview" ? "active" : ""} type="button" onClick={() => setProfileSection("overview")}>Rezumat</button>
+        <button className={profileSection === "details" ? "active" : ""} type="button" onClick={() => setProfileSection("details")}>Date și rezultate</button>
+        <button className={profileSection === "security" ? "active" : ""} type="button" onClick={() => setProfileSection("security")}>Securitate</button>
+      </nav>
+
+      {profileSection === "overview" && <>
       <section className="profile-hero">
         <div className="profile-hero-main">
-          <span className="hero-kicker"><Sparkles size={16} /> Dosar inteligent</span>
           <h2>{user.name}</h2>
-          <p>Profilul tău devine credibil doar când notele, certificatele și documentele sunt verificate. Aici vezi rapid ce lipsește ca dosarul să fie gata de trimis.</p>
+          <p>Notele și certificatele sunt folosite în aplicații numai după verificarea documentelor.</p>
           <div className="profile-hero-actions">
             <button className="soft-button" type="button" onClick={copyLink}><Copy size={16} /> Copiază profil public</button>
             <button className="soft-button" type="button" onClick={rotateLink}><Link2 size={16} /> Regenerează link</button>
@@ -500,7 +498,6 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
           <span>documente verificate în tracker și aplicații</span>
         </article>
       </section>
-      <StatCards stats={stats} />
 
       <section className="accepted-panel">
         <h2><CheckCircle2 size={17} /> Universități acceptate</h2>
@@ -516,7 +513,9 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
           </article>
         ))}
       </section>
+      </>}
 
+      {profileSection === "details" && <>
       <form className="profile-stack" onSubmit={submit}>
         <section className="profile-panel">
           <h2>Informații personale</h2>
@@ -584,7 +583,9 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
           <button className="soft-button" type="button" onClick={rotateLink}><Link2 size={17} /> Regenerează</button>
         </div>
       </section>
+      </>}
 
+      {profileSection === "security" && <>
       <section className="profile-panel security-panel">
         <h2><KeyRound size={17} /> Securitate cont</h2>
         <form className="profile-form" onSubmit={changePassword}>
@@ -622,6 +623,7 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
           </div>
         </form>
       </section>
+      </>}
     </section>
   );
 }
