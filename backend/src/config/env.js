@@ -70,6 +70,11 @@ export const env = {
   geminiRequestTimeoutMs: Math.min(45000, Math.max(5000, Number(process.env.GEMINI_REQUEST_TIMEOUT_MS || 25000))),
   aiDocumentDailyLimit: Number(process.env.AI_DOCUMENT_DAILY_LIMIT || 40),
   aiAdvisorDailyLimit: Number(process.env.AI_ADVISOR_DAILY_LIMIT || 20),
+  mail: {
+    provider: process.env.MAIL_PROVIDER || "auto",
+    from: process.env.EMAIL_FROM || process.env.SMTP_FROM || "UniTrack <no-reply@unitrack.sbs>",
+    resendApiKey: process.env.RESEND_API_KEY || ""
+  },
   smtp: {
     host: process.env.SMTP_HOST || "",
     port: Number(process.env.SMTP_PORT || 587),

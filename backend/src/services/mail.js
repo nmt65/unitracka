@@ -4,7 +4,10 @@ import { env } from "../config/env.js";
 let transporter;
 
 export function isSmtpConfigured() {
-  return Boolean(env.smtp.host && env.smtp.user && env.smtp.pass);
+  return Boolean(
+    env.mail.resendApiKey ||
+    (env.smtp.host && env.smtp.user && env.smtp.pass)
+  );
 }
 
 function isGmailSmtp() {
@@ -16,6 +19,11 @@ function mailFrom() {
     return `UniTrack <${env.smtp.user}>`;
   }
   return env.smtp.from;
+}
+
+function useResend() {
+  return Boolean(env.mail.resendApiKey) &&
+    (env.mail.provider === "auto" || env.mail.provider === "resend");
 }
 
 function escapeHtml(value) {
@@ -59,10 +67,38 @@ function friendlyMailReason(error) {
   return message;
 }
 
+async function sendWithResend(message) {
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.mail.resendApiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      from: env.mail.from,
+      to: Array.isArray(message.to) ? message.to : [message.to],
+      subject: message.subject,
+      text: message.text,
+      html: message.html
+    }),
+    signal: AbortSignal.timeout(15000)
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    const detail = payload?.message || `HTTP ${response.status}`;
+    throw new Error(`Resend: ${detail}`);
+  }
+}
+
 export async function sendMailSafe(message) {
   if (!isSmtpConfigured()) return { sent: false, reason: "SMTP neconfigurat" };
   try {
-    await getTransporter().sendMail({ from: mailFrom(), ...message });
+    if (useResend()) {
+      await sendWithResend(message);
+    } else {
+      await getTransporter().sendMail({ from: mailFrom(), ...message });
+    }
     return { sent: true };
   } catch (error) {
     const reason = friendlyMailReason(error);

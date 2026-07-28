@@ -150,6 +150,9 @@ Cheile pentru verificarea asistată și SMTP sunt opționale:
 ```env
 OPENAI_API_KEY=
 GEMINI_API_KEY=
+MAIL_PROVIDER=auto
+RESEND_API_KEY=
+EMAIL_FROM=UniTrack <no-reply@unitrack.sbs>
 SMTP_HOST=
 SMTP_PORT=587
 SMTP_USER=
@@ -158,7 +161,10 @@ SMTP_FROM=UniTrack <no-reply@example.ro>
 SMTP_FORCE_IPV4=true
 ```
 
-Fără chei externe, verificarea documentelor folosește reguli locale stricte. Fără SMTP, resetarea prin email nu poate fi trimisă în producție.
+Fără chei externe, verificarea documentelor folosește reguli locale stricte. Pe
+Render Free folosește `RESEND_API_KEY`, deoarece porturile SMTP sunt blocate.
+SMTP rămâne disponibil pentru dezvoltare locală sau pentru o instanță Render
+plătită.
 
 ## Verificare
 
