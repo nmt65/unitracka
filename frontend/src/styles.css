@@ -4859,7 +4859,9 @@ body:not(.dark) .command-row {
 
 .next-step-list strong,
 .next-step-list small {
+  grid-column: 2;
   display: block;
+  min-width: 0;
 }
 
 .next-step-list small {
@@ -5279,5 +5281,650 @@ body:not(.dark) .admin-health-ring {
 @media (max-width: 560px) {
   .top-avatar {
     display: none;
+  }
+}
+
+/* Mobile application shell. Kept last so later desktop enhancements cannot
+   override responsive behavior. */
+.mobile-nav,
+.mobile-nav-sheet,
+.mobile-nav-backdrop {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  html,
+  body,
+  #root,
+  .app-shell,
+  .app-body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .mobile-nav {
+    position: fixed;
+    z-index: 90;
+    inset: auto 0 0;
+    height: calc(68px + env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 3px;
+    padding: 6px 7px calc(6px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border);
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.12);
+    backdrop-filter: blur(18px);
+  }
+
+  .mobile-nav.mobile-nav-compact {
+    grid-template-columns: repeat(2, minmax(0, 150px));
+    justify-content: center;
+  }
+
+  .mobile-nav > button {
+    min-width: 0;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 4px;
+    padding: 4px 2px;
+    background: transparent;
+    color: var(--muted);
+  }
+
+  .mobile-nav > button span {
+    width: 100%;
+    overflow: hidden;
+    font-size: 0.64rem;
+    font-weight: 900;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-nav > button.active {
+    border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
+    background: var(--primary-soft);
+    color: var(--primary);
+  }
+
+  .mobile-nav-backdrop {
+    position: fixed;
+    z-index: 91;
+    inset: 0;
+    width: 100%;
+    border: 0;
+    display: block;
+    background: rgba(2, 10, 12, 0.5);
+    backdrop-filter: blur(4px);
+  }
+
+  .mobile-nav-sheet {
+    position: fixed;
+    z-index: 92;
+    right: 8px;
+    bottom: calc(76px + env(safe-area-inset-bottom));
+    left: 8px;
+    display: grid;
+    gap: 12px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    background: var(--surface);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
+  }
+
+  .mobile-nav-sheet > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .mobile-nav-sheet > header div,
+  .mobile-nav-sheet > header strong,
+  .mobile-nav-sheet > header small {
+    display: block;
+    min-width: 0;
+  }
+
+  .mobile-nav-sheet > header small {
+    margin-top: 2px;
+  }
+
+  .mobile-nav-sheet > header > button {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    background: var(--surface-2);
+    color: var(--muted);
+  }
+
+  .mobile-status-shortcuts,
+  .mobile-more-grid {
+    display: grid;
+    gap: 8px;
+  }
+
+  .mobile-status-shortcuts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .mobile-status-shortcuts button,
+  .mobile-more-grid button {
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: var(--surface-2);
+    color: var(--text);
+    font-weight: 850;
+  }
+
+  .mobile-status-shortcuts button {
+    min-height: 62px;
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 5px;
+    padding: 9px;
+    font-size: 0.7rem;
+  }
+
+  .mobile-status-shortcuts button span {
+    color: var(--primary);
+  }
+
+  .mobile-more-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mobile-more-grid button {
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 10px 12px;
+    text-align: left;
+  }
+
+  .mobile-more-grid button.active {
+    border-color: color-mix(in srgb, var(--primary) 42%, var(--border));
+    background: var(--primary-soft);
+    color: var(--primary);
+  }
+
+  .content {
+    width: 100%;
+    min-width: 0;
+    padding: 74px 12px calc(92px + env(safe-area-inset-bottom));
+  }
+
+  .unitrack-page,
+  .main-column,
+  .dashboard-layout,
+  .dashboard-layout > *,
+  .student-hero > *,
+  .page-heading > *,
+  .section-heading > * {
+    min-width: 0;
+  }
+
+  .dashboard-layout,
+  .student-hero,
+  .calendar-layout,
+  .documents-layout,
+  .compare-layout,
+  .profile-hero,
+  .admin-command-center,
+  .account-hero,
+  .compare-verdict {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .student-hero {
+    gap: 14px;
+    padding: 20px;
+  }
+
+  .student-hero h1 {
+    font-size: clamp(2rem, 10vw, 2.8rem);
+    line-height: 1;
+  }
+
+  .student-hero p {
+    font-size: 0.94rem;
+  }
+
+  .dashboard-readiness {
+    min-height: 136px;
+  }
+
+  .dashboard-action-grid,
+  .stats-grid,
+  .profile-insights,
+  .admin-ops-grid,
+  .compare-score-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .dashboard-action-grid button,
+  .stat-card,
+  .compact-stats .stat-card {
+    min-height: 104px;
+    padding: 13px;
+  }
+
+  .dashboard-action-grid strong,
+  .stat-card strong {
+    font-size: 1.85rem;
+  }
+
+  .page-heading,
+  .section-heading {
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .heading-actions,
+  .export-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .heading-actions > *,
+  .export-row > * {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .applications-card > header,
+  .table-card-heading,
+  .panel-heading-row {
+    min-height: 58px;
+    padding: 13px 14px;
+  }
+
+  .app-tabs,
+  .filter-tabs,
+  .type-tabs {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+  }
+
+  .app-tabs::-webkit-scrollbar,
+  .filter-tabs::-webkit-scrollbar,
+  .type-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .app-tabs {
+    gap: 8px;
+    padding: 8px 12px;
+  }
+
+  .app-tabs button {
+    flex: 0 0 auto;
+    min-height: 34px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0 10px;
+    background: var(--surface-2);
+  }
+
+  .application-row {
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 10px;
+    min-height: 110px;
+    padding: 13px;
+  }
+
+  .application-progress {
+    grid-column: 2;
+    justify-items: stretch;
+  }
+
+  .application-copy,
+  .application-copy strong,
+  .application-copy > span {
+    min-width: 0;
+  }
+
+  .application-copy > span {
+    flex-wrap: wrap;
+  }
+
+  .application-copy strong,
+  .application-copy small {
+    overflow-wrap: anywhere;
+  }
+
+  .filter-bar {
+    min-width: 0;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .filter-tabs {
+    padding-bottom: 2px;
+  }
+
+  .result-count {
+    width: 100%;
+    margin: 0;
+    text-align: right;
+  }
+
+  .catalog-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .catalog-card {
+    min-width: 0;
+    padding: 15px;
+  }
+
+  .catalog-card header,
+  .catalog-card footer {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .university-table-card,
+  .compare-table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    box-shadow: inset -14px 0 18px -20px var(--text);
+  }
+
+  .university-table {
+    min-width: 820px;
+  }
+
+  .admin-table,
+  .audit-table {
+    min-width: 700px;
+  }
+
+  .compare-table {
+    min-width: 680px;
+  }
+
+  .compare-picker-card,
+  .profile-panel,
+  .doc-hero,
+  .doc-checklist-card,
+  .predefined-docs,
+  .calendar-panel,
+  .calendar-upcoming {
+    min-width: 0;
+  }
+
+  .compare-selection-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .compare-decision-board {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-hero,
+  .admin-command-center {
+    padding: 18px;
+  }
+
+  .profile-hero-actions,
+  .profile-photo-actions,
+  .profile-actions.inline-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-hero-actions > *,
+  .profile-photo-actions > *,
+  .profile-actions.inline-actions > * {
+    width: 100%;
+  }
+
+  .profile-photo-editor {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .profile-photo-preview {
+    width: 84px;
+    height: 84px;
+  }
+
+  .calendar-month-header {
+    padding-inline: 10px;
+  }
+
+  .calendar-cell {
+    min-width: 0;
+    min-height: 62px;
+    padding: 6px;
+  }
+
+  .calendar-event {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .modal-backdrop {
+    align-items: flex-end;
+    padding: 8px;
+  }
+
+  .modal,
+  .modal-card.document-viewer {
+    width: 100%;
+    max-height: calc(100dvh - 16px);
+    border-radius: 14px 14px 8px 8px;
+  }
+
+  .notification-panel {
+    position: fixed;
+    top: 64px;
+    right: 10px;
+    left: 10px;
+    width: auto;
+    max-height: min(72dvh, 560px);
+    overflow-y: auto;
+  }
+
+  .toast {
+    right: 10px;
+    bottom: calc(82px + env(safe-area-inset-bottom));
+    left: 10px;
+    width: auto;
+    text-align: center;
+  }
+}
+
+@media (max-width: 560px) {
+  .auth-page {
+    align-items: start;
+    padding: 8px;
+  }
+
+  .auth-shell {
+    min-height: 0;
+    grid-template-columns: 1fr;
+  }
+
+  .auth-visual {
+    order: 1;
+    min-height: 148px;
+    gap: 8px;
+    padding: 24px 18px;
+  }
+
+  .auth-visual > svg,
+  .auth-visual > p,
+  .auth-proof-list {
+    display: none;
+  }
+
+  .auth-visual h1 {
+    max-width: 290px;
+    font-size: 1.65rem;
+    line-height: 1.05;
+  }
+
+  .auth-card {
+    order: 2;
+    gap: 15px;
+    padding: 24px 18px;
+  }
+
+  .auth-theme-toggle,
+  .auth-language-toggle {
+    position: absolute;
+    top: 18px;
+    box-shadow: none;
+  }
+
+  .auth-theme-toggle {
+    right: 18px;
+  }
+
+  .auth-language-toggle {
+    right: 66px;
+  }
+
+  .auth-demo-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .content {
+    padding-inline: 10px;
+  }
+
+  .topbar-title {
+    min-width: 0;
+    max-width: 86px;
+  }
+
+  .topbar-title strong {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .topbar-actions {
+    min-width: 0;
+  }
+
+  .student-hero-actions,
+  .export-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .heading-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .heading-actions .primary-button:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .dashboard-action-grid,
+  .stats-grid,
+  .profile-insights,
+  .admin-ops-grid,
+  .compare-score-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-action-grid button span,
+  .stat-card span,
+  .stat-card small {
+    overflow-wrap: anywhere;
+  }
+
+  .mobile-status-shortcuts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mobile-status-shortcuts button {
+    min-height: 46px;
+  }
+
+  .compare-filter-row.compact-row,
+  .selection-dock-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .compare-selection-strip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .compare-heading-count {
+    grid-template-columns: auto auto;
+  }
+
+  .profile-hero h2,
+  .admin-command-center h2 {
+    font-size: 1.65rem;
+  }
+
+  .profile-insights article,
+  .admin-ops-grid article,
+  .compare-score-grid article {
+    min-height: 102px;
+    padding: 13px;
+  }
+
+  .calendar-weekdays,
+  .calendar-grid {
+    font-size: 0.68rem;
+  }
+
+  .calendar-cell {
+    min-height: 54px;
+  }
+}
+
+@media (max-width: 360px) {
+  .topbar-title {
+    max-width: 62px;
+  }
+
+  .top-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .language-button {
+    min-width: 42px;
+  }
+
+  .mobile-nav > button span {
+    font-size: 0.58rem;
+  }
+
+  .dashboard-action-grid,
+  .stats-grid,
+  .profile-insights,
+  .admin-ops-grid,
+  .compare-score-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
