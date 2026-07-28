@@ -13,6 +13,8 @@
     "check": "npm run check --prefix backend && npm run build --prefix frontend",
     "smoke": "npm run smoke --prefix backend",
     "jury:demo": "npm run jury:demo --prefix backend",
+    "verify": "npm run check && npm run test:e2e",
+    "verify:live": "powershell -ExecutionPolicy Bypass -File tools/verify-all.ps1",
     "test:e2e": "playwright test",
     "gdpr:retention": "npm run gdpr:retention --prefix backend",
     "db:rls:audit": "npm run db:rls:audit --prefix backend"

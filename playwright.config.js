@@ -1,4 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
+import { existsSync } from "node:fs";
+
+const systemChrome = process.env.PLAYWRIGHT_USE_SYSTEM_CHROME === "1"
+  || (process.platform === "win32" && existsSync("C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"));
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -18,14 +22,14 @@ export default defineConfig({
       name: "desktop-chromium",
       use: {
         ...devices["Desktop Chrome"],
-        ...(process.env.PLAYWRIGHT_USE_SYSTEM_CHROME ? { channel: "chrome" } : {})
+        ...(systemChrome ? { channel: "chrome" } : {})
       }
     },
     {
       name: "mobile-chromium",
       use: {
         ...devices["Pixel 7"],
-        ...(process.env.PLAYWRIGHT_USE_SYSTEM_CHROME ? { channel: "chrome" } : {})
+        ...(systemChrome ? { channel: "chrome" } : {})
       }
     }
   ],

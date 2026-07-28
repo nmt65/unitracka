@@ -1,24 +1,25 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { api } from "./services/api.js";
 import { useAuth } from "./hooks/useAuth.js";
 import { useUniversities } from "./hooks/useUniversities.js";
-import { AdminPanel } from "./pages/AdminPanel.jsx";
-import { Admissions } from "./pages/Admissions.jsx";
 import { AuthPage } from "./pages/AuthPage.jsx";
-import { Calendar } from "./pages/Calendar.jsx";
-import { Compare } from "./pages/Compare.jsx";
-import { Dashboard } from "./pages/Dashboard.jsx";
-import { Documents } from "./pages/Documents.jsx";
-import { Profile } from "./pages/Profile.jsx";
-import { PublicShare } from "./pages/PublicShare.jsx";
-import { StudentAdvisor } from "./pages/StudentAdvisor.jsx";
-import { Universities } from "./pages/Universities.jsx";
-import { UniversityWorkspace } from "./pages/UniversityWorkspace.jsx";
+import { LandingPage } from "./pages/LandingPage.jsx";
 import { CommandPalette } from "./components/CommandPalette.jsx";
 import { Navbar } from "./components/Navbar.jsx";
 import { Sidebar } from "./components/Sidebar.jsx";
 import { UniversityModal } from "./components/UniversityModal.jsx";
 import { applyDomLanguage } from "./i18n.js";
+
+const AdminPanel = lazy(() => import("./pages/AdminPanel.jsx").then((module) => ({ default: module.AdminPanel })));
+const Admissions = lazy(() => import("./pages/Admissions.jsx").then((module) => ({ default: module.Admissions })));
+const Calendar = lazy(() => import("./pages/Calendar.jsx").then((module) => ({ default: module.Calendar })));
+const Compare = lazy(() => import("./pages/Compare.jsx").then((module) => ({ default: module.Compare })));
+const Dashboard = lazy(() => import("./pages/Dashboard.jsx").then((module) => ({ default: module.Dashboard })));
+const Documents = lazy(() => import("./pages/Documents.jsx").then((module) => ({ default: module.Documents })));
+const Profile = lazy(() => import("./pages/Profile.jsx").then((module) => ({ default: module.Profile })));
+const StudentAdvisor = lazy(() => import("./pages/StudentAdvisor.jsx").then((module) => ({ default: module.StudentAdvisor })));
+const Universities = lazy(() => import("./pages/Universities.jsx").then((module) => ({ default: module.Universities })));
+const UniversityWorkspace = lazy(() => import("./pages/UniversityWorkspace.jsx").then((module) => ({ default: module.UniversityWorkspace })));
 
 const pagesByRole = {
   student: new Set(["dashboard", "admissions", "advisor", "universities", "documents", "compare", "calendar", "profile"]),
@@ -27,7 +28,6 @@ const pagesByRole = {
 };
 
 export function App() {
-  const publicMatch = window.location.pathname.match(/(?:^|\/)public\/([^/]+)/);
   const { user, setUser, checking, login, register, logout } = useAuth();
   const { universities, stats, loading, refresh } = useUniversities(Boolean(user));
   const [active, setActive] = useState("dashboard");
@@ -41,6 +41,9 @@ export function App() {
   const [universitySearchFocus, setUniversitySearchFocus] = useState(0);
   const [universityNavigationIntent, setUniversityNavigationIntent] = useState(null);
   const [commandOpen, setCommandOpen] = useState(false);
+  const [authEntry, setAuthEntry] = useState(() => (
+    new URLSearchParams(window.location.search).has("reset_token") ? "login" : ""
+  ));
 
   useEffect(() => {
     document.body.classList.toggle("dark", darkMode);
@@ -225,11 +228,15 @@ export function App() {
     setCommandOpen(false);
   }
 
-  if (publicMatch) {
-    return <PublicShare shareId={publicMatch[1]} />;
-  }
-
   if (!user) {
+    if (!authEntry) {
+      return (
+        <LandingPage
+          onLogin={() => setAuthEntry("login")}
+          onRegister={() => setAuthEntry("register")}
+        />
+      );
+    }
     return (
       <AuthPage
         onLogin={login}
@@ -240,6 +247,8 @@ export function App() {
         onToggleTheme={() => setDarkMode((value) => !value)}
         language={language}
         onToggleLanguage={() => setLanguage((value) => value === "ro" ? "en" : "ro")}
+        initialMode={authEntry}
+        onBack={() => setAuthEntry("")}
       />
     );
   }
@@ -263,7 +272,6 @@ export function App() {
       <Navbar
         user={user}
         active={active}
-        onChange={navigate}
         onSearchUniversities={handleTopSearch}
         onOpenCommand={() => setCommandOpen(true)}
         onLogout={logout}
@@ -278,6 +286,7 @@ export function App() {
         <Sidebar active={active} onChange={navigate} counts={counts} user={user} language={language} />
         <main className="content">
           {loading && <div className="loading-bar" />}
+          <Suspense fallback={<div className="page-loader" role="status">Se încarcă...</div>}>
           {active === "dashboard" && user.role === "admin" && <AdminPanel onToast={setToast} />}
           {active === "dashboard" && user.role === "university" && <UniversityWorkspace user={user} onToast={setToast} />}
           {active === "dashboard" && user.role === "student" && <Dashboard {...pageProps} />}
@@ -295,6 +304,7 @@ export function App() {
           {active === "compare" && user.role === "student" && <Compare universities={universities} onToast={setToast} onRefresh={refresh} />}
           {active === "calendar" && user.role === "student" && <Calendar universities={universities} onToast={setToast} />}
           {active === "profile" && <Profile user={user} universities={universities} stats={stats} onUser={setUser} onLogout={logout} onToast={setToast} />}
+          </Suspense>
         </main>
       </div>
       <CommandPalette

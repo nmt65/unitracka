@@ -31,6 +31,7 @@ const ADMISSIONS_SELECTION_KEY = "unitrack_admissions_selection_v1";
 
 export function Universities({ user, universities, onAdd, onEdit, onNavigate, onToast, searchFocusSignal = 0, navigationIntent = null }) {
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [status, setStatus] = useState("Toate");
   const [type, setType] = useState("toate");
   const [view, setView] = useState("catalog");
@@ -42,8 +43,13 @@ export function Universities({ user, universities, onAdd, onEdit, onNavigate, on
   const addLabel = user?.role === "admin" ? "Adaugă universitate" : "Trimite aplicație";
 
   useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedQuery(query.trim()), 280);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
     let active = true;
-    api.catalog(query)
+    api.catalog(debouncedQuery)
       .then((data) => {
         if (!active) return;
         const rows = data.universities || [];
@@ -57,7 +63,7 @@ export function Universities({ user, universities, onAdd, onEdit, onNavigate, on
     return () => {
       active = false;
     };
-  }, [pinnedCatalogItem, query, onToast]);
+  }, [pinnedCatalogItem, debouncedQuery, onToast]);
 
   useEffect(() => {
     if (!searchFocusSignal) return;

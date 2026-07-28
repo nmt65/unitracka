@@ -13,12 +13,11 @@ const pageTitles = {
   profile: "Profil"
 };
 
-export function Navbar({ user, active, onChange, onSearchUniversities, onLogout, darkMode, onToggleTheme, language = "ro", onToggleLanguage, notifications = [], onMarkNotificationRead }) {
+export function Navbar({ user, active, onSearchUniversities, onLogout, darkMode, onToggleTheme, language = "ro", onToggleLanguage, notifications = [], onMarkNotificationRead }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const notificationRef = useRef(null);
   const unreadCount = useMemo(() => notifications.filter((item) => !item.readAt).length, [notifications]);
   const latestNotifications = notifications.slice(0, 6);
-  const initials = user?.name?.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase() || "AM";
   const pageTitle = user?.role === "admin" && active === "dashboard"
     ? "Panou Admin"
     : user?.role === "university" && active === "dashboard"
@@ -130,16 +129,6 @@ export function Navbar({ user, active, onChange, onSearchUniversities, onLogout,
         </button>
         <button className="top-icon" type="button" title={t("Deconectare", language)} aria-label={t("Deconectare", language)} onClick={onLogout}>
           <LogOut size={18} />
-        </button>
-        <button
-          className={`top-avatar ${active === "profile" ? "active" : ""}`}
-          type="button"
-          title={`${t("Profil", language)} · ${user?.email || ""}`}
-          aria-label={t("Deschide profilul", language)}
-          aria-current={active === "profile" ? "page" : undefined}
-          onClick={() => onChange?.("profile")}
-        >
-          {user?.avatarDataUrl ? <img src={user.avatarDataUrl} alt="" /> : initials}
         </button>
       </div>
     </header>

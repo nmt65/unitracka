@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BookOpen, Brain, Copy, Database, Gauge, MailCheck, Plus, UserPlus } from "lucide-react";
+import { BookOpen, Brain, Database, Gauge, MailCheck, Plus, UserPlus } from "lucide-react";
 import { api } from "../services/api.js";
 
 const emptyInstitution = {
@@ -189,32 +189,6 @@ export function AdminPanel({ onToast }) {
     }
   }
 
-  async function copyAiEnv() {
-    await navigator.clipboard.writeText([
-      "OPENAI_API_KEY=sk-...",
-      "OPENAI_DOCUMENT_MODEL=gpt-4o-mini",
-      "OPENAI_ADVISOR_MODEL=gpt-4o-mini",
-      "# sau",
-      "GEMINI_API_KEY=...",
-      "GEMINI_DOCUMENT_MODEL=gemini-2.5-flash",
-      "GEMINI_ADVISOR_MODEL=gemini-2.5-flash",
-      "GEMINI_FALLBACK_MODELS=gemini-2.5-flash",
-      "GEMINI_REQUEST_TIMEOUT_MS=25000"
-    ].join("\n"));
-    onToast("Variabilele de analiză au fost copiate.");
-  }
-
-  async function copyGmailSmtpEnv() {
-    await navigator.clipboard.writeText([
-      "SMTP_HOST=smtp.gmail.com",
-      "SMTP_PORT=465",
-      "SMTP_USER=adresa-ta@gmail.com",
-      "SMTP_PASS=parola-app-google-16-caractere",
-      "SMTP_FROM=UniTrack <adresa-ta@gmail.com>"
-    ].join("\n"));
-    onToast("Variabilele SMTP Gmail au fost copiate.");
-  }
-
   return (
     <section className="unitrack-page admin-page">
       <div className="page-heading">
@@ -262,27 +236,9 @@ export function AdminPanel({ onToast }) {
             <strong>{systemStatus.aiConfigured ? "Analiză avansată" : "Analiză locală"}</strong>
             <span>{systemStatus.openaiModel || systemStatus.geminiModel || "verificare locală"}</span>
           </article>
-          {systemStatus.aiConfigured && (
-            <article>
-              <strong>{systemStatus.geminiRequestTimeoutMs ? `${Math.round(systemStatus.geminiRequestTimeoutMs / 1000)} sec` : "-"}</strong>
-              <span>timeout analiză document</span>
-            </article>
-          )}
           <article>
             <strong>{systemStatus.aiDocumentDailyLimit || 0}/zi</strong>
             <span>Limită verificări documente</span>
-          </article>
-          <article>
-            <strong>{systemStatus.aiAdvisorDailyLimit || 0}/zi</strong>
-            <span>Limită asistent dosar</span>
-          </article>
-          <article className={systemStatus.seedDemo ? "warn" : "ok"}>
-            <strong>{systemStatus.seedDemo ? "Seed test ON" : "Seed test OFF"}</strong>
-            <span>Date de test publice</span>
-          </article>
-          <article className={systemStatus.bootstrapAdmin ? "warn" : "ok"}>
-            <strong>{systemStatus.bootstrapAdmin ? "Bootstrap ON" : "Bootstrap OFF"}</strong>
-            <span>Primul admin</span>
           </article>
           <article>
             <strong>{systemStatus.catalogCount || 0}</strong>
@@ -315,10 +271,9 @@ export function AdminPanel({ onToast }) {
               <p>
                 {systemStatus.aiConfigured
                   ? `Documentele sunt citite din fișierul real de ${systemStatus.geminiModel || systemStatus.openaiModel}. Dacă modelul nu poate decide, dosarul rămâne în verificare manuală, nu este respins automat.`
-                  : "Momentan rulează verificarea locală. Pentru PDF-uri scanate, imagini și CV-uri reale, setează cheia providerului în Render > Environment."}
+                  : "Analiza avansată este indisponibilă. Verificarea locală și revizuirea manuală rămân active."}
               </p>
             </div>
-            <button className="soft-button" type="button" onClick={copyAiEnv}><Copy size={16} /> Copiază env analiză</button>
           </div>
         </section>
       )}
@@ -332,10 +287,9 @@ export function AdminPanel({ onToast }) {
               <p>
                 {systemStatus.smtpConfigured
                   ? `Resetările de parolă și notificările sunt trimise prin ${systemStatus.smtpHost || "SMTP"}.`
-                  : "Pentru Gmail trebuie parolă de aplicație Google, nu parola normală a contului. Pune variabilele SMTP în Render > Environment și redeploy."}
+                  : "Trimiterea emailurilor este indisponibilă până la configurarea serviciului."}
               </p>
             </div>
-            <button className="soft-button" type="button" onClick={copyGmailSmtpEnv}><Copy size={16} /> Copiază SMTP Gmail</button>
           </div>
           <form className="inline-admin-form" onSubmit={sendTestEmail}>
             <input type="email" value={testEmail} onChange={(event) => setTestEmail(event.target.value)} placeholder="email pentru test (opțional)" />

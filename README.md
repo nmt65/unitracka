@@ -243,6 +243,12 @@ Netlify frontend -> Backend Express -> PostgreSQL
 
 ## Documentație
 
+- [Documentația finală pentru prezentare](docs/DOCUMENTATIE-PREZENTARE.md)
+- [Discurs cronometrat de 8 minute](docs/DISCURS-8-MINUTE.md)
+- [Discurs cronometrat de 15 minute](docs/DISCURS-15-MINUTE.md)
+- [Audit pe criteriile oficiale Web 2026](docs/audit-criterii-web-2026.md)
+- [Documentație Word pentru juriu](docs/UniTrack-Documentatie-Juriu.docx)
+- [Discursuri Word pentru juriu](docs/UniTrack-Discursuri-Juriu.docx)
 - [Dosar de prezentare pentru juriu](docs/prezentare-juriu.md)
 - [Discurs pentru juriu, ușor de învățat](docs/discurs-juriu-de-invatat.md)
 - [Hardening pentru producție: storage, antivirus, RLS și GDPR](docs/hardening-productie.md)
@@ -262,6 +268,20 @@ Documentația proiectului este în folderul `docs/`:
 - `docs/public-launch-checklist.md`
 - `docs/surse-externe.md`
 - `docs/ce-nu-se-urca-pe-github.md`
+
+Verificarea completă locală:
+
+```powershell
+npm run verify
+```
+
+Verificarea buildului, browserului și API-ului live, cu raport JSON:
+
+```powershell
+$env:JURY_EMAIL="admin@unitracker.ro"
+$env:JURY_PASSWORD="<parola-admin>"
+powershell -ExecutionPolicy Bypass -File tools/verify-all.ps1
+```
 
 ## Conformitate InfoEducație 2026
 

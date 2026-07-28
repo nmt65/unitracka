@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { browserSupportsWebAuthn, startAuthentication } from "@simplewebauthn/browser";
-import { CheckCircle2, Eye, EyeOff, Fingerprint, GraduationCap, Languages, Lock, Mail, Moon, RotateCcw, ShieldCheck, Sun, UserPlus } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Eye, EyeOff, Fingerprint, GraduationCap, Languages, Lock, Mail, Moon, RotateCcw, ShieldCheck, Sun, UserPlus } from "lucide-react";
 import { api } from "../services/api.js";
 import { t } from "../i18n.js";
 
@@ -22,8 +22,8 @@ function passwordScore(password) {
   ].filter(Boolean).length;
 }
 
-export function AuthPage({ onLogin, onRegister, onAuthenticated, checkingSession = false, darkMode = false, onToggleTheme, language = "ro", onToggleLanguage }) {
-  const [mode, setMode] = useState("login");
+export function AuthPage({ onLogin, onRegister, onAuthenticated, checkingSession = false, darkMode = false, onToggleTheme, language = "ro", onToggleLanguage, initialMode = "login", onBack }) {
+  const [mode, setMode] = useState(initialMode === "register" ? "register" : "login");
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({
     email: "",
@@ -204,6 +204,9 @@ export function AuthPage({ onLogin, onRegister, onAuthenticated, checkingSession
 
   return (
     <main className="auth-page">
+      <button className="auth-back-button" type="button" onClick={onBack} aria-label="Înapoi la prezentare" title="Înapoi">
+        <ArrowLeft size={18} />
+      </button>
       <button
         className="auth-theme-toggle"
         type="button"

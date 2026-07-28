@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { browserSupportsWebAuthn, startRegistration } from "@simplewebauthn/browser";
-import { AlertTriangle, BellRing, CheckCircle2, Copy, FileCheck2, Fingerprint, ImagePlus, KeyRound, Link2, LogOut, Mail, Plus, Save, Target, Trash2, X } from "lucide-react";
+import { AlertTriangle, BellRing, CheckCircle2, FileCheck2, Fingerprint, ImagePlus, KeyRound, LogOut, Mail, Plus, Save, Target, Trash2, X } from "lucide-react";
 import { api } from "../services/api.js";
 
 function shortName(university) {
@@ -195,7 +195,6 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
     + (user.emailNotifications ? 12 : 0)
   ));
   const nextDeadline = (stats?.upcomingDeadlines || []).find((item) => item.daysUntilDeadline >= 0);
-  const publicProfileUrl = new URL(`public/${user.publicShareId}`, window.location.href).toString();
   const [form, setForm] = useState({
     name: user.name || "",
     bacAverage: user.bacAverage ?? "",
@@ -287,17 +286,6 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
     } finally {
       setSaving(false);
     }
-  }
-
-  async function rotateLink() {
-    const data = await api.rotateShareLink();
-    onUser({ ...user, publicShareId: data.publicShareId });
-    onToast("Link public regenerat.");
-  }
-
-  async function copyLink() {
-    await navigator.clipboard.writeText(publicProfileUrl);
-    onToast("Link copiat.");
   }
 
   async function changePassword(event) {
@@ -463,10 +451,6 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
         <div className="profile-hero-main">
           <h2>{user.name}</h2>
           <p>Notele și certificatele sunt folosite în aplicații numai după verificarea documentelor.</p>
-          <div className="profile-hero-actions">
-            <button className="soft-button" type="button" onClick={copyLink}><Copy size={16} /> Copiază profil public</button>
-            <button className="soft-button" type="button" onClick={rotateLink}><Link2 size={16} /> Regenerează link</button>
-          </div>
         </div>
         <div className="readiness-card">
           <span>Scor pregătire</span>
@@ -575,14 +559,6 @@ export function Profile({ user, universities = [], stats, onUser, onLogout, onTo
         </div>
       </form>
 
-      <section className="share-panel">
-        <h2>Profil public</h2>
-        <p>{publicProfileUrl}</p>
-        <div className="export-row">
-          <button className="soft-button" type="button" onClick={copyLink}><Copy size={17} /> Copiază</button>
-          <button className="soft-button" type="button" onClick={rotateLink}><Link2 size={17} /> Regenerează</button>
-        </div>
-      </section>
       </>}
 
       {profileSection === "security" && <>

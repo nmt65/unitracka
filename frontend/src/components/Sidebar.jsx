@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Brain, Building2, CalendarDays, CheckCircle2, ChevronRight, FileText, GraduationCap, Grid2X2, Heart, Menu, Send, Scale, ShieldCheck, UserCircle2, X } from "lucide-react";
+import { Brain, Building2, CalendarDays, ChevronRight, FileText, GraduationCap, Grid2X2, Menu, Scale, ShieldCheck, UserCircle2, X } from "lucide-react";
 import { t } from "../i18n.js";
 
 const items = [
@@ -81,11 +81,6 @@ function MobileStudentNav({ active, onChange, counts, user, language }) {
             </div>
             <button type="button" aria-label={t("Închide meniul", language)} onClick={() => setMoreOpen(false)}><X size={19} /></button>
           </header>
-          <div className="mobile-status-shortcuts">
-            <button type="button" onClick={() => go("universities", { status: "Wishlist" })}><Heart size={17} /> Wishlist <span>{counts.wishlist || 0}</span></button>
-            <button type="button" onClick={() => go("universities", { status: "Aplicat" })}><Send size={17} /> {t("Aplicate", language)} <span>{counts.applied || 0}</span></button>
-            <button type="button" onClick={() => go("universities", { status: "Acceptat" })}><CheckCircle2 size={17} /> {t("Acceptate", language)} <span>{counts.accepted || 0}</span></button>
-          </div>
           <div className="mobile-more-grid">
             <button className={active === "advisor" ? "active" : ""} type="button" onClick={() => go("advisor")}><Brain size={19} /><span>{t("Asistent dosar", language)}</span></button>
             <button className={active === "compare" ? "active" : ""} type="button" onClick={() => go("compare")}><Scale size={19} /><span>{t("Compară", language)}</span></button>
@@ -132,36 +127,14 @@ export function Sidebar({ active, onChange, counts, user, language = "ro" }) {
     <>
       <aside className="sidebar">
         <SidebarBrand />
-        <p className="sidebar-title">{t("Aplicațiile mele", language)}</p>
+        <p className="sidebar-title">{t("Navigare", language)}</p>
         <button className={`side-link ${active === "dashboard" ? "active" : ""}`} type="button" onClick={() => onChange("dashboard")}>
           <Grid2X2 size={18} />
-          {t("Toate", language)}
-          <span>{counts.total || 0}</span>
+          Dashboard
         </button>
-        <button className="side-link" type="button" onClick={() => openUniversities("Wishlist")}>
-          <Heart size={18} />
-          Wishlist
-          <span>{counts.wishlist || 0}</span>
-        </button>
-        <button className="side-link" type="button" onClick={() => openUniversities("Aplicat")}>
-          <Send size={18} />
-          {t("Aplicate", language)}
-          <span>{counts.applied || 0}</span>
-        </button>
-        <button className="side-link" type="button" onClick={() => openUniversities("Acceptat")}>
-          <CheckCircle2 size={18} />
-          {t("Acceptate", language)}
-          <span>{counts.accepted || 0}</span>
-        </button>
-        <div className="side-divider" />
-        <p className="sidebar-title">{t("Unelte", language)}</p>
         <button className={`side-link ${active === "admissions" ? "active" : ""}`} type="button" onClick={() => onChange("admissions")}>
           <Building2 size={18} />
           {t("Admitere", language)}
-        </button>
-        <button className={`side-link ${active === "advisor" ? "active" : ""}`} type="button" onClick={() => onChange("advisor")}>
-          <Brain size={18} />
-          {t("Asistent dosar", language)}
         </button>
         {items.map((item) => {
           const Icon = item.icon;
@@ -172,6 +145,10 @@ export function Sidebar({ active, onChange, counts, user, language = "ro" }) {
             </button>
           );
         })}
+        <button className={`side-link ${active === "advisor" ? "active" : ""}`} type="button" onClick={() => onChange("advisor")}>
+          <Brain size={18} />
+          {t("Asistent dosar", language)}
+        </button>
         <SidebarAccount active={active} onChange={onChange} user={user} language={language} />
       </aside>
       <MobileStudentNav
