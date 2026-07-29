@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../services/api.js";
 import { BookOpen, CheckCircle2, Circle, Download, Eye, FileText, Plus, Search, X } from "lucide-react";
+import { t } from "../i18n.js";
 
 const statusLabels = {
   submitted: "Trimisă",
@@ -40,7 +41,7 @@ const emptyProgram = {
   status: "active"
 };
 
-export function UniversityWorkspace({ user, onToast }) {
+export function UniversityWorkspace({ user, onToast, language = "ro" }) {
   const [applications, setApplications] = useState([]);
   const [institution, setInstitution] = useState(null);
   const [programs, setPrograms] = useState([]);
@@ -170,24 +171,28 @@ export function UniversityWorkspace({ user, onToast }) {
     <section className="unitrack-page">
       <div className="page-heading">
         <div>
-          <h1>Workspace admitere</h1>
-          <p>{user.institution?.name || "Universitate"} · evaluarea aplicațiilor și oferta educațională.</p>
+          <h1>{t("Workspace admitere", language)}</h1>
+          <p>
+            {user.institution?.name || t("Universitate", language)}
+            {" · "}
+            {language === "en" ? "application review and educational offer." : "evaluarea aplicațiilor și oferta educațională."}
+          </p>
         </div>
       </div>
 
       <nav className="workspace-tabs" aria-label="Secțiuni workspace">
-        <button className={activeSection === "applications" ? "active" : ""} type="button" onClick={() => setActiveSection("applications")}>Aplicații</button>
-        <button className={activeSection === "offer" ? "active" : ""} type="button" onClick={() => setActiveSection("offer")}>Ofertă educațională</button>
-        <button className={activeSection === "profile" ? "active" : ""} type="button" onClick={() => setActiveSection("profile")}>Profil universitate</button>
+        <button className={activeSection === "applications" ? "active" : ""} type="button" onClick={() => setActiveSection("applications")}>{t("Aplicații", language)}</button>
+        <button className={activeSection === "offer" ? "active" : ""} type="button" onClick={() => setActiveSection("offer")}>{t("Ofertă educațională", language)}</button>
+        <button className={activeSection === "profile" ? "active" : ""} type="button" onClick={() => setActiveSection("profile")}>{t("Profil universitate", language)}</button>
       </nav>
 
       {activeSection === "applications" && (
         <>
           <div className="stats-grid compact-stats workspace-stats">
-            <article className="stat-card"><strong>{stats.total}</strong><span>Aplicații</span><small>total</small></article>
-            <article className="stat-card warning"><strong>{stats.review}</strong><span>De evaluat</span><small>noi / în lucru</small></article>
-            <article className="stat-card success"><strong>{stats.accepted}</strong><span>Acceptate</span><small>notificate</small></article>
-            <article className="stat-card warning"><strong>{stats.incomplete}</strong><span>Incomplete</span><small>documente lipsă</small></article>
+            <article className="stat-card"><strong>{stats.total}</strong><span>{t("Aplicații", language)}</span><small>{t("total", language)}</small></article>
+            <article className="stat-card warning"><strong>{stats.review}</strong><span>{t("De evaluat", language)}</span><small>{t("noi / în lucru", language)}</small></article>
+            <article className="stat-card success"><strong>{stats.accepted}</strong><span>{t("Acceptate", language)}</span><small>{t("notificate", language)}</small></article>
+            <article className="stat-card warning"><strong>{stats.incomplete}</strong><span>{t("Incomplete", language)}</span><small>{t("documente lipsă", language)}</small></article>
           </div>
           <section className="review-pipeline" aria-label="Flux evaluare aplicații">
             {workflowStages.map(([key, label], index) => {
@@ -200,8 +205,10 @@ export function UniversityWorkspace({ user, onToast }) {
                   onClick={() => setFilter((current) => ({ ...current, status: current.status === key ? "all" : key }))}
                 >
                   <span>{index + 1}</span>
-                  <strong>{label}</strong>
-                  <small>{count} aplicații</small>
+                  <strong>{t(label, language)}</strong>
+                  <small>
+                    {count} {language === "en" ? (count === 1 ? "application" : "applications") : (count === 1 ? "aplicație" : "aplicații")}
+                  </small>
                 </button>
               );
             })}

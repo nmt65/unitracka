@@ -6,9 +6,13 @@ export function daysUntil(dateLike) {
   return Math.ceil((date - today) / 86400000);
 }
 
-export function formatDate(dateLike) {
+export function formatDate(dateLike, language = "ro") {
   if (!dateLike) return "-";
-  return new Intl.DateTimeFormat("ro-RO", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(dateLike));
+  return new Intl.DateTimeFormat(language === "en" ? "en-GB" : "ro-RO", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  }).format(new Date(dateLike));
 }
 
 export function deadlineTone(dateLike) {

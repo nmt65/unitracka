@@ -69,7 +69,7 @@ export function Navbar({ user, active, onSearchUniversities, onLogout, darkMode,
             {unreadCount > 0 && <span className="notification-count">{unreadCount}</span>}
           </button>
           {notificationsOpen && (
-            <section className="notification-panel" aria-label="Notificări">
+            <section className="notification-panel" aria-label={t("Notificări", language)}>
               <header>
                 <span className="notification-title">
                   <Inbox size={16} />
@@ -94,7 +94,7 @@ export function Navbar({ user, active, onSearchUniversities, onLogout, darkMode,
                     <span>
                       <strong>{item.title}</strong>
                       <em>{item.body}</em>
-                      <small>{item.createdAt ? new Date(item.createdAt).toLocaleString("ro-RO") : t("Acum", language)}</small>
+                      <small>{item.createdAt ? new Date(item.createdAt).toLocaleString(language === "en" ? "en-GB" : "ro-RO") : t("Acum", language)}</small>
                     </span>
                   </button>
                 ))

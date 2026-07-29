@@ -35,7 +35,10 @@ export function App() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [toast, setToast] = useState("");
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem("unitrack-theme") === "dark");
+  const [darkMode, setDarkMode] = useState(() => {
+    const savedTheme = localStorage.getItem("unitrack-theme");
+    return savedTheme ? savedTheme === "dark" : true;
+  });
   const [language, setLanguage] = useState(() => localStorage.getItem("unitrack-language") || "ro");
   const [notifications, setNotifications] = useState([]);
   const [serverNotice, setServerNotice] = useState("");
@@ -236,6 +239,8 @@ export function App() {
           <LandingPage
             onLogin={() => setAuthEntry("login")}
             onRegister={() => setAuthEntry("register")}
+            language={language}
+            onToggleLanguage={() => setLanguage((value) => value === "ro" ? "en" : "ro")}
           />
           <CookieBanner language={language} />
         </>
@@ -270,7 +275,8 @@ export function App() {
     onManageUniversities: () => navigate("universities"),
     onNavigate: navigate,
     onRefresh: refresh,
-    onToast: setToast
+    onToast: setToast,
+    language
   };
 
   return (
@@ -294,11 +300,11 @@ export function App() {
         <main className="content">
           {loading && <div className="loading-bar" />}
           <Suspense fallback={<div className="page-loader" role="status">Se încarcă...</div>}>
-          {active === "dashboard" && user.role === "admin" && <AdminPanel onToast={setToast} />}
-          {active === "dashboard" && user.role === "university" && <UniversityWorkspace user={user} onToast={setToast} />}
+          {active === "dashboard" && user.role === "admin" && <AdminPanel onToast={setToast} language={language} />}
+          {active === "dashboard" && user.role === "university" && <UniversityWorkspace user={user} onToast={setToast} language={language} />}
           {active === "dashboard" && user.role === "student" && <Dashboard {...pageProps} />}
-          {active === "admissions" && user.role === "student" && <Admissions onToast={setToast} />}
-          {active === "advisor" && user.role === "student" && <StudentAdvisor universities={universities} onToast={setToast} />}
+          {active === "admissions" && user.role === "student" && <Admissions onToast={setToast} language={language} />}
+          {active === "advisor" && user.role === "student" && <StudentAdvisor universities={universities} onToast={setToast} language={language} />}
           {active === "universities" && user.role === "student" && <Universities {...pageProps} searchFocusSignal={universitySearchFocus} navigationIntent={universityNavigationIntent} />}
           {active === "documents" && (
             <Documents
@@ -306,11 +312,12 @@ export function App() {
               onToggleDocument={toggleDocument}
               onAddDocument={addDocument}
               onDeleteDocument={deleteDocument}
+              language={language}
             />
           )}
-          {active === "compare" && user.role === "student" && <Compare universities={universities} onToast={setToast} onRefresh={refresh} />}
-          {active === "calendar" && user.role === "student" && <Calendar universities={universities} onToast={setToast} />}
-          {active === "profile" && <Profile user={user} universities={universities} stats={stats} onUser={setUser} onLogout={logout} onToast={setToast} />}
+          {active === "compare" && user.role === "student" && <Compare universities={universities} onToast={setToast} onRefresh={refresh} language={language} />}
+          {active === "calendar" && user.role === "student" && <Calendar universities={universities} language={language} />}
+          {active === "profile" && <Profile user={user} universities={universities} stats={stats} onUser={setUser} onLogout={logout} onToast={setToast} language={language} />}
           </Suspense>
         </main>
       </div>

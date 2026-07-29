@@ -5,6 +5,7 @@ import { ProgressBar } from "../components/ProgressBar.jsx";
 import { StatusPill } from "../components/StatusPill.jsx";
 import { DeadlinePanel } from "../components/DeadlinePanel.jsx";
 import { formatDate } from "../utils/date.js";
+import { t } from "../i18n.js";
 
 function shortName(university) {
   return university.shortName || university.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 4).toUpperCase();
@@ -21,10 +22,10 @@ function progressTone(value) {
   return "danger";
 }
 
-export function Dashboard({ user, universities, stats, onAdd, onEdit, onManageUniversities, onNavigate }) {
+export function Dashboard({ user, universities, stats, onAdd, onEdit, onManageUniversities, onNavigate, language = "ro" }) {
   const [activeTab, setActiveTab] = useState("Toate");
   const firstName = user?.name?.split(" ")[0] || "Andrei";
-  const addLabel = user?.role === "admin" ? "Adaugă universitate" : "Adaugă aplicație";
+  const addLabel = t(user?.role === "admin" ? "Adaugă universitate" : "Adaugă aplicație", language);
   const completedDocs = universities.reduce((sum, uni) => sum + (uni.documents?.filter((doc) => doc.isCompleted).length || 0), 0);
   const totalDocs = universities.reduce((sum, uni) => sum + (uni.documents?.length || 0), 0);
   const missingDocs = Math.max(0, totalDocs - completedDocs);
@@ -33,11 +34,17 @@ export function Dashboard({ user, universities, stats, onAdd, onEdit, onManageUn
   const needsWork = [...universities]
     .filter((uni) => uni.status !== "Acceptat")
     .sort((a, b) => Number(a.progress || 0) - Number(b.progress || 0))[0];
-  const nextAction = missingDocs
-    ? `Începe cu ${needsWork?.name || "dosarul cu progres mic"}: mai sunt ${missingDocs} documente lipsă în tracker.`
-    : nextDeadline
-      ? `Dosarele arată bine. Următorul deadline: ${nextDeadline.name}, în ${nextDeadline.daysUntilDeadline} zile.`
-      : "Ai dosarele pregătite. Poți compara opțiunile sau trimite o aplicație nouă.";
+  const nextAction = language === "en"
+    ? missingDocs
+      ? `Start with ${needsWork?.name || "the least complete application"}: ${missingDocs} documents are still missing.`
+      : nextDeadline
+        ? `Your applications look good. The next deadline is ${nextDeadline.name}, in ${nextDeadline.daysUntilDeadline} days.`
+        : "Your applications are ready. Compare your options or submit a new application."
+    : missingDocs
+      ? `Începe cu ${needsWork?.name || "dosarul cu progres mic"}: mai sunt ${missingDocs} documente lipsă în tracker.`
+      : nextDeadline
+        ? `Dosarele arată bine. Următorul deadline: ${nextDeadline.name}, în ${nextDeadline.daysUntilDeadline} zile.`
+        : "Ai dosarele pregătite. Poți compara opțiunile sau trimite o aplicație nouă.";
   const tabs = [
     ["Toate", universities.length],
     ["Wishlist", universities.filter((uni) => uni.status === "Wishlist").length],
@@ -60,35 +67,35 @@ export function Dashboard({ user, universities, stats, onAdd, onEdit, onManageUn
       <section className="main-column">
         <header className="dashboard-header">
           <div>
-            <h1>Bună, {firstName}</h1>
+            <h1>{language === "en" ? "Hello" : "Bună"}, {firstName}</h1>
             <p>{nextAction}</p>
           </div>
           <div className="dashboard-header-actions">
-            <button className="soft-button" type="button" onClick={() => onNavigate?.("documents")}><ClipboardList size={17} /> Documente</button>
+            <button className="soft-button" type="button" onClick={() => onNavigate?.("documents")}><ClipboardList size={17} /> {t("Documente", language)}</button>
             <button className="primary-button" type="button" onClick={onAdd}><Plus size={18} /> {addLabel}</button>
           </div>
         </header>
 
-        <section className="dashboard-summary" aria-label="Rezumat aplicații">
+        <section className="dashboard-summary" aria-label={t("Rezumat aplicații", language)}>
           <button type="button" onClick={onManageUniversities}>
             <GraduationCap size={18} />
             <strong>{universities.length}</strong>
-            <span>universități urmărite</span>
+            <span>{t("universități urmărite", language)}</span>
           </button>
           <button type="button" onClick={() => setActiveTab("Aplicate")}>
             <Send size={18} />
             <strong>{appliedCount}</strong>
-            <span>aplicații trimise</span>
+            <span>{t("aplicații trimise", language)}</span>
           </button>
           <button type="button" onClick={() => onNavigate?.("documents")}>
             <ClipboardList size={18} />
             <strong>{missingDocs}</strong>
-            <span>documente lipsă</span>
+            <span>{t("documente lipsă", language)}</span>
           </button>
           <button type="button" onClick={() => onNavigate?.("profile")}>
-            <span className="summary-progress-label">Pregătire dosar</span>
+            <span className="summary-progress-label">{t("Pregătire dosar", language)}</span>
             <strong>{readinessScore}%</strong>
-            <span>{completedDocs}/{totalDocs || 0} documente verificate</span>
+            <span>{completedDocs}/{totalDocs || 0} {t("documente verificate", language)}</span>
             <i className="summary-progress-track"><b style={{ width: `${readinessScore}%` }} /></i>
           </button>
         </section>
@@ -98,13 +105,13 @@ export function Dashboard({ user, universities, stats, onAdd, onEdit, onManageUn
         ) : (
           <section className="applications-card">
             <header>
-              <h2>Aplicațiile mele</h2>
-              <button type="button" onClick={onManageUniversities}>Gestionează →</button>
+              <h2>{t("Aplicațiile mele", language)}</h2>
+              <button type="button" onClick={onManageUniversities}>{t("Gestionează", language)} <ArrowRight size={15} /></button>
             </header>
-            <nav className="app-tabs" aria-label="Filtrare aplicații">
+            <nav className="app-tabs" aria-label={t("Filtrare aplicații", language)}>
               {tabs.map(([label, count]) => (
                 <button key={label} className={label === activeTab ? "active" : ""} type="button" onClick={() => setActiveTab(label)}>
-                  {label} <span>{count}</span>
+                  {t(label, language)} <span>{count}</span>
                 </button>
               ))}
             </nav>
@@ -115,27 +122,27 @@ export function Dashboard({ user, universities, stats, onAdd, onEdit, onManageUn
                   <strong>{university.name} <small>{countryCode(university)}</small></strong>
                   <small>{university.program} — {university.faculty}</small>
                   <span>
-                    <StatusPill status={university.status} />
+                    <StatusPill status={university.status} language={language} />
                     {university.daysUntilDeadline < 0 ? (
-                      <em className="deadline-expired"><CalendarDays size={13} /> Deadline expirat</em>
+                      <em className="deadline-expired"><CalendarDays size={13} /> {t("Deadline expirat", language)}</em>
                     ) : university.daysUntilDeadline <= 14 ? (
-                      <em><CalendarDays size={13} /> {university.daysUntilDeadline} zile rămase</em>
+                      <em><CalendarDays size={13} /> {university.daysUntilDeadline} {t("zile rămase", language)}</em>
                     ) : (
-                      <em><CalendarDays size={13} /> {formatDate(university.deadline)}</em>
+                      <em><CalendarDays size={13} /> {formatDate(university.deadline, language)}</em>
                     )}
                   </span>
                 </span>
                 <span className="application-progress">
                   <ProgressBar value={university.progress} tone={progressTone(university.progress)} />
                   <strong>{university.progress}%</strong>
-                  <small>{university.documents?.filter((doc) => doc.isCompleted).length || 0}/{university.documents?.length || 0} documente</small>
+                  <small>{university.documents?.filter((doc) => doc.isCompleted).length || 0}/{university.documents?.length || 0} {t("documente", language)}</small>
                 </span>
               </button>
             ))}
             {visibleUniversities.length === 0 && (
               <div className="inline-empty compact">
-                <strong>Nu există aplicații în filtrul {activeTab}.</strong>
-                <span>Alege alt status sau adaugă o aplicație nouă.</span>
+                <strong>{language === "en" ? `There are no applications in the ${t(activeTab, language)} filter.` : `Nu există aplicații în filtrul ${activeTab}.`}</strong>
+                <span>{t("Alege alt status sau adaugă o aplicație nouă.", language)}</span>
               </div>
             )}
           </section>
@@ -143,14 +150,18 @@ export function Dashboard({ user, universities, stats, onAdd, onEdit, onManageUn
       </section>
       <div className="side-column">
         <section className="right-panel next-action-panel">
-          <span>Următorul pas</span>
-          <strong>{missingDocs ? "Completează documentele lipsă" : "Dosarele sunt pregătite"}</strong>
-          <p>{missingDocs ? `${missingDocs} documente necesită atenție.` : nextDeadline ? `${nextDeadline.name}: ${nextDeadline.daysUntilDeadline} zile până la deadline.` : "Poți trimite o aplicație nouă."}</p>
+          <span>{t("Următorul pas", language)}</span>
+          <strong>{t(missingDocs ? "Completează documentele lipsă" : "Dosarele sunt pregătite", language)}</strong>
+          <p>{missingDocs
+            ? language === "en" ? `${missingDocs} documents require attention.` : `${missingDocs} documente necesită atenție.`
+            : nextDeadline
+              ? language === "en" ? `${nextDeadline.name}: ${nextDeadline.daysUntilDeadline} days until the deadline.` : `${nextDeadline.name}: ${nextDeadline.daysUntilDeadline} zile până la deadline.`
+              : t("Poți trimite o aplicație nouă.", language)}</p>
           <button type="button" onClick={missingDocs ? () => onNavigate?.("documents") : onAdd}>
-            {missingDocs ? "Deschide documentele" : "Adaugă aplicație"} <ArrowRight size={16} />
+            {t(missingDocs ? "Deschide documentele" : "Adaugă aplicație", language)} <ArrowRight size={16} />
           </button>
         </section>
-        <DeadlinePanel items={stats?.upcomingDeadlines || []} />
+        <DeadlinePanel items={stats?.upcomingDeadlines || []} language={language} />
       </div>
     </div>
   );

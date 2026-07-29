@@ -25,6 +25,8 @@ const en = {
   "Aplicat": "Applied",
   "Acceptat": "Accepted",
   "Respins": "Rejected",
+  "Listă de așteptare": "Waitlist",
+  "Evaluare": "Review",
   "Licență": "Bachelor",
   "Master": "Master",
   "Doctorat": "PhD",
@@ -342,7 +344,215 @@ const en = {
   "Conexiunea cu serverul a picat. Așteaptă câteva secunde și reîncearcă.": "The server connection was interrupted. Wait a few seconds and try again."
 };
 
+Object.assign(en, {
+  "UniTrack, început": "UniTrack, home",
+  "Navigare prezentare": "Presentation navigation",
+  "Cum funcționează": "How it works",
+  "Pentru cine": "Who it is for",
+  "Autentificare": "Sign in",
+  "Intră": "Sign in",
+  "Platformă unificată pentru admitere": "Unified admissions platform",
+  "Dosarul tău universitar, de la alegere la admitere.": "Your university application, from shortlist to admission.",
+  "Compară programe, verifică documente și urmărește fiecare candidatură într-un singur loc.": "Compare programs, verify documents, and track every application in one place.",
+  "Intră în platformă": "Open the platform",
+  "Avantaje principale": "Key benefits",
+  "Cont student unic": "One student account",
+  "Documente verificate": "Verified documents",
+  "Date separate pe roluri": "Role-based data access",
+  "Un singur proces": "One connected process",
+  "Trei pași, fără dosare pierdute.": "Three steps, no lost applications.",
+  "Alegi programul": "Choose a program",
+  "Cauți și compari ofertele educaționale relevante.": "Search and compare relevant educational offers.",
+  "Pregătești dosarul": "Prepare your application",
+  "Documentele sunt organizate și verificate înainte de trimitere.": "Documents are organized and checked before submission.",
+  "Urmărești admiterea": "Track the decision",
+  "Studentul și universitatea lucrează în același flux.": "Students and universities work in the same flow.",
+  "Un flux comun, acces controlat": "One workflow, controlled access",
+  "Fiecare vede exact ce are de făcut.": "Every role sees exactly what needs attention.",
+  "Catalog, dosar, comparații și statusuri.": "Catalog, applications, comparisons, and statuses.",
+  "Ofertă educațională și evaluarea candidaților.": "Educational offers and applicant review.",
+  "Instituții, conturi și control operațional.": "Institutions, accounts, and operational control.",
+  "Validare explicabilă și trasabilitate.": "Explainable checks and full traceability.",
+  "Admitere universitară organizată.": "University admissions, organized.",
+  "Începe acum": "Get started",
+  "Rezumat aplicații": "Application overview",
+  "universități urmărite": "tracked universities",
+  "aplicații trimise": "submitted applications",
+  "documente lipsă": "missing documents",
+  "Pregătire dosar": "Application readiness",
+  "Filtrare aplicații": "Application filters",
+  "Deadline expirat": "Deadline passed",
+  "Progres": "Progress",
+  "Următorul pas": "Next step",
+  "Completează documentele lipsă": "Complete missing documents",
+  "Dosarele sunt pregătite": "Applications are ready",
+  "Deschide documentele": "Open documents",
+  "Poți trimite o aplicație nouă.": "You can submit a new application.",
+  "Alege alt status sau adaugă o aplicație nouă.": "Choose another status or add a new application.",
+  "Deadline-uri": "Deadlines",
+  "Nu ai deadline-uri active.": "You have no active deadlines.",
+  "Trecut": "Passed",
+  "zile": "days",
+  "Adaugă aplicație": "Add application",
+  "Trimite aplicații către universități și verifică documentele înainte de evaluare.": "Submit applications to universities and verify documents before review.",
+  "Trimite aplicație": "Submit application",
+  "Media BAC și scorurile de limbă se completează din profil doar după ce ai documente atestatoare verificate.": "Your final exam average and language scores can be added only after supporting documents are verified.",
+  "Acceptăm PDF, DOC/DOCX, JPG, PNG, WebP și documente text de maximum 5 MB. Tipul, extensia și conținutul sunt comparate înainte de analiză.": "We accept PDF, DOC/DOCX, JPG, PNG, WebP, and text documents up to 5 MB. File type, extension, and content are checked before analysis.",
+  "Conținut citit din fișier": "Content extracted from file",
+  "Nu ai aplicații trimise încă.": "You have not submitted any applications yet.",
+  "Alege o universitate activă și trimite prima aplicație ca să apară documentele de verificat.": "Choose an active university and submit your first application to create its document checklist.",
+  "Catalog 2026-2027, comparații și aplicațiile tale.": "2026-2027 catalog, comparisons, and your applications.",
+  "Compară selecția": "Compare selection",
+  "Trackerul meu": "My tracker",
+  "rezultate": "results",
+  "Gestionează checklist-ul de documente pentru fiecare universitate": "Manage the document checklist for every university",
+  "UNIVERSITĂȚI": "UNIVERSITIES",
+  "DOCUMENTE PREDEFINITE DISPONIBILE": "AVAILABLE DOCUMENT TYPES",
+  "Finalizat pe": "Completed on",
+  "Diplomă BAC": "Baccalaureate diploma",
+  "Foaie matricolă": "Academic transcript",
+  "Scrisoare motivație": "Motivation letter",
+  "Scrisori de recomandare": "Letters of recommendation",
+  "Cazier judiciar": "Criminal record certificate",
+  "Adeverință medicală": "Medical certificate",
+  "Certificat limbă (IELTS/TOEFL)": "Language certificate (IELTS/TOEFL)",
+  "Compară Universități": "Compare universities",
+  "Selectează 2–4 universități din catalogul public sau din trackerul tău": "Select 2-4 universities from the public catalog or your tracker",
+  "SELECTATE": "SELECTED",
+  "ALEGE UNIVERSITĂȚILE": "CHOOSE UNIVERSITIES",
+  "SELECȚII RAPIDE": "QUICK PICKS",
+  "RECOMANDARE UNITRACK": "UNITRACK RECOMMENDATION",
+  "Catalog": "Catalog",
+  "Catalog public": "Public catalog",
+  "Mai sunt": "There are",
+  "Rafinează căutarea ca să le vezi mai repede.": "Refine your search to find them faster.",
+  "Calendar Deadline-uri": "Admissions calendar",
+  "Vizualizează deadline-urile și prioritățile dosarelor tale": "Review deadlines and application priorities",
+  "viitoare": "upcoming",
+  "urgente": "urgent",
+  "deadline-uri în luna curentă": "deadlines this month",
+  "DEADLINE-URI": "DEADLINES",
+  "Asistent dosar": "Application assistant",
+  "Primești strategie, riscuri și pași concreți pentru aplicațiile tale.": "Get strategy, risks, and practical next steps for your applications.",
+  "STRATEGY STUDIO": "APPLICATION STRATEGY",
+  "Construiește un plan de admitere, nu doar un scor.": "Build an admissions plan, not just a score.",
+  "Alege ținta, bugetul și nivelul de ambiție. AI-ul folosește documentele verificate și aplicațiile reale, iar fallback-ul local rămâne strict când API-ul nu răspunde.": "Choose a target, budget, and ambition level. The assistant uses verified documents and real applications, while strict local checks remain available if the API is unavailable.",
+  "dosar verificat": "application verified",
+  "Analiză profil": "Profile analysis",
+  "Ținta analizei": "Analysis target",
+  "Aplicații trimise": "Submitted applications",
+  "Tracker personal": "Personal tracker",
+  "Profilul meu": "My profile",
+  "Date personale, rezultate verificate și securitatea contului.": "Personal details, verified results, and account security.",
+  "Rezumat": "Overview",
+  "Date și rezultate": "Details and results",
+  "Securitate": "Security",
+  "Notele și certificatele sunt folosite în aplicații numai după verificarea documentelor.": "Grades and certificates are used in applications only after their documents are verified.",
+  "SCOR PREGĂTIRE": "READINESS SCORE",
+  "documente obligatorii lipsă": "required documents missing",
+  "Note blocate": "Grades locked",
+  "Încarcă dovada înainte să modifici media": "Upload evidence before changing your average",
+  "Certificat necesar": "Certificate required",
+  "IELTS/TOEFL se salvează după document": "IELTS/TOEFL scores are saved after document verification",
+  "Reminder activ": "Reminder active",
+  "documente verificate în tracker și aplicații": "verified documents across tracker and applications",
+  "Universități acceptate": "Accepted universities",
+  "Administrație platformă": "Platform administration",
+  "Panou de control": "Control panel",
+  "Catalog, conturi instituționale și configurarea platformei.": "Catalog, institutional accounts, and platform configuration.",
+  "servicii active": "services active",
+  "Sănătate": "Health",
+  "Catalog & ofertă": "Catalog & programs",
+  "Conturi": "Accounts",
+  "Conectată": "Connected",
+  "verificare locală": "local verification",
+  "Analiza avansată este indisponibilă. Verificarea locală și revizuirea manuală rămân active.": "Advanced analysis is unavailable. Local verification and manual review remain active.",
+  "Trimiterea emailurilor este indisponibilă până la configurarea serviciului.": "Email delivery is unavailable until the service is configured.",
+  "Universitatea din București · evaluarea aplicațiilor și oferta educațională.": "Universitatea din București · application review and educational offer.",
+  "total": "total",
+  "noi / în lucru": "new / in progress",
+  "notificate": "notified",
+  "Primite": "Received",
+  "În review": "In review",
+  "1 aplicații": "1 application",
+  "Documente complete": "Complete documents",
+  "Toate documentele": "All documents",
+  "Dosare complete": "Complete applications",
+  "Dosare incomplete": "Incomplete applications",
+  "Fișiere lipsă": "Missing files",
+  "Documente respinse": "Rejected documents",
+  "Export listă": "Export list",
+  "Trimisă": "Submitted",
+  "Acceptă": "Accept",
+  "Respinge": "Reject",
+  "Feedback pentru student": "Feedback for student",
+  "fără fișier": "no file",
+  "neverificat automat": "not automatically verified",
+  "Foaie matricola": "Academic transcript",
+  "Adeverinta medicala": "Medical certificate",
+  "Certificat limba (IELTS/TOEFL/DELF)": "Language certificate (IELTS/TOEFL/DELF)",
+  "Cazier": "Criminal record certificate",
+  "Diploma BAC": "Baccalaureate diploma",
+  "Scrisoare motivatie": "Motivation letter",
+  "Aplicație demo trimisă către workspace-ul universității.": "Demo application submitted to the university workspace.",
+  "România": "Romania",
+  "Marea Britanie": "United Kingdom",
+  "Germania": "Germany",
+  "Olanda": "Netherlands",
+  "Belgia": "Belgium",
+  "Franța": "France",
+  "Elveția": "Switzerland",
+  "Suedia": "Sweden",
+  "Danemarca": "Denmark"
+});
+
 const ro = Object.fromEntries(Object.entries(en).map(([key, value]) => [value, key]));
+
+const inlineEn = [
+  ["DOCUMENTE PREDEFINITE DISPONIBILE", "AVAILABLE DOCUMENT TYPES"],
+  ["Documente predefinite disponibile", "Available document types"],
+  ["SELECȚII RAPIDE", "QUICK PICKS"],
+  ["Selecții rapide", "Quick picks"],
+  ["SCOR PREGĂTIRE", "READINESS SCORE"],
+  ["Scor pregătire", "Readiness score"],
+  ["Nu ai deadline-uri active", "You have no active deadlines"],
+  ["Compară selecția", "Compare selection"],
+  ["Catalog UniTrack: THE Europe 2026. Domenii:", "UniTrack catalog: THE Europe 2026. Fields:"],
+  ["Domenii:", "Fields:"],
+  ["documente obligatorii lipsă", "required documents missing"],
+  ["documente verificate în tracker și aplicații", "verified documents across tracker and applications"],
+  ["documente verificate", "verified documents"],
+  ["documente lipsă", "missing documents"],
+  ["universități urmărite", "tracked universities"],
+  ["aplicații trimise", "submitted applications"],
+  ["Deadline expirat", "Deadline passed"],
+  ["zile rămase", "days left"],
+  ["Finalizat pe", "Completed on"],
+  ["rezultate disponibile", "available results"],
+  ["deadline-uri în luna curentă", "deadlines this month"],
+  ["UNIVERSITĂȚI", "UNIVERSITIES"],
+  ["Universități (", "Universities ("],
+  ["STRATEGY STUDIO", "APPLICATION STRATEGY"],
+  ["Strategy studio", "Application strategy"],
+  ["Notă student:", "Student note:"],
+  ["/zi", "/day"],
+  ["Acceptat", "Accepted"],
+  ["Progres", "Progress"],
+  ["documente", "documents"],
+  ["aplicații", "applications"],
+  ["zile", "days"],
+  ["Marea Britanie", "United Kingdom"],
+  ["România", "Romania"],
+  ["Germania", "Germany"],
+  ["Olanda", "Netherlands"],
+  ["Belgia", "Belgium"],
+  ["Franța", "France"],
+  ["Elveția", "Switzerland"],
+  ["Suedia", "Sweden"],
+  ["Danemarca", "Denmark"]
+];
+
+const inlineRo = inlineEn.map(([source, target]) => [target, source]);
 
 export function t(value, language = "ro") {
   if (!value) return value;
@@ -362,7 +572,16 @@ function translateValue(value, language) {
   const trimmed = value.trim();
   const translated = dictionary[trimmed];
   if (translated) return value.replace(trimmed, translated);
-  return value;
+  const replacements = language === "en" ? inlineEn : inlineRo;
+  let nextValue = value;
+  replacements.forEach(([source, target]) => {
+    const escaped = source.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const wordCharacter = /[\p{L}\p{N}]/u;
+    const prefix = wordCharacter.test(source[0]) ? "(?<![\\p{L}\\p{N}])" : "";
+    const suffix = wordCharacter.test(source[source.length - 1]) ? "(?![\\p{L}\\p{N}])" : "";
+    nextValue = nextValue.replace(new RegExp(`${prefix}${escaped}${suffix}`, "gu"), target);
+  });
+  return nextValue;
 }
 
 function translateTree(root, language) {
@@ -395,6 +614,21 @@ export function applyDomLanguage(language) {
   const root = document.getElementById("root");
   if (!root) return () => {};
   document.documentElement.lang = language === "en" ? "en" : "ro";
-  const frame = window.requestAnimationFrame(() => translateTree(root, language));
-  return () => window.cancelAnimationFrame(frame);
+  let frame = 0;
+  let stopped = false;
+  const scheduleTranslation = () => {
+    if (stopped || frame) return;
+    frame = window.requestAnimationFrame(() => {
+      frame = 0;
+      translateTree(root, language);
+    });
+  };
+  const observer = new MutationObserver(scheduleTranslation);
+  observer.observe(root, { childList: true, subtree: true, characterData: true });
+  scheduleTranslation();
+  return () => {
+    stopped = true;
+    observer.disconnect();
+    if (frame) window.cancelAnimationFrame(frame);
+  };
 }
