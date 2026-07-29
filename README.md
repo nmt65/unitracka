@@ -1,314 +1,167 @@
 # UniTrack
 
-UniTrack este o platformă web pentru gestionarea procesului de admitere la universități. Aplicația centralizează opțiunile candidatului, documentele necesare, deadline-urile, statusul aplicațiilor și comunicarea dintre elevi, universități și administratori.
+UniTrack este o platformă web full-stack pentru organizarea și gestionarea admiterii la universitate. Elevii își construiesc dosarul, urmăresc termenele și trimit aplicații, iar instituțiile procesează candidaturile într-un workspace separat. Administratorul controlează catalogul public, programele și conturile instituționale.
 
-Proiectul este construit ca aplicație full-stack: frontend React/Vite, backend Node.js/Express și bază de date relațională prin Sequelize. În dezvoltare rulează cu SQLite local, iar pentru producție poate fi conectat la PostgreSQL.
+Aplicația live este disponibilă la [unitrack.sbs](https://unitrack.sbs).
 
-## Obiectiv
+## Funcționalități
 
-Admiterea la facultate implică multe platforme diferite, documente repetate și termene limită greu de urmărit. UniTrack propune un spațiu unic în care elevul își poate organiza aplicațiile, iar instituțiile pot primi și administra dosarele într-un flux coerent.
-
-Aplicația urmărește trei direcții principale:
-
-- organizarea aplicațiilor pentru elevi;
-- verificarea și urmărirea documentelor;
-- administrarea universităților, conturilor instituționale și statusurilor de admitere.
-
-## Funcționalități principale
-
-- Autentificare cu email și parolă, verificare prin cod unic și passkey WebAuthn.
-- Roluri separate pentru student, universitate și administrator.
-- Cont unic per elev prin validarea CNP-ului, fără stocarea CNP-ului în clar.
-- Resetare parolă cu token temporar și verificare email cu cod de 6 cifre.
-- Login fără parolă prin Windows Hello, Face ID sau cheie FIDO2.
-- Deconectare, schimbare parolă și ștergere cont.
-- Dashboard cu progresul aplicațiilor, deadline-uri și statistici.
-- Administrare universități, programe, taxe, ratinguri și deadline-uri.
-- Adăugare universități doar de către administrator.
-- Workspace pentru universități, cu aplicații primite de la elevi.
-- Trimitere aplicații de către studenți către universitățile active.
-- Checklist documente pentru fiecare universitate.
-- Documente predefinite și documente custom.
-- Verificare automată asistată prin OpenAI/Gemini, cu reguli locale stricte când providerul nu este configurat.
-- Asistent pentru studenți: scor orientativ pentru CV, dosar și șanse de admitere.
-- Media BAC și scorurile de limbă se pot salva doar după documente atestatoare verificate.
-- Notificări interne pentru aplicații noi și schimbări de status.
-- Audit log pentru acțiuni sensibile.
-- Comparare side-by-side pentru 2-4 universități.
-- Calendar cu deadline-uri și export `.ics`.
-- Exporturi CSV, JSON, PDF, ICS și XML.
-- Profil student și link public read-only.
+- autentificare cu email, parolă, verificarea adresei și recuperarea contului;
+- autentificare fără parolă prin WebAuthn/passkey;
+- roluri și interfețe distincte pentru student, universitate și administrator;
+- unicitatea contului de student prin hash CNP cu pepper, fără stocarea CNP-ului în clar;
+- catalog de universități și programe de studiu;
+- dosar de admitere, checklist de documente și urmărirea progresului;
+- încărcarea și clasificarea asistată a documentelor cu Gemini;
+- trimiterea aplicațiilor și actualizarea statusului de către universitate;
+- compararea universităților și calendarul termenelor limită;
+- notificări, exporturi și jurnal de audit pentru operațiile sensibile;
+- profil, fotografie de profil, schimbarea parolei și ștergerea contului;
+- interfață responsive în română și engleză.
 
 ## Arhitectură
 
 ```text
-frontend/   React + Vite
-backend/    Node.js + Express + Sequelize
-docs/       documentație tehnică și checklist de concurs
+Browser
+  |
+  v
+Netlify: React + Vite
+  |
+  | /api/*
+  v
+Render: Node.js + Express
+  |
+  v
+Supabase: PostgreSQL + RLS + storage privat
 ```
 
-Backend-ul expune un API REST, iar frontend-ul consumă API-ul printr-un strat separat de servicii. Pentru prezentări statice, aplicația are și un mod frontend-only bazat pe `localStorage`, util pentru GitHub Pages.
+Frontendul comunică exclusiv cu API-ul. Cheile Gemini, credențialele bazei de date, secretele JWT și cheia Supabase `service_role` există numai pe server. Documentele sunt stocate într-un bucket privat și sunt livrate doar după verificarea sesiunii și a rolului.
 
-### Tehnologii
+## Tehnologii
 
-- React și Vite
-- Node.js, Express
-- Sequelize ORM
-- SQLite pentru dezvoltare locală
-- PostgreSQL pentru producție
-- Zod pentru validare
-- JWT în cookie `httpOnly`
-- WebAuthn prin SimpleWebAuthn
-- Helmet, CORS, rate limiting și sanitizare XSS
-- OpenAI/Gemini pentru verificarea asistată a documentelor
+### Frontend
 
-## Securitate și date personale
+- React 18;
+- Vite 6;
+- JavaScript ES modules;
+- CSS modular pe straturi;
+- Lucide React;
+- SimpleWebAuthn Browser.
 
-Proiectul include măsuri de securitate aplicate atât la nivel de API, cât și la nivel de bază de date:
+### Backend
 
-- parole hash-uite cu bcrypt;
-- JWT stocat în cookie `httpOnly`;
+- Node.js și Express;
+- Sequelize ORM;
+- PostgreSQL în producție și SQLite pentru dezvoltare;
+- Zod pentru validarea payloadurilor;
+- JWT în cookie `httpOnly`;
+- bcrypt pentru parole;
+- SimpleWebAuthn Server;
+- Gemini pentru analiza documentelor;
+- Resend sau SMTP pentru email.
+
+### Securitate
+
+- Helmet și politici HTTP restrictive;
+- CORS cu allowlist;
 - protecție CSRF double-submit;
-- rate limiting pentru autentificare și API;
-- validare strictă a inputului cu Zod;
-- sanitizare împotriva XSS;
-- CNP hash-uit cu pepper, fără salvare în clar;
-- roluri și permisiuni pe endpoint-uri;
-- script SQL pentru Row Level Security în PostgreSQL;
-- audit pentru acțiuni administrative și operații sensibile.
+- rate limiting pe autentificare și API;
+- validare Zod și sanitizarea inputurilor;
+- autorizare pe roluri la nivel de endpoint;
+- parole hash-uite și CNP ireversibil hash-uit;
+- Row Level Security în PostgreSQL;
+- audit pentru acțiuni administrative;
+- secrete exclusiv în variabile de mediu.
 
-Scriptul pentru politicile PostgreSQL RLS se află în:
+## Structura proiectului
 
 ```text
-backend/sql/postgres_rls.sql
+backend/             API, modele, validatoare și servicii
+frontend/            aplicația React
+supabase/migrations/ schema și migrări PostgreSQL
+tests/e2e/           teste Playwright desktop și mobil
+tools/               verificarea automată a mediului live
+docs/                documentația și discursurile pentru prezentare
+netlify.toml         build, headers și proxy pentru frontend
+render.yaml          configurația API-ului
 ```
 
-## Rulare locală
+## Instalare locală
+
+Cerințe: Node.js 20 sau mai nou și npm.
 
 ```bash
-npm run install:all
+git clone https://github.com/nmt65/unitracka.git
+cd unitracka
+npm install
+copy backend\.env.example backend\.env
 npm run dev
 ```
 
-Comanda pornește simultan backend-ul Express și frontend-ul Vite. Nu este
-necesar PostgreSQL pentru demonstrația locală: aplicația creează automat baza
-SQLite din `backend/data/`. Dacă SMTP nu este configurat, codul de verificare
-email este afișat numai în development. Passkey-urile funcționează pe
-`http://localhost:5173`, pe care browserul îl tratează ca mediu securizat.
+Adrese locale:
 
-URL-uri locale:
+- frontend: `http://localhost:5173`;
+- API: `http://localhost:4000/api`;
+- health check: `http://localhost:4000/api/health`;
+- verificarea bazei de date: `http://localhost:4000/api/ready`.
 
-- Frontend: `http://localhost:5173`
-- API: `http://localhost:4000/api`
-- Health check: `http://localhost:4000/api/health`
-- Readiness DB check: `http://localhost:4000/api/ready`
-
-Conturi de test pentru development:
-
-```text
-Student:       andrei@unitracker.ro / Demo1234!
-Admin:         admin@unitracker.ro / Demo1234!
-Universitate:  admitere@unibuc.ro / Demo1234!
-```
-
-Datele de test sunt generate doar în modul de dezvoltare. Pentru producție se setează `SEED_DEMO=false`.
-
-## Configurare
-
-Backend-ul citește variabilele din `.env`. Fișierele reale `.env` nu se urcă în repository; în Git se păstrează doar exemplele:
-
-```text
-backend/.env.example
-backend/.env.production.example
-frontend/.env.example
-frontend/.env.pages.example
-```
-
-Exemplu minim pentru dezvoltare:
-
-```env
-NODE_ENV=development
-PORT=4000
-DB_DIALECT=sqlite
-JWT_SECRET=schimba-acest-secret
-CNP_PEPPER=schimba-acest-pepper
-CORS_ORIGIN=http://localhost:5173
-APP_URL=http://localhost:5173
-PASSKEY_RP_ID=localhost
-PASSKEY_ORIGIN=http://localhost:5173
-```
-
-Exemplu minim pentru PostgreSQL:
+Configurația implicită folosește SQLite. Pentru PostgreSQL:
 
 ```env
 DB_DIALECT=postgres
 DATABASE_URL=postgresql://user:password@host:5432/database
 ```
 
-Cheile pentru verificarea asistată și SMTP sunt opționale:
+Fișierele `.env` reale nu se urcă în Git. Exemplele complete sunt în:
 
-```env
-OPENAI_API_KEY=
-GEMINI_API_KEY=
-MAIL_PROVIDER=auto
-RESEND_API_KEY=
-EMAIL_FROM=UniTrack <no-reply@unitrack.sbs>
-SMTP_HOST=
-SMTP_PORT=587
-SMTP_USER=
-SMTP_PASS=
-SMTP_FROM=UniTrack <no-reply@example.ro>
-SMTP_FORCE_IPV4=true
-```
-
-Fără chei externe, verificarea documentelor folosește reguli locale stricte. Pe
-Render Free folosește `RESEND_API_KEY`, deoarece porturile SMTP sunt blocate.
-SMTP rămâne disponibil pentru dezvoltare locală sau pentru o instanță Render
-plătită.
+- `backend/.env.example`;
+- `backend/.env.production.example`;
+- `frontend/.env.example`.
 
 ## Verificare
 
 ```bash
 npm run check
-npm run smoke
-npm run --silent jury:demo
 npm run test:e2e
-npm run gdpr:retention
-```
-
-`npm run check` verifică sintaxa backend-ului și construiește frontend-ul. `npm run smoke` testează API-ul pornit, `jury:demo` rulează verificări read-only cu raport JSON, `test:e2e` verifică fluxul real pe desktop și mobil, iar `gdpr:retention` produce implicit doar raportul de retenție.
-
-Pentru PostgreSQL în producție:
-
-```bash
-npm run db:sync --prefix backend
-npm run db:rls --prefix backend
-npm run db:rls:audit
-npm run production:check --prefix backend
-```
-
-`db:sync` creează tabelele prin Sequelize, `db:rls` aplică politicile din `backend/sql/postgres_rls.sql`, iar `production:check` verifică variabilele critice, conexiunea la baza de date și existența tabelelor principale.
-
-## Build și deploy
-
-Pentru build frontend:
-
-```bash
-npm run build
-```
-
-Pentru build static compatibil cu GitHub Pages:
-
-```bash
-npm run build:pages
-```
-
-Varianta completă de producție folosește frontend Netlify, backend Node.js pe Render și PostgreSQL în Supabase:
-
-```text
-https://unitrack.sbs -> Netlify frontend -> Render API -> Supabase PostgreSQL
-```
-
-Deploy-ul Netlify este configurat prin `netlify.toml`. Proiectul Netlify este `unitrack-640`, domeniul principal este `unitrack.sbs`, iar aliasul este `www.unitrack.sbs`. Netlify face build-ul din `frontend/` și trimite cererile `/api/*` către API-ul Render.
-
-Pentru un deploy manual al frontendului:
-
-```bash
-npm run build --prefix frontend
-netlify deploy --prod --dir frontend/dist
-```
-
-DNS-ul extern trebuie setat în Hostinger astfel:
-
-```text
-A      @      75.2.60.5
-CNAME  www    unitrack-640.netlify.app
-```
-
-Elimină recordurile vechi care intră în conflict. Netlify emite automat certificatul SSL după propagarea DNS-ului.
-
-GitHub Pages poate rula doar frontend static. Varianta statică rămâne utilă pentru demo-uri, dar varianta live are nevoie de backend Node.js separat și bază de date PostgreSQL.
-
-Configurația pentru deploy backend se află în:
-
-```text
-render.yaml
-```
-
-Flux recomandat pentru producție:
-
-```text
-Netlify frontend -> Backend Express -> PostgreSQL
-```
-
-## Documentație
-
-- [Documentația finală pentru prezentare](docs/DOCUMENTATIE-PREZENTARE.md)
-- [Discurs cronometrat de 8 minute](docs/DISCURS-8-MINUTE.md)
-- [Discurs cronometrat de 15 minute](docs/DISCURS-15-MINUTE.md)
-- [Audit pe criteriile oficiale Web 2026](docs/audit-criterii-web-2026.md)
-- [Documentație Word pentru juriu](docs/UniTrack-Documentatie-Juriu.docx)
-- [Discursuri Word pentru juriu](docs/UniTrack-Discursuri-Juriu.docx)
-- [Dosar de prezentare pentru juriu](docs/prezentare-juriu.md)
-- [Discurs pentru juriu, ușor de învățat](docs/discurs-juriu-de-invatat.md)
-- [Hardening pentru producție: storage, antivirus, RLS și GDPR](docs/hardening-productie.md)
-- [Politica tehnică de retenție GDPR](docs/politica-retentie-gdpr.md)
-- [Rulare și testare pentru juriu](docs/rulare-demo-juriu.md)
-- [Biblioteci și servicii externe](docs/surse-externe.md)
-
-Documentația proiectului este în folderul `docs/`:
-
-- `docs/infoeducatie-2026-checklist.md`
-- `docs/arhitectura-tehnica.md`
-- `docs/database.md`
-- `docs/security-and-rls.md`
-- `docs/ai-document-verification.md`
-- `docs/deploy-github-pages-supabase.md`
-- `docs/github-pages.md`
-- `docs/public-launch-checklist.md`
-- `docs/surse-externe.md`
-- `docs/ce-nu-se-urca-pe-github.md`
-
-Verificarea completă locală:
-
-```powershell
 npm run verify
 ```
 
-Verificarea buildului, browserului și API-ului live, cu raport JSON:
+`npm run verify` verifică sintaxa backendului, build-ul frontendului și fluxurile principale în Playwright pe desktop și mobil.
+
+Pentru un raport JSON al mediului live:
 
 ```powershell
-$env:JURY_EMAIL="admin@unitracker.ro"
-$env:JURY_PASSWORD="<parola-admin>"
-powershell -ExecutionPolicy Bypass -File tools/verify-all.ps1
+npm run verify:live
 ```
 
-## Conformitate InfoEducație 2026
+Raportul include starea frontendului, API-ului, bazei de date și rutelor publice, într-un format potrivit pentru demonstrație.
 
-Proiectul include cod sursă, documentație tehnică, descrierea arhitecturii, surse externe, explicații de securitate și checklist dedicat pentru categoria Aplicații Web.
+## Deploy
 
-Elemente relevante pentru evaluare:
+Frontendul este publicat exclusiv prin Netlify. Configurația din `netlify.toml` stabilește:
 
-- aplicație web funcțională, cu frontend și backend;
-- roluri distincte și fluxuri pentru utilizatori diferiți;
-- operații CRUD reale;
-- bază de date relațională;
-- protecție pentru date personale;
-- validare server-side;
-- documentație locală pentru instalare, rulare și deploy;
-- exporturi și integrare opțională cu servicii externe.
+- baza buildului: `frontend`;
+- comanda: `npm run build`;
+- directorul publicat: `frontend/dist`;
+- proxy-ul `/api/*` către API-ul Render;
+- fallback SPA către `index.html`;
+- politici de cache pentru HTML și assets.
 
-## Structură repository
+Deploy manual:
 
-```text
-unitracka/
-├── backend/
-│   ├── sql/postgres_rls.sql
-│   └── src/
-├── docs/
-├── frontend/
-│   ├── public/
-│   └── src/
-├── render.yaml
-└── README.md
+```bash
+netlify deploy --build --prod
 ```
+
+Backendul este publicat pe Render folosind `render.yaml`, iar PostgreSQL și storage-ul privat sunt găzduite în Supabase. Variabilele de producție se configurează în Render, nu în frontend și nu în repository.
+
+## Documentație
+
+- [Documentație pentru prezentare](docs/DOCUMENTATIE-PREZENTARE.md)
+- [Prezentare tehnică scurtă și traseu demo](docs/PREZENTARE-TEHNICA-SCURTA.md)
+- [Discurs de 8 minute](docs/DISCURS-8-MINUTE.md)
+- [Discurs de 15 minute](docs/DISCURS-15-MINUTE.md)
+
+## Licență și date
+
+Repository-ul este public pentru evaluarea proiectului. Datele personale și documentele încărcate rămân protejate de autentificare, autorizare și politicile bazei de date; acestea nu fac parte din codul sursă.

@@ -159,7 +159,7 @@ function initialState() {
         programType: "licenta",
         status: "submitted",
         admissionScore: 9.75,
-        notes: "Aplicație trimisă din modul static GitHub Pages.",
+        notes: "Aplicație trimisă din modul local de prezentare.",
         submittedAt: new Date().toISOString(),
         documents: appDocs
       }
@@ -585,7 +585,7 @@ export const staticApi = {
         geminiAdvisorModel: null,
         aiDocumentDailyLimit: 40,
         aiAdvisorDailyLimit: 20,
-        corsOrigins: ["GitHub Pages static"],
+        corsOrigins: ["Mod local de prezentare"],
         trustProxy: false
       }
     };

@@ -2,6 +2,10 @@ import { test, expect } from "@playwright/test";
 
 async function login(page) {
   await page.goto("/");
+  const cookieBanner = page.getByLabel("Preferințe cookies");
+  if (await cookieBanner.isVisible()) {
+    await cookieBanner.getByRole("button", { name: "Accept" }).click();
+  }
   await page.getByRole("button", { name: "Intră în platformă" }).click();
   await page.getByLabel("Email").fill("andrei@unitracker.ro");
   await page.locator('input[name="password"]').fill("Demo1234!");
@@ -40,6 +44,16 @@ test("pagina publică este accesibilă și fără overflow", async ({ page }) =>
   expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
   await page.getByRole("button", { name: "Creează cont" }).click();
   await expect(page.getByRole("heading", { name: "Creează cont" })).toBeVisible();
+});
+
+test("preferința pentru cookies este memorată", async ({ page }) => {
+  await page.goto("/");
+  const banner = page.getByLabel("Preferințe cookies");
+  await expect(banner).toBeVisible();
+  await banner.getByRole("button", { name: "Refuz" }).click();
+  await expect(banner).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByLabel("Preferințe cookies")).toHaveCount(0);
 });
 
 test("notificările se închid la click exterior", async ({ page }) => {

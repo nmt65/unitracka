@@ -1,8 +1,10 @@
 [build]
-  command = "npm run build --prefix frontend"
-  publish = "frontend/dist"
+  base = "frontend"
+  command = "npm run build"
+  publish = "dist"
 
 [build.environment]
+  NODE_VERSION = "20"
   VITE_STATIC_MODE = "false"
   VITE_API_URL = "/api"
   VITE_BASE_PATH = "/"

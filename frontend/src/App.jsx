@@ -5,6 +5,7 @@ import { useUniversities } from "./hooks/useUniversities.js";
 import { AuthPage } from "./pages/AuthPage.jsx";
 import { LandingPage } from "./pages/LandingPage.jsx";
 import { CommandPalette } from "./components/CommandPalette.jsx";
+import { CookieBanner } from "./components/CookieBanner.jsx";
 import { Navbar } from "./components/Navbar.jsx";
 import { Sidebar } from "./components/Sidebar.jsx";
 import { UniversityModal } from "./components/UniversityModal.jsx";
@@ -231,25 +232,31 @@ export function App() {
   if (!user) {
     if (!authEntry) {
       return (
-        <LandingPage
-          onLogin={() => setAuthEntry("login")}
-          onRegister={() => setAuthEntry("register")}
-        />
+        <>
+          <LandingPage
+            onLogin={() => setAuthEntry("login")}
+            onRegister={() => setAuthEntry("register")}
+          />
+          <CookieBanner language={language} />
+        </>
       );
     }
     return (
-      <AuthPage
-        onLogin={login}
-        onRegister={register}
-        onAuthenticated={setUser}
-        checkingSession={checking}
-        darkMode={darkMode}
-        onToggleTheme={() => setDarkMode((value) => !value)}
-        language={language}
-        onToggleLanguage={() => setLanguage((value) => value === "ro" ? "en" : "ro")}
-        initialMode={authEntry}
-        onBack={() => setAuthEntry("")}
-      />
+      <>
+        <AuthPage
+          onLogin={login}
+          onRegister={register}
+          onAuthenticated={setUser}
+          checkingSession={checking}
+          darkMode={darkMode}
+          onToggleTheme={() => setDarkMode((value) => !value)}
+          language={language}
+          onToggleLanguage={() => setLanguage((value) => value === "ro" ? "en" : "ro")}
+          initialMode={authEntry}
+          onBack={() => setAuthEntry("")}
+        />
+        <CookieBanner language={language} />
+      </>
     );
   }
 
@@ -318,6 +325,7 @@ export function App() {
       />
       <UniversityModal open={modalOpen} initial={editing} onClose={() => setModalOpen(false)} onSave={saveUniversity} />
       {toast && <div className="toast">{toast}</div>}
+      <CookieBanner language={language} />
     </div>
   );
 }
