@@ -159,8 +159,7 @@ Backendul este publicat pe Render folosind `render.yaml`, iar PostgreSQL și sto
 
 - [Documentație pentru prezentare](docs/DOCUMENTATIE-PREZENTARE.md)
 - [Prezentare tehnică scurtă și traseu demo](docs/PREZENTARE-TEHNICA-SCURTA.md)
-- [Discurs de 8 minute](docs/DISCURS-8-MINUTE.md)
-- [Discurs de 15 minute](docs/DISCURS-15-MINUTE.md)
+
 
 ## Licență și date
 
